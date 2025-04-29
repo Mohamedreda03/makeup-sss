@@ -4,6 +4,10 @@ import AdminSidebar from "@/components/admin/AdminSidebar";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 
+// تعطيل التخزين المؤقت وإجبار إعادة جلب البيانات في كل زيارة
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export const metadata: Metadata = {
   title: "Admin Dashboard | MakeupPro",
   description: "Administrative control panel for MakeupPro",
