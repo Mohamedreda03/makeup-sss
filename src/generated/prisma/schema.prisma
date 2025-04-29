@@ -1,0 +1,276 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 String         @id @default(cuid())
+  name               String?
+  email              String?        @unique
+  emailVerified      DateTime?
+  image              String?
+  password           String?
+  phone              String?
+  role               UserRole       @default(CUSTOMER)
+  instagram          String?
+  facebook           String?
+  twitter            String?
+  tiktok             String?
+  website            String?
+  bio                String?        @db.Text
+  yearsOfExperience  Int? // Years of experience for artists
+  defaultPrice       Float? // Default price for artist services
+  category           String? // Artist category/specialty
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  accounts           Account[]
+  sessions           Session[]
+  appointments       Appointment[]  @relation()
+  artistAppointments Appointment[]  @relation("ArtistAppointments")
+  reviews            Review[]       @relation()
+  artistReviews      Review[]       @relation("ArtistReviews")
+  metadata           UserMetadata?
+  orders             Order[]
+  Transaction        Transaction[]
+  ArtistAccount      ArtistAccount?
+}
+
+model UserMetadata {
+  id                   String   @id @default(cuid())
+  userId               String   @unique
+  availabilitySettings String?  @db.Text // JSON string of availability settings
+  artistSettings       String?  @db.Text // JSON string of artist settings (specialties, certificates, services)
+  preferences          String?  @db.Text // JSON string of user preferences
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Product {
+  id          String      @id @default(cuid())
+  name        String
+  description String?
+  price       Float
+  imageUrl    String?
+  featured    Boolean     @default(false)
+  inStock     Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  category    String
+  cartItems   CartItem[]
+  orderItems  OrderItem[]
+}
+
+model Cart {
+  id        String     @id @default(cuid())
+  userId    String?
+  sessionId String?    @unique
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  items     CartItem[]
+}
+
+model CartItem {
+  id        String   @id @default(cuid())
+  cartId    String
+  productId String
+  quantity  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cart    Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  CANCELLED
+}
+
+model Order {
+  id           String      @id @default(cuid())
+  userId       String?
+  sessionId    String?
+  status       OrderStatus @default(PENDING)
+  total        Float
+  shippingInfo Json?
+  paymentInfo  Json?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  items        OrderItem[]
+
+  user        User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  Transaction Transaction[]
+}
+
+model OrderItem {
+  id        String   @id @default(cuid())
+  orderId   String
+  productId String
+  name      String
+  price     Float
+  quantity  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+model Appointment {
+  id             String            @id @default(cuid())
+  datetime       DateTime
+  description    String?
+  status         AppointmentStatus @default(PENDING)
+  userId         String
+  artistId       String?
+  serviceType    String
+  duration       Int // Duration in minutes
+  totalPrice     Float
+  location       String?
+  notes          String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  review         Review?
+  paymentDetails PaymentDetail?
+  transactions   Transaction[]
+
+  user   User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  artist User? @relation("ArtistAppointments", fields: [artistId], references: [id], onDelete: SetNull)
+}
+
+enum UserRole {
+  CUSTOMER
+  ADMIN
+  ARTIST
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Review {
+  id            String       @id @default(cuid())
+  appointmentId String       @unique
+  userId        String
+  artistId      String
+  rating        Int // Rating from 1 to 5
+  comment       String       @db.Text
+  status        ReviewStatus @default(PENDING)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  artist      User        @relation("ArtistReviews", fields: [artistId], references: [id], onDelete: Cascade)
+}
+
+// Payment related models
+model PaymentDetail {
+  id             String   @id @default(cuid())
+  appointmentId  String   @unique
+  amount         Float
+  currency       String   @default("USD")
+  status         String // PENDING, COMPLETED, FAILED
+  paymentMethod  String // card, paypal, etc.
+  paidAt         DateTime @default(now())
+  transactionId  String? // External payment gateway transaction ID
+  paymentGateway String // stripe, paypal, etc
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+}
+
+enum TransactionType {
+  PAYOUT
+  SALE
+  REFUND
+  ADJUSTMENT
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+model Transaction {
+  id              String            @id @default(cuid())
+  artistAccountId String
+  artistAccount   ArtistAccount     @relation(fields: [artistAccountId], references: [id], onDelete: Cascade)
+  orderId         String?
+  order           Order?            @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  amount          Float
+  type            TransactionType
+  status          TransactionStatus @default(PENDING)
+  description     String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  User            User?             @relation(fields: [userId], references: [id])
+  userId          String?
+  Appointment     Appointment?      @relation(fields: [appointmentId], references: [id])
+  appointmentId   String?
+}
+
+model ArtistAccount {
+  id               String        @id @default(cuid())
+  userId           String        @unique
+  user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  totalEarnings    Float         @default(0)
+  pendingPayouts   Float         @default(0)
+  availableBalance Float         @default(0)
+  transactions     Transaction[]
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+}
