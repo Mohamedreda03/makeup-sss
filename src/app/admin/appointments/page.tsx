@@ -80,7 +80,6 @@ interface Appointment {
   userPhone?: string | null;
   artistId: string | null;
   artistName?: string | null;
-  serviceType: string;
   duration: number;
   totalPrice: number;
   location: string | null;
@@ -205,7 +204,6 @@ function AdminAppointmentsPage() {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
         (appointment) =>
-          appointment.serviceType.toLowerCase().includes(query) ||
           appointment.description?.toLowerCase().includes(query) ||
           appointment.location?.toLowerCase().includes(query) ||
           appointment.artistName?.toLowerCase().includes(query) ||

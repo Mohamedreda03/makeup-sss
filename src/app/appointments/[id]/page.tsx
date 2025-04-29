@@ -68,7 +68,6 @@ export default async function AppointmentPage({
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>{appointment.serviceType}</CardTitle>
             <AppointmentStatusBadge status={appointment.status} />
           </div>
           <CardDescription>

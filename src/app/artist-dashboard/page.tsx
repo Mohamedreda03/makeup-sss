@@ -85,7 +85,7 @@ interface Appointment {
   status: AppointmentStatus;
   userId: string;
   artistId: string | null;
-  serviceType: string;
+
   duration: number;
   totalPrice: number;
   location: string | null;
@@ -755,7 +755,6 @@ export default function ArtistDashboard() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <div className="text-sm font-medium">Service</div>
-                  <div>{selectedAppointment.serviceType}</div>
                 </div>
                 <div className="space-y-1">
                   <div className="text-sm font-medium">Price</div>

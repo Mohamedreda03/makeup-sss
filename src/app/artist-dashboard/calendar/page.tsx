@@ -45,7 +45,7 @@ interface ExtendedUser {
 interface Appointment {
   id: string;
   datetime: string;
-  serviceType: string;
+
   duration: number;
   status: AppointmentStatus;
   user: {
@@ -285,9 +285,6 @@ export default function ArtistCalendarPage() {
                           )}`}
                           onClick={() => viewAppointmentDetails(appointment.id)}
                         >
-                          <div className="font-semibold truncate">
-                            {appointment.serviceType}
-                          </div>
                           <div className="truncate">
                             {appointment.user.name || "Client"}
                           </div>

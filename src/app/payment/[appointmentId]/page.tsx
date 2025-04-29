@@ -31,7 +31,7 @@ import {
 interface Appointment {
   id: string;
   datetime: string;
-  serviceType: string;
+
   status: string;
   totalPrice: number;
   artistName?: string | null;
@@ -371,14 +371,6 @@ export default function PaymentPage() {
                 {format(new Date(appointment.datetime), "MMMM d, yyyy")} at{" "}
                 {format(new Date(appointment.datetime), "h:mm a")}
               </span>
-            </div>
-
-            <div className="flex justify-between items-center p-3 bg-gray-50 rounded-md">
-              <span className="font-medium flex items-center text-gray-700">
-                <User className="mr-2 h-4 w-4 text-rose-500" />
-                Service
-              </span>
-              <span className="text-gray-900">{appointment.serviceType}</span>
             </div>
 
             <div className="flex justify-between items-center p-3 bg-gray-50 rounded-md">

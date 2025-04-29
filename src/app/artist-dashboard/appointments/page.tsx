@@ -65,7 +65,7 @@ interface Appointment {
   status: AppointmentStatus;
   userId: string;
   artistId: string | null;
-  serviceType: string;
+
   duration: number;
   totalPrice: number;
   location: string | null;

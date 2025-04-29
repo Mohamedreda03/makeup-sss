@@ -38,14 +38,13 @@ type ReviewFormValues = z.infer<typeof reviewFormSchema>;
 
 interface ReviewFormProps {
   appointmentId: string;
-  serviceName: string;
   artistName: string;
   onSuccess?: () => void;
 }
 
 export function ReviewForm({
   appointmentId,
-  serviceName,
+
   artistName,
   onSuccess,
 }: ReviewFormProps) {
@@ -113,7 +112,7 @@ export function ReviewForm({
       <CardHeader>
         <CardTitle>Write a Review</CardTitle>
         <CardDescription>
-          Share your experience with {artistName} for your {serviceName} service
+          Share your experience with {artistName}
         </CardDescription>
       </CardHeader>
 

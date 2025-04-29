@@ -44,7 +44,6 @@ interface Appointment {
   artistId: string | null;
   artistName?: string | null;
   artistImage?: string | null;
-  serviceType: string;
   duration: number;
   totalPrice: number;
   location: string | null;
@@ -280,11 +279,8 @@ export default function AppointmentsPage() {
                 <CardContent className="p-4">
                   <div className="flex justify-between mb-3">
                     <div>
-                      <h3 className="font-semibold text-base text-rose-700">
-                        {appointment.serviceType}
-                      </h3>
-                      <p className="text-gray-600 flex items-center text-sm">
-                        <User className="h-3 w-3 mr-1 inline" />
+                      <p className="text-gray-600 flex items-center text-lg">
+                        <User className="h-5 w-5 mr-1 inline" />
                         {appointment.artistName || "Unknown Artist"}
                       </p>
                     </div>
@@ -400,11 +396,8 @@ export default function AppointmentsPage() {
                       )}
 
                       <div>
-                        <h3 className="font-semibold text-lg text-rose-700">
-                          {appointment.serviceType}
-                        </h3>
-                        <p className="text-gray-600 flex items-center">
-                          <User className="h-3 w-3 mr-1 inline" />
+                        <p className="text-gray-600 flex items-center text-lg">
+                          <User className="h-5 w-5 mr-1 inline" />
                           {appointment.artistName || "Unknown Artist"}
                         </p>
                       </div>
@@ -442,7 +435,6 @@ export default function AppointmentsPage() {
                   <div className="border-t p-6 bg-gray-50">
                     <ReviewForm
                       appointmentId={appointment.id}
-                      serviceName={appointment.serviceType}
                       artistName={appointment.artistName || "Artist"}
                     />
                   </div>
@@ -468,9 +460,6 @@ export default function AppointmentsPage() {
                 <CardContent className="p-6">
                   <div className="flex justify-between mb-4">
                     <div>
-                      <h3 className="font-semibold text-lg text-rose-700">
-                        {appointment.serviceType}
-                      </h3>
                       <p className="text-gray-600 flex items-center">
                         <User className="h-3 w-3 mr-1 inline" />
                         {appointment.artistName || "Unknown Artist"}

@@ -159,7 +159,6 @@ export async function GET(req: Request) {
         userPhone: appointment.user?.phone || null,
         artistId: appointment.artistId,
         artistName: appointment.artist?.name || null,
-        serviceType: appointment.serviceType,
         duration: appointment.duration,
         totalPrice: appointment.totalPrice,
         location: appointment.location,

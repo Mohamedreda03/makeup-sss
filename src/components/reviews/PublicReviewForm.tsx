@@ -187,7 +187,6 @@ export function PublicReviewForm({
             {/* Hidden fields - these will still be submitted but not shown to the user */}
             <input type="hidden" {...form.register("name")} />
             <input type="hidden" {...form.register("email")} />
-            <input type="hidden" {...form.register("serviceType")} />
 
             {/* Rating field */}
             <FormField
