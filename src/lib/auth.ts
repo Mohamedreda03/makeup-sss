@@ -11,6 +11,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   secret: process.env.NEXTAUTH_SECRET,
   session: {
     strategy: "jwt" as const,
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   pages: {
     signIn: "/sign-in",
@@ -18,25 +19,45 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   debug: process.env.NODE_ENV === "development",
   callbacks: {
-    jwt({ token, user }: any) {
+    jwt({ token, user, account, profile }: any) {
+      // Initial sign in
       if (user) {
+        // Map user data to token
         token.id = user.id;
         token.role = user.role || UserRole.CUSTOMER;
+        token.email = user.email;
+        token.name = user.name;
+        token.image = user.image;
       }
 
-      console.log("JWT callback - token:", { id: token.id, role: token.role });
+      console.log(
+        "JWT callback - token:",
+        JSON.stringify({
+          id: token.id,
+          role: token.role,
+          email: token.email?.split("@")[0], // Log partial email for privacy
+        })
+      );
 
       return token;
     },
     session({ session, token }: any) {
       if (token && session.user) {
+        // Map token data to session user
         session.user.id = token.id;
         session.user.role = token.role;
+        session.user.email = token.email;
+        session.user.name = token.name;
+        session.user.image = token.image;
 
-        console.log("Session callback - user:", {
-          id: session.user.id,
-          role: session.user.role,
-        });
+        console.log(
+          "Session callback - user:",
+          JSON.stringify({
+            id: session.user.id,
+            role: session.user.role,
+            email: session.user.email?.split("@")[0], // Log partial email for privacy
+          })
+        );
       }
       return session;
     },
