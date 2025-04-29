@@ -30,6 +30,7 @@ import {
   ChevronDown,
   Check,
   X,
+  Eye,
 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import {
@@ -288,6 +289,17 @@ export default function ProductsTable({
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                        asChild
+                      >
+                        <Link href={`/admin/products/${product.id}`}>
+                          <Eye className="h-4 w-4" />
+                          <span className="sr-only">View</span>
+                        </Link>
+                      </Button>
                       <Button
                         variant="outline"
                         size="sm"
