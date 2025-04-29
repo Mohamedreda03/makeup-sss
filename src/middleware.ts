@@ -2,15 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "./lib/auth";
 import { UserRole } from "@/generated/prisma";
 
-// Add type definition
-interface CustomUser {
-  role?: string;
-  [key: string]: any;
-}
-
 export default auth((req) => {
   // Use type assertion to fix the error
-  const user = req.auth?.user as CustomUser | undefined;
+  const user = req.auth?.user;
   const path = req.nextUrl.pathname;
 
   // If no user is authenticated and trying to access protected routes

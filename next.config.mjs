@@ -12,6 +12,12 @@ const nextConfig = {
       },
     ],
   },
+  experimental: {
+    serverComponentsExternalPackages: ["bcrypt", "@prisma/client"],
+  },
+  middleware: {
+    runtime: "nodejs",
+  },
 };
 
 export default nextConfig;

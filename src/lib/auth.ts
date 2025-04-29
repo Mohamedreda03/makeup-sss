@@ -6,6 +6,37 @@ import GoogleProvider from "next-auth/providers/google";
 import { db } from "@/lib/db";
 import { UserRole } from "@/generated/prisma";
 
+import { type DefaultSession } from "next-auth";
+import { JWT } from "next-auth/jwt";
+
+declare module "next-auth" {
+  interface Session {
+    user: {
+      id: number;
+      name: string;
+      email: string;
+      image: string;
+      role: Role;
+    } & DefaultSession["user"];
+  }
+}
+
+enum Role {
+  CUSTOMER = "CUSTOMER",
+  ARTIST = "ARTIST",
+  ADMIN = "ADMIN",
+}
+
+declare module "next-auth/jwt" {
+  interface JWT {
+    id: number;
+    name: string;
+    email: string;
+    image: string;
+    role: Role;
+  }
+}
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(db),
   secret: process.env.NEXTAUTH_SECRET,
