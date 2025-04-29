@@ -2,6 +2,10 @@
 
 import { ReactNode, useEffect, useState } from "react";
 import { useCartStore } from "@/store/useCartStore";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+// Create a client
+const queryClient = new QueryClient();
 
 export function Providers({ children }: { children: ReactNode }) {
   const [isHydrated, setIsHydrated] = useState(false);
@@ -28,5 +32,8 @@ export function Providers({ children }: { children: ReactNode }) {
     useCartStore.persist.rehydrate();
   }, []);
 
-  return children;
+  // Wrap with QueryClientProvider
+  return (
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  );
 }
