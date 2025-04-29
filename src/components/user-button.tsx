@@ -88,11 +88,7 @@ export function UserButton() {
         <DropdownMenuSeparator />
         {user.role === "ADMIN" && (
           <DropdownMenuItem asChild>
-            <Link
-              href="/admin"
-              className="w-full cursor-pointer"
-              prefetch={true}
-            >
+            <Link href="/admin" className="w-full cursor-pointer">
               <UserCircle className="mr-2 h-4 w-4" />
               Admin Dashboard
             </Link>
@@ -123,7 +119,7 @@ export function UserButton() {
           <Button
             onClick={handleSignOut}
             variant="ghost"
-            className="w-full cursor-pointer text-red-500 hover:bg-red-50 hover:text-red-600 justify-start font-medium"
+            className="w-full cursor-pointer text-red-500 justify-start font-medium"
           >
             <LogOut className="mr-2 h-4 w-4" />
             Sign out

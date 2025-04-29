@@ -18,6 +18,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     error: "/error",
   },
   debug: process.env.NODE_ENV === "development",
+  trustHost: true,
   callbacks: {
     jwt({ token, user, account, profile }: any) {
       // Initial sign in
@@ -157,7 +158,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
     }),
   ],
-  trustHost: true,
 });
 
 export const { GET, POST } = handlers;

@@ -13,38 +13,61 @@ export const getCurrentUser = async () => {
 };
 
 export const checkRole = async (allowedRoles: UserRole[]) => {
-  try {
-    const session = await auth();
+  // Add retry mechanism
+  const MAX_RETRIES = 3;
+  let retries = 0;
+  let lastError: any;
 
-    if (!session?.user) {
-      console.log("No session found, redirecting to sign-in");
-      redirect("/sign-in");
+  while (retries < MAX_RETRIES) {
+    try {
+      const session = await auth();
+
+      console.log("Auth Session:", JSON.stringify(session || "No session"));
+
+      if (!session?.user) {
+        console.log("No session found, redirecting to sign-in");
+        redirect("/sign-in");
+      }
+
+      // Use any as a workaround for type issues
+      const user = session.user as any;
+
+      // Add debugging
+      console.log("User role:", user.role);
+
+      if (!user.role) {
+        console.log("Role is undefined, redirecting to sign-in");
+        redirect("/sign-in");
+      }
+
+      if (!allowedRoles.includes(user.role)) {
+        // Redirect users without proper role to the home page
+        console.log(
+          `Role ${user.role} not in allowed roles: ${allowedRoles.join(", ")}`
+        );
+        redirect("/");
+      }
+
+      return user;
+    } catch (error) {
+      console.error(`Error in checkRole (attempt ${retries + 1}):`, error);
+      lastError = error;
+      retries++;
+
+      // Wait a moment before retrying
+      if (retries < MAX_RETRIES) {
+        console.log(
+          `Retrying authentication check... (${retries}/${MAX_RETRIES})`
+        );
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
     }
-
-    // Use any as a workaround for type issues
-    const user = session.user as any;
-
-    // Add debugging
-    console.log("User role:", user.role);
-
-    if (!user.role) {
-      console.log("Role is undefined, redirecting to sign-in");
-      redirect("/sign-in");
-    }
-
-    if (!allowedRoles.includes(user.role)) {
-      // Redirect users without proper role to the home page
-      console.log(
-        `Role ${user.role} not in allowed roles: ${allowedRoles.join(", ")}`
-      );
-      redirect("/");
-    }
-
-    return user;
-  } catch (error) {
-    console.error("Error in checkRole:", error);
-    redirect("/sign-in");
   }
+
+  console.error(
+    "Max retries reached for authentication check. Redirecting to sign-in."
+  );
+  redirect("/sign-in");
 };
 
 // Only Admin can access
