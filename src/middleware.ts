@@ -1,22 +1,54 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getToken } from "next-auth/jwt";
+import { auth } from "./lib/auth";
+import { UserRole } from "@/generated/prisma";
 
-// Remove middleware functionality completely
-// and let the layout components handle authentication
-export async function middleware(req: NextRequest) {
-  // Just continue to the actual page and let server components handle auth
-  return NextResponse.next();
+// Add type definition
+interface CustomUser {
+  role?: string;
+  [key: string]: any;
 }
 
-// Specify which routes the middleware applies to
+export default auth((req) => {
+  // Use type assertion to fix the error
+  const user = req.auth?.user as CustomUser | undefined;
+  const path = req.nextUrl.pathname;
+
+  // If no user is authenticated and trying to access protected routes
+  if (
+    !user &&
+    (path.startsWith("/admin") || path.startsWith("/artist-dashboard"))
+  ) {
+    // Redirect to sign-in page
+    return NextResponse.redirect(new URL("/sign-in", req.nextUrl));
+  }
+
+  // Admin routes - Only ADMIN role allowed
+  if (path.startsWith("/admin")) {
+    if (user?.role === UserRole.ADMIN) {
+      return NextResponse.next();
+    }
+    // Redirect non-admin users to unauthorized page
+    return NextResponse.redirect(new URL("/", req.nextUrl));
+  }
+
+  // Artist dashboard - Only ARTIST and ADMIN roles allowed
+  if (path.startsWith("/artist-dashboard")) {
+    if (user?.role === UserRole.ARTIST || user?.role === UserRole.ADMIN) {
+      return NextResponse.next();
+    }
+    // Redirect non-artist users to unauthorized page
+    return NextResponse.redirect(new URL("/", req.nextUrl));
+  }
+
+  // For all other routes, proceed normally
+  return NextResponse.next();
+});
+
 export const config = {
   matcher: [
-    "/admin",
-    "/admin/:path*",
-    "/artist-dashboard",
-    "/artist-dashboard/:path*",
-    "/artist/:path*",
-    "/dashboard",
-    "/dashboard/:path*",
+    // Skip Next.js internals and all static files, unless found in search params
+    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
+    // Always run for API routes
+    "/(api|trpc)(.*)",
   ],
 };
