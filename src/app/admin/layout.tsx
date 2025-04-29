@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { checkAdmin } from "@/lib/utils/auth-utils";
 import AdminSidebar from "@/components/admin/AdminSidebar";
+import { auth } from "@/lib/auth";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
   title: "Admin Dashboard | MakeupPro",
@@ -12,8 +14,11 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // This will redirect to sign-in if not admin
-  await checkAdmin();
+  const session = await auth();
+
+  if (session?.user?.role !== "ADMIN") {
+    redirect("/");
+  }
 
   return (
     <div className="flex min-h-screen bg-gray-100 dark:bg-gray-900">

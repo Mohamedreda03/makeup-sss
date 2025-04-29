@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Calendar,
@@ -62,6 +62,11 @@ export default function ArtistDashboardLayout({
   const pathname = usePathname();
   const user = session?.user as ExtendedUser | undefined;
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+  const router = useRouter();
+
+  if (session?.user?.role !== "ARTIST") {
+    router.push("/");
+  }
 
   // Navigation items
   const navItems = [
