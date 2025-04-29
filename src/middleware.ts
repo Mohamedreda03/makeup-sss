@@ -15,6 +15,8 @@ export async function middleware(req: NextRequest) {
       secret: secret,
     });
 
+    console.log("Token:", token);
+
     const path = req.nextUrl.pathname;
 
     // Debug logs (these will show up in server logs)
