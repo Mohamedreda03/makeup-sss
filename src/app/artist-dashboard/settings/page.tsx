@@ -1,427 +1,598 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  AlertCircle,
-  Camera,
-  Loader2,
-  Instagram,
-  Facebook,
-  Twitter,
-  Globe,
-  Mail,
-  User,
-} from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { useForm } from "react-hook-form";
-import { toast } from "@/hooks/use-toast";
-import axios from "axios";
-import { uploadImageToCloudinary } from "@/lib/utils/cloudinary-upload";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Loader2, Upload } from "lucide-react";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  useArtistSettings,
+  ArtistSettingsFormValues,
+} from "@/hooks/use-artist-settings";
+import { artistSettingsSchema } from "@/lib/validations/artist-settings";
+import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
+import { Progress } from "@/components/ui/progress";
+import { uploadImageToCloudinary } from "@/lib/utils/cloudinary-upload";
+import { useCurrentUser } from "@/hooks/use-current-user";
+import { useQueryClient } from "@tanstack/react-query";
+import React from "react";
 
-// Extended user interface for typing session.user
-interface ExtendedUser {
-  id: string;
-  name?: string | null;
-  email?: string | null;
-  image?: string | null;
-  role?: string;
-}
+// Custom image component with cache busting
+const CacheBustedImage = ({
+  src,
+  alt,
+  className,
+}: {
+  src: string;
+  alt: string;
+  className?: string;
+}) => {
+  // Force refresh by adding a timestamp
+  const cacheBustedSrc = React.useMemo(() => {
+    if (!src) return "";
+    // Add timestamp to URL to prevent browser caching
+    return src.includes("?")
+      ? `${src}&_=${Date.now()}`
+      : `${src}?_=${Date.now()}`;
+  }, [src]);
+
+  return (
+    <img
+      src={cacheBustedSrc}
+      alt={alt}
+      className={className}
+      onError={(e) => {
+        console.error("Image failed to load:", src);
+        // Fall back to a default image
+        e.currentTarget.src = "/img/default-avatar.png";
+      }}
+    />
+  );
+};
 
 export default function ArtistSettingsPage() {
-  const { data: session, update: updateSession } = useSession();
-  const [settings, setSettings] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isPageLoading, setIsPageLoading] = useState(true);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [isUploading, setIsUploading] = useState(false);
+  const { toast } = useToast();
+  const router = useRouter();
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordError, setPasswordError] = useState("");
-  const router = useRouter();
+  const [isSubmittingPassword, setIsSubmittingPassword] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [avatarKey, setAvatarKey] = useState(0);
 
-  // Fetch artist settings on component mount
+  const {
+    settings,
+    isLoading,
+    error,
+    updateSettings,
+    updateProfileImage,
+    updatePassword,
+    currentUser,
+    updateSession,
+  } = useArtistSettings();
+
+  const { currentUser: freshUserData, refreshUserData } = useCurrentUser();
+  const queryClient = useQueryClient();
+
+  // Redirect if not an artist
   useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const response = await axios.get("/api/artist/settings");
-        console.log("Received artist settings:", response.data);
-        setSettings(response.data);
-      } catch (error) {
-        console.error("Failed to fetch artist settings:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load settings data. Please try again later.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsPageLoading(false);
-      }
-    };
-
-    // Check if user is authenticated and is an artist
-    if (session?.user) {
-      const user = session.user as ExtendedUser;
-      if (user.role === "ARTIST") {
-        fetchSettings();
-      } else {
-        // Redirect non-artists
-        router.push("/");
-        toast({
-          title: "Access Denied",
-          description: "Only artists can access settings.",
-          variant: "destructive",
-        });
-      }
-    } else {
-      setIsPageLoading(false);
+    // Only redirect if:
+    // 1. Not loading anymore
+    // 2. User session is loaded (currentUser exists)
+    // 3. There are no settings
+    // 4. User is not an artist (based on role)
+    if (
+      !isLoading &&
+      currentUser &&
+      !settings &&
+      currentUser.role !== "ARTIST"
+    ) {
+      router.push("/profile");
     }
-  }, [session, router]);
+  }, [isLoading, settings, currentUser, router]);
 
-  const handleUpdateProfileImage = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = event.target.files?.[0];
+  // Refresh user data on page load
+  useEffect(() => {
+    refreshUserData();
+    // Force avatar refresh
+    setAvatarKey(Date.now());
+  }, [refreshUserData]);
+
+  const form = useForm<ArtistSettingsFormValues>({
+    resolver: zodResolver(artistSettingsSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      yearsOfExperience: undefined,
+      bio: "",
+      instagram: "",
+      facebook: "",
+      twitter: "",
+      tiktok: "",
+      website: "",
+      defaultPrice: undefined,
+      category: "",
+      certificates: [],
+      services: [],
+      specialties: [],
+    },
+    mode: "onChange",
+  });
+
+  // Update form values when settings data is loaded
+  useEffect(() => {
+    if (settings) {
+      form.reset({
+        name: settings.name || "",
+        email: settings.email || "",
+        yearsOfExperience: settings.yearsOfExperience || undefined,
+        bio: settings.bio || "",
+        instagram: settings.instagram || "",
+        facebook: settings.facebook || "",
+        twitter: settings.twitter || "",
+        tiktok: settings.tiktok || "",
+        website: settings.website || "",
+        defaultPrice: settings.defaultPrice || undefined,
+        category: settings.category || "",
+        certificates: settings.certificates || [],
+        services: settings.services || [],
+        specialties: settings.specialties || [],
+      });
+    }
+  }, [settings, form]);
+
+  // Handle form submission
+  const onSubmit = async (data: ArtistSettingsFormValues) => {
+    updateSettings.mutate(data);
+  };
+
+  // Handle profile image change
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
     if (!file) return;
 
-    // Check file type
-    if (!file.type.includes("image")) {
+    // Validate file type
+    const validTypes = ["image/jpeg", "image/png", "image/webp"];
+    if (!validTypes.includes(file.type)) {
       toast({
-        title: "Error",
-        description: "Please upload a valid image file",
+        title: "Invalid file type",
+        description: "Please upload a JPEG, PNG, or WebP image",
         variant: "destructive",
       });
       return;
     }
 
-    // Check file size (max 5MB)
-    const maxSize = 5 * 1024 * 1024; // 5MB
-    if (file.size > maxSize) {
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
       toast({
-        title: "Error",
-        description: "Image size must be less than 5MB",
+        title: "File too large",
+        description: "Please upload an image smaller than 5MB",
         variant: "destructive",
       });
       return;
     }
+
+    setImageFile(file);
+
+    // Create a preview URL
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPreviewUrl(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Handle profile image upload
+  const handleUploadImage = async () => {
+    if (!imageFile) return;
+    setIsUploading(true);
+    setUploadProgress(0);
 
     try {
-      setIsLoading(true);
-      setIsUploading(true);
-      setUploadProgress(0);
-
-      // Create a local preview for immediate feedback
-      const localPreview = URL.createObjectURL(file);
-
-      // Temporarily update UI with local preview
-      if (session?.user) {
-        session.user.image = localPreview;
-        updateSession(session);
-      }
-
-      // Upload image to Cloudinary
+      // Upload image to Cloudinary with progress tracking
       const imageUrl = await uploadImageToCloudinary(
-        file,
-        `profile-images/${(session?.user as ExtendedUser)?.id || "user"}`,
-        (progress: number) => {
+        imageFile,
+        "artist-profiles",
+        (progress) => {
           setUploadProgress(progress);
         }
       );
 
-      // Revoke the local preview URL to avoid memory leaks
-      URL.revokeObjectURL(localPreview);
+      if (imageUrl) {
+        console.log("Image uploaded successfully to Cloudinary:", imageUrl);
 
-      // Update image URL in database
-      const response = await fetch("/api/user/profile-image", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          imageUrl,
-          timestamp: Date.now(), // Add timestamp for cache busting
-        }),
-      });
+        // Update profile image using our mutation
+        const updatedImageUrl = await updateProfileImage.mutateAsync(imageUrl);
+        console.log("Profile image updated in database:", updatedImageUrl);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to update profile image");
-      }
+        // Reset upload state
+        setImageFile(null);
 
-      // Update session to reflect changes
-      if (session) {
-        await updateSession({
-          user: {
-            ...session.user,
-            image: imageUrl,
-          },
-        });
+        // Update preview with the cache-busting URL
+        setPreviewUrl(updatedImageUrl);
 
-        toast({
-          title: "Image Updated",
-          description: "Your profile image has been updated successfully.",
-          variant: "success",
-        });
+        // Refresh user data from database
+        await refreshUserData();
 
-        // Reload the page after a short delay
-        setTimeout(() => {
-          window.location.reload();
-        }, 2000);
+        // Force rerender by setting a new key on the avatar component
+        setAvatarKey(Date.now());
       }
     } catch (error) {
-      console.error("Error updating profile image:", error);
+      console.error("Error uploading image:", error);
       toast({
-        title: "Error",
+        title: "Upload Error",
         description:
-          error instanceof Error
-            ? error.message
-            : "An error occurred while updating your profile image",
+          "An error occurred while uploading your image. Please try again.",
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
-      setTimeout(() => {
-        setIsUploading(false);
-      }, 500);
+      setIsUploading(false);
     }
   };
 
-  const handleUpdatePassword = async (event: React.FormEvent) => {
-    event.preventDefault();
+  // Handle password update
+  const handlePasswordUpdate = async () => {
     setPasswordError("");
 
+    if (newPassword.length < 8) {
+      setPasswordError("Password must be at least 8 characters");
+      return;
+    }
+
     if (newPassword !== confirmPassword) {
-      setPasswordError("New passwords do not match");
+      setPasswordError("Passwords do not match");
       return;
     }
 
-    if (newPassword.length < 6) {
-      setPasswordError("Password must be at least 6 characters");
-      return;
-    }
-
-    setIsLoading(true);
+    setIsSubmittingPassword(true);
 
     try {
-      const response = await fetch("/api/user/password", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          newPassword,
-          skipCurrentPassword: true,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to update password");
-      }
-
+      await updatePassword.mutateAsync({ newPassword });
       setNewPassword("");
       setConfirmPassword("");
-
-      toast({
-        title: "Password Updated",
-        description: "Your password has been changed successfully.",
-        variant: "success",
-      });
     } catch (error) {
-      console.error("Error updating password:", error);
-      setPasswordError(
-        error instanceof Error
-          ? error.message
-          : "An error occurred while updating your password"
-      );
+      // Error is handled by the mutation
     } finally {
-      setIsLoading(false);
+      setIsSubmittingPassword(false);
     }
   };
 
-  const handleUpdateProfile = async (formData: any) => {
-    setIsLoading(true);
-
-    try {
-      const requestData = {
-        name: formData.name || "",
-        email: formData.email || "",
-        bio: formData.bio || "",
-        instagram: formData.instagram || "",
-        facebook: formData.facebook || "",
-        twitter: formData.twitter || "",
-        website: formData.website || "",
-        defaultPrice: formData.defaultPrice
-          ? parseFloat(formData.defaultPrice)
-          : null,
-      };
-
-      console.log("Updating artist profile with:", requestData);
-      const response = await axios.put("/api/artist/settings", requestData);
-
-      setSettings((prev: any) => ({
-        ...prev,
-        ...requestData,
-      }));
-
-      toast({
-        title: "Profile Updated",
-        description: "Your profile has been updated successfully.",
-        variant: "success",
-      });
-    } catch (error: any) {
-      console.error("Failed to update profile:", error);
-      toast({
-        title: "Error",
-        description:
-          error.response?.data?.message ||
-          "Failed to update profile. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  if (isPageLoading) {
+  if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-rose-500"></div>
+      <div className="flex h-[70vh] w-full items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
-  if (!settings) {
+  // If the user is not an artist or there's an authentication issue, show a message
+  if (!settings && currentUser) {
     return (
-      <div className="container mx-auto px-4 py-8 max-w-5xl">
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Data Error</AlertTitle>
-          <AlertDescription>
-            Unable to load settings data. Please try again later.
-          </AlertDescription>
-        </Alert>
+      <div className="container py-10">
+        <Card className="p-8 text-center">
+          <h2 className="text-2xl font-semibold mb-4">
+            هذه الصفحة خاصة بالفنانين فقط
+          </h2>
+          <p className="mb-6 text-muted-foreground">
+            يجب أن تكون لديك حساب فنان للوصول إلى هذه الصفحة.
+          </p>
+          <Button onClick={() => router.push("/profile")}>
+            العودة إلى الصفحة الشخصية
+          </Button>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-5xl">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold">Account Settings</h1>
-          <p className="text-muted-foreground mt-1">
-            Update your personal information and password
-          </p>
-        </div>
-      </div>
+    <div className="container py-10">
+      <h1 className="text-3xl font-bold mb-6">Artist Settings</h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Profile Image */}
-        <Card className="md:col-span-1">
-          <CardHeader>
-            <CardTitle>Profile Image</CardTitle>
-            <CardDescription>Update your profile picture</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col items-center">
-            <div className="relative mb-4">
-              <Avatar className="h-32 w-32">
-                <AvatarImage
-                  src={session?.user?.image || ""}
-                  alt={session?.user?.name || "User"}
-                />
-                <AvatarFallback>
-                  {session?.user?.name?.charAt(0) || "U"}
-                </AvatarFallback>
-              </Avatar>
-              <div className="absolute bottom-0 right-0">
-                <label
-                  htmlFor="image-upload"
-                  className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm"
-                >
-                  <Camera className="h-5 w-5" />
-                  <span className="sr-only">Upload image</span>
-                  <input
-                    id="image-upload"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleUpdateProfileImage}
-                    disabled={isLoading}
-                  />
-                </label>
-              </div>
-            </div>
+      <Tabs defaultValue="profile" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="profile">Profile</TabsTrigger>
+          <TabsTrigger value="account">Account</TabsTrigger>
+          <TabsTrigger value="social">Social & Services</TabsTrigger>
+        </TabsList>
 
-            {isUploading && (
-              <div className="w-full mt-4">
-                <div className="w-full h-2 bg-gray-200 rounded-full">
-                  <div
-                    className="h-full bg-primary rounded-full transition-all duration-300"
-                    style={{ width: `${uploadProgress}%` }}
-                  />
+        {/* Profile Tab */}
+        <TabsContent value="profile">
+          <Card>
+            <CardHeader>
+              <CardTitle>Profile</CardTitle>
+              <CardDescription>
+                Manage your public profile information
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Profile Image */}
+              <div className="flex flex-col space-y-4 sm:flex-row sm:space-x-4 sm:space-y-0">
+                <div className="flex flex-col items-center space-y-2">
+                  <Avatar
+                    className="h-24 w-24 border-2 border-primary/20"
+                    key={`avatar-${avatarKey}`}
+                  >
+                    {previewUrl ||
+                    freshUserData?.image ||
+                    currentUser?.image ? (
+                      <div className="w-full h-full overflow-hidden rounded-full">
+                        <CacheBustedImage
+                          src={
+                            previewUrl ||
+                            freshUserData?.image ||
+                            currentUser?.image ||
+                            ""
+                          }
+                          alt={
+                            freshUserData?.name ||
+                            currentUser?.name ||
+                            "Profile"
+                          }
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <AvatarFallback className="bg-primary/10 text-primary">
+                        {freshUserData?.name?.charAt(0) ||
+                          currentUser?.name?.charAt(0) ||
+                          "A"}
+                      </AvatarFallback>
+                    )}
+                  </Avatar>
+                  <div className="flex space-x-2 mt-2">
+                    <label
+                      htmlFor="profile-image"
+                      className={cn(
+                        "flex cursor-pointer items-center gap-1 text-sm text-primary px-2 py-1 rounded-md border border-primary/20 hover:bg-primary/10 transition-colors",
+                        isUploading && "opacity-50 cursor-not-allowed"
+                      )}
+                    >
+                      <Upload className="h-3.5 w-3.5" />
+                      <span>Change Photo</span>
+                      <input
+                        type="file"
+                        id="profile-image"
+                        className="hidden"
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={handleImageChange}
+                        disabled={isUploading}
+                      />
+                    </label>
+                  </div>
                 </div>
-                <p className="text-center text-sm mt-1">
-                  {Math.round(uploadProgress)}%
-                </p>
-              </div>
-            )}
+                <div className="flex-1">
+                  {previewUrl && (
+                    <div className="flex flex-col space-y-2">
+                      <p className="text-sm text-muted-foreground">
+                        Preview your new profile photo
+                      </p>
 
-            <div className="text-sm text-muted-foreground mt-2 text-center">
-              JPG, GIF or PNG. Max size 5MB.
-            </div>
-          </CardContent>
-        </Card>
+                      {isUploading && (
+                        <div className="space-y-2 mb-2">
+                          <Progress
+                            value={uploadProgress}
+                            className="h-2 w-full"
+                          />
+                          <p className="text-xs text-muted-foreground text-center">
+                            {uploadProgress < 100
+                              ? `Uploading: ${uploadProgress.toFixed(0)}%`
+                              : "Processing image..."}
+                          </p>
+                        </div>
+                      )}
 
-        {/* Profile Info and Password */}
-        <div className="md:col-span-2">
-          <div className="space-y-6">
-            {/* Basic Info */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Personal Information</CardTitle>
-                <CardDescription>
-                  Update your basic and social media details
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <BasicInfoForm
-                  onSubmit={handleUpdateProfile}
-                  settings={settings}
-                  user={session?.user as ExtendedUser}
-                  isLoading={isLoading}
-                />
-              </CardContent>
-            </Card>
-
-            {/* Password Change */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Change Password</CardTitle>
-                <CardDescription>Update your account password</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleUpdatePassword} className="space-y-4">
-                  {passwordError && (
-                    <Alert variant="destructive">
-                      <AlertDescription>{passwordError}</AlertDescription>
-                    </Alert>
+                      <div className="flex space-x-2">
+                        <Button
+                          size="sm"
+                          onClick={handleUploadImage}
+                          disabled={isUploading}
+                          className="bg-primary hover:bg-primary/90"
+                        >
+                          {isUploading && (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          )}
+                          {isUploading ? "Uploading..." : "Save Photo"}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setPreviewUrl(null);
+                            setImageFile(null);
+                          }}
+                          disabled={isUploading}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
                   )}
+                </div>
+              </div>
 
+              <Separator />
+
+              {/* Profile Form */}
+              <Form {...form}>
+                <form
+                  onSubmit={form.handleSubmit(onSubmit)}
+                  className="space-y-4"
+                >
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <FormField
+                      control={form.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Full Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Your name" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Your email" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <FormField
+                      control={form.control}
+                      name="yearsOfExperience"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Years of Experience</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              placeholder="Years of experience"
+                              {...field}
+                              value={field.value ?? ""}
+                              onChange={(e) => {
+                                const value =
+                                  e.target.value === ""
+                                    ? undefined
+                                    : Number(e.target.value);
+                                field.onChange(value);
+                              }}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="category"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Category</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Your specialty category"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <FormField
+                    control={form.control}
+                    name="bio"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Bio</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Tell clients about yourself"
+                            className="resize-none h-32"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="defaultPrice"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Default Price</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            placeholder="Your default service price"
+                            {...field}
+                            value={field.value ?? ""}
+                            onChange={(e) => {
+                              const value =
+                                e.target.value === ""
+                                  ? undefined
+                                  : Number(e.target.value);
+                              field.onChange(value);
+                            }}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <Button
+                    type="submit"
+                    className="w-full md:w-auto"
+                    disabled={updateSettings.isPending}
+                  >
+                    {updateSettings.isPending && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    Save Profile
+                  </Button>
+                </form>
+              </Form>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Account Tab */}
+        <TabsContent value="account">
+          <Card>
+            <CardHeader>
+              <CardTitle>Account</CardTitle>
+              <CardDescription>
+                Update your account settings and password
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">Change Password</h3>
+                <div className="grid gap-4">
                   <div className="grid gap-2">
                     <Label htmlFor="new-password">New Password</Label>
                     <Input
@@ -429,10 +600,8 @@ export default function ArtistSettingsPage() {
                       type="password"
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
-                      required
                     />
                   </div>
-
                   <div className="grid gap-2">
                     <Label htmlFor="confirm-password">
                       Confirm New Password
@@ -442,168 +611,148 @@ export default function ArtistSettingsPage() {
                       type="password"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      required
+                    />
+                  </div>
+                  {passwordError && (
+                    <p className="text-sm font-medium text-destructive">
+                      {passwordError}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+            <CardFooter>
+              <Button
+                onClick={handlePasswordUpdate}
+                disabled={isSubmittingPassword}
+              >
+                {isSubmittingPassword && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                Change Password
+              </Button>
+            </CardFooter>
+          </Card>
+        </TabsContent>
+
+        {/* Social Tab */}
+        <TabsContent value="social">
+          <Card>
+            <CardHeader>
+              <CardTitle>Social & Services</CardTitle>
+              <CardDescription>
+                Manage your social links and service information
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <Form {...form}>
+                <form
+                  onSubmit={form.handleSubmit(onSubmit)}
+                  className="space-y-6"
+                >
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium">Social Media Links</h3>
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <FormField
+                        control={form.control}
+                        name="instagram"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Instagram</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="Instagram username"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="facebook"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Facebook</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="Facebook username"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="twitter"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Twitter</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="Twitter username"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="tiktok"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>TikTok</FormLabel>
+                            <FormControl>
+                              <Input placeholder="TikTok username" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <FormField
+                      control={form.control}
+                      name="website"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Website</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Your website URL" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
                   </div>
 
-                  <Button type="submit" disabled={isLoading}>
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Updating...
-                      </>
-                    ) : (
-                      "Update Password"
+                  {/* Note: The specialties, services, and certificates can be implemented with more advanced components
+                     like a multi-select or tag input, but for simplicity we're keeping them basic for now */}
+
+                  <Button
+                    type="submit"
+                    className="w-full md:w-auto"
+                    disabled={updateSettings.isPending}
+                  >
+                    {updateSettings.isPending && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     )}
+                    Save Changes
                   </Button>
                 </form>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </div>
+              </Form>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
-  );
-}
-
-function BasicInfoForm({
-  onSubmit,
-  settings,
-  user,
-  isLoading,
-}: {
-  onSubmit: (data: any) => void;
-  settings: any;
-  user: ExtendedUser;
-  isLoading: boolean;
-}) {
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm({
-    defaultValues: {
-      name: user?.name || "",
-      email: user?.email || "",
-      bio: settings.bio || "",
-      instagram: settings.instagram || "",
-      facebook: settings.facebook || "",
-      twitter: settings.twitter || "",
-      website: settings.website || "",
-      defaultPrice: settings.defaultPrice || "",
-    },
-  });
-
-  return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      <div className="grid gap-4">
-        <div className="grid gap-2">
-          <Label htmlFor="name" className="flex items-center gap-2">
-            <User className="h-4 w-4" /> Name
-          </Label>
-          <Input id="name" placeholder="Your full name" {...register("name")} />
-        </div>
-
-        <div className="grid gap-2">
-          <Label htmlFor="email" className="flex items-center gap-2">
-            <Mail className="h-4 w-4" /> Email
-          </Label>
-          <Input
-            id="email"
-            type="email"
-            placeholder="Your email address"
-            {...register("email")}
-          />
-        </div>
-
-        <div className="grid gap-2">
-          <Label htmlFor="defaultPrice">Default Price (EGP)</Label>
-          <Input
-            id="defaultPrice"
-            type="number"
-            min="0"
-            step="0.01"
-            placeholder="Your default service price"
-            {...register("defaultPrice")}
-          />
-          <p className="text-xs text-muted-foreground">
-            The default price for your services in Egyptian Pound
-          </p>
-        </div>
-
-        <div className="grid gap-2">
-          <Label htmlFor="bio">Bio</Label>
-          <Textarea
-            id="bio"
-            placeholder="Tell clients about yourself and your expertise..."
-            className="min-h-[120px]"
-            {...register("bio")}
-          />
-          <p className="text-xs text-muted-foreground">
-            Max 1000 characters. This will be displayed on your public profile.
-          </p>
-        </div>
-
-        <div className="space-y-4 pt-4">
-          <h3 className="text-lg font-medium">Social Media</h3>
-
-          <div className="grid gap-2">
-            <Label htmlFor="instagram" className="flex items-center gap-2">
-              <Instagram className="h-4 w-4" /> Instagram
-            </Label>
-            <Input
-              id="instagram"
-              placeholder="Your Instagram handle"
-              {...register("instagram")}
-            />
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="facebook" className="flex items-center gap-2">
-              <Facebook className="h-4 w-4" /> Facebook
-            </Label>
-            <Input
-              id="facebook"
-              placeholder="Your Facebook profile or page"
-              {...register("facebook")}
-            />
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="twitter" className="flex items-center gap-2">
-              <Twitter className="h-4 w-4" /> Twitter
-            </Label>
-            <Input
-              id="twitter"
-              placeholder="Your Twitter handle"
-              {...register("twitter")}
-            />
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="website" className="flex items-center gap-2">
-              <Globe className="h-4 w-4" /> Website
-            </Label>
-            <Input
-              id="website"
-              type="url"
-              placeholder="https://your-website.com"
-              {...register("website")}
-            />
-          </div>
-        </div>
-      </div>
-
-      <Button type="submit" disabled={isLoading}>
-        {isLoading ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Saving...
-          </>
-        ) : (
-          "Save Changes"
-        )}
-      </Button>
-    </form>
   );
 }

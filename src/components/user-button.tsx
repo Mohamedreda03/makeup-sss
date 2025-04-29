@@ -24,8 +24,8 @@ interface UserData {
   role?: string;
 }
 
-export function UserButton() {
-  const { data: session, update } = useSession();
+export function UserButton({ session }: { session: any }) {
+  const { update } = useSession();
   const user = session?.user as UserData | undefined;
   const queryClient = useQueryClient();
 

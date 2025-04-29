@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { z } from "zod";
+import { prisma } from "@/lib/prisma";
+import { artistSettingsSchema } from "@/lib/validations/artist-settings";
 
-// Extended user interface
+// Extended user interface for typing session.user
 interface ExtendedUser {
   id: string;
   name?: string | null;
@@ -12,265 +12,193 @@ interface ExtendedUser {
   role?: string;
 }
 
-// Artist service schema
-const serviceSchema = z.object({
-  id: z.string(),
-  name: z.string().min(1, "Service name is required"),
-  description: z.string(),
-  price: z.number().min(0, "Price must be a positive number"),
-  duration: z.number().min(15, "Duration must be at least 15 minutes"),
-  isActive: z.boolean(),
-});
-
-// Main schema for validation
-const artistSettingsSchema = z.object({
-  yearsOfExperience: z.number().min(0).max(100).optional(),
-  bio: z.string().max(1000).optional(),
-  instagram: z.string().max(100).optional(),
-  facebook: z.string().max(100).optional(),
-  twitter: z.string().max(100).optional(),
-  tiktok: z.string().max(100).optional(),
-  website: z.string().url().max(100).optional().or(z.literal("")),
-  defaultPrice: z.number().min(0).optional().nullable(),
-  specialties: z.array(z.string()).optional(),
-  certificates: z.array(z.string()).optional(),
-  services: z.array(serviceSchema).optional(),
-  category: z.string().optional(),
-});
-
-// GET /api/artist/settings
-export async function GET(req: Request) {
+export async function GET() {
   try {
-    // Verify user is authenticated
+    // Get the user's session
     const session = await auth();
 
-    if (!session?.user) {
-      return NextResponse.json(
-        { message: "Unauthorized - Please log in" },
-        { status: 401 }
-      );
+    if (!session || !session.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const user = session.user as ExtendedUser;
 
-    // Verify that the user is an artist
-    if (user.role !== "ARTIST" && user.role !== "ADMIN") {
+    // Verify the user is an artist
+    if (user.role !== "ARTIST") {
       return NextResponse.json(
-        { message: "Forbidden - Access denied" },
+        { error: "Only artists can access these settings" },
         { status: 403 }
       );
     }
 
-    // Get artist ID (for admins viewing another artist)
-    const url = new URL(req.url);
-    let artistId = user.id;
-
-    if (user.role === "ADMIN" && url.searchParams.get("artistId")) {
-      artistId = url.searchParams.get("artistId") as string;
-    }
-
-    // Find artist data
-    const artistData = await db.user.findUnique({
+    // Fetch the artist data (user with ARTIST role) from the database
+    const artistUser = await prisma.user.findUnique({
       where: {
-        id: artistId,
-        role: "ARTIST",
+        id: user.id,
       },
-      select: {
-        id: true,
-        yearsOfExperience: true,
-        bio: true,
-        instagram: true,
-        facebook: true,
-        twitter: true,
-        tiktok: true,
-        website: true,
-        defaultPrice: true,
+      include: {
+        // Include artist account for services information
+        ArtistAccount: true,
+        // Include metadata for additional artist data
+        metadata: true,
       },
     });
 
-    if (!artistData) {
-      return NextResponse.json(
-        { message: "Artist not found" },
-        { status: 404 }
-      );
+    if (!artistUser) {
+      return NextResponse.json({ error: "Artist not found" }, { status: 404 });
     }
 
-    // Find artist metadata (for specialties, certificates, and services)
-    const artistMetadata = await db.userMetadata.findUnique({
-      where: {
-        userId: artistId,
-      },
-    });
-
-    // Parse metadata or use defaults
-    let specialties: string[] = [
-      "Bridal Makeup",
-      "Party Makeup",
-      "Editorial & Photoshoot",
-      "Henna Night & Engagement",
-      "Bridal & Reception",
-      "Photoshoot Makeup",
-      "Runway & Fashion Show",
-    ];
+    // Parse additional artist settings from metadata if available
     let certificates: string[] = [];
+    let specialties: string[] = [];
     let services: any[] = [];
-    let category: string = "";
 
-    if (artistMetadata?.artistSettings) {
+    if (artistUser.metadata?.artistSettings) {
       try {
-        const settings = JSON.parse(artistMetadata.artistSettings);
-        // Use fixed specialties
-        certificates = settings.certificates || [];
-        services = settings.services || [];
-        category = settings.category || "";
-      } catch (error) {
-        console.error("Error parsing artist settings:", error);
+        const artistSettings = JSON.parse(artistUser.metadata.artistSettings);
+        certificates = artistSettings.certificates || [];
+        specialties = artistSettings.specialties || [];
+        services = artistSettings.services || [];
+      } catch (e) {
+        console.error("Error parsing artist settings from metadata:", e);
       }
     }
 
-    // Return combined data
-    return NextResponse.json({
-      ...artistData,
-      specialties,
+    // Transform the artist data to match our schema
+    const artistSettings = {
+      name: artistUser.name || "",
+      email: artistUser.email || "",
+      yearsOfExperience: artistUser.yearsOfExperience,
+      bio: artistUser.bio,
+      instagram: artistUser.instagram,
+      facebook: artistUser.facebook,
+      twitter: artistUser.twitter,
+      tiktok: artistUser.tiktok,
+      website: artistUser.website,
+      defaultPrice: artistUser.defaultPrice,
+      category: artistUser.category,
       certificates,
       services,
-      category,
-    });
+      specialties,
+    };
+
+    return NextResponse.json(artistSettings);
   } catch (error) {
     console.error("Error fetching artist settings:", error);
-    return NextResponse.json({ message: "Server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch artist settings" },
+      { status: 500 }
+    );
   }
 }
 
-// PUT /api/artist/settings
-export async function PUT(req: Request) {
+export async function PUT(request: Request) {
   try {
-    // Verify user is authenticated
+    // Get the user's session
     const session = await auth();
 
-    if (!session?.user) {
-      return NextResponse.json(
-        { message: "Unauthorized - Please log in" },
-        { status: 401 }
-      );
+    if (!session || !session.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const user = session.user as ExtendedUser;
 
-    // Verify that the user is an artist
-    if (user.role !== "ARTIST" && user.role !== "ADMIN") {
+    // Verify the user is an artist
+    if (user.role !== "ARTIST") {
       return NextResponse.json(
-        { message: "Forbidden - Access denied" },
+        { error: "Only artists can update these settings" },
         { status: 403 }
       );
     }
 
-    // Get artist ID (for admins updating another artist)
-    const url = new URL(req.url);
-    let artistId = user.id;
+    // Parse the request body
+    const body = await request.json();
 
-    if (user.role === "ADMIN" && url.searchParams.get("artistId")) {
-      artistId = url.searchParams.get("artistId") as string;
-    }
+    // Validate the request body against our schema
+    const validationResult = artistSettingsSchema.safeParse(body);
 
-    console.log("Processing request for artistId:", artistId);
-
-    // Parse and validate request body
-    const requestBody = await req.json();
-    console.log("Request body received:", requestBody);
-
-    const validatedData = artistSettingsSchema.parse(requestBody);
-    console.log("Validated data:", validatedData);
-
-    // Extract data for the user table
-    const {
-      yearsOfExperience,
-      bio,
-      instagram,
-      facebook,
-      twitter,
-      tiktok,
-      website,
-      defaultPrice,
-    } = validatedData;
-
-    // Extract data for the metadata
-    const { certificates, services } = validatedData;
-
-    console.log("Category from request:", validatedData.category);
-
-    // Use fixed specialties
-    const specialties = [
-      "Bridal Makeup",
-      "Party Makeup",
-      "Editorial & Photoshoot",
-      "Henna Night & Engagement",
-      "Bridal & Reception",
-      "Photoshoot Makeup",
-      "Runway & Fashion Show",
-    ];
-
-    // Update user record
-    await db.user.update({
-      where: {
-        id: artistId,
-      },
-      data: {
-        yearsOfExperience,
-        bio,
-        instagram,
-        facebook,
-        twitter,
-        tiktok,
-        website,
-        defaultPrice,
-        category: validatedData.category || null,
-      },
-    });
-
-    // Prepare artist settings object for better logging
-    const artistSettingsObj = {
-      specialties,
-      certificates,
-      services,
-      category: validatedData.category || "",
-    };
-
-    console.log(
-      "Saving artist settings:",
-      JSON.stringify(artistSettingsObj, null, 2)
-    );
-
-    // Update or create metadata with artist settings
-    const updatedMetadata = await db.userMetadata.upsert({
-      where: {
-        userId: artistId,
-      },
-      update: {
-        artistSettings: JSON.stringify(artistSettingsObj),
-      },
-      create: {
-        userId: artistId,
-        artistSettings: JSON.stringify(artistSettingsObj),
-      },
-    });
-
-    console.log("UserMetadata updated successfully, id:", updatedMetadata.id);
-
-    return NextResponse.json({
-      message: "Artist settings updated successfully",
-    });
-  } catch (error) {
-    console.error("Error updating artist settings:", error);
-
-    // Handle validation errors
-    if (error instanceof z.ZodError) {
+    if (!validationResult.success) {
       return NextResponse.json(
-        { message: "Invalid data format", errors: error.errors },
+        {
+          error: "Invalid data",
+          details: validationResult.error.format(),
+        },
         { status: 400 }
       );
     }
 
-    return NextResponse.json({ message: "Server error" }, { status: 500 });
+    const data = validationResult.data;
+
+    // Find the user by id
+    const artistUser = await prisma.user.findUnique({
+      where: {
+        id: user.id,
+      },
+    });
+
+    if (!artistUser) {
+      return NextResponse.json({ error: "Artist not found" }, { status: 404 });
+    }
+
+    // Update the user data with artist settings
+    const updatedArtist = await prisma.user.update({
+      where: {
+        id: user.id,
+      },
+      data: {
+        name: data.name,
+        email: data.email,
+        yearsOfExperience: data.yearsOfExperience,
+        bio: data.bio,
+        instagram: data.instagram,
+        facebook: data.facebook,
+        twitter: data.twitter,
+        tiktok: data.tiktok,
+        website: data.website,
+        defaultPrice: data.defaultPrice,
+        category: data.category,
+        // For certificates, specialties, and services, we may need to use UserMetadata
+      },
+    });
+
+    // Consider updating metadata for any additional fields not in the User model directly
+    if (
+      (data.certificates && data.certificates.length > 0) ||
+      (data.specialties && data.specialties.length > 0) ||
+      (data.services && data.services.length > 0)
+    ) {
+      // Find or create metadata record
+      const metadata = await prisma.userMetadata.upsert({
+        where: {
+          userId: user.id,
+        },
+        update: {
+          artistSettings: JSON.stringify({
+            certificates: data.certificates || [],
+            specialties: data.specialties || [],
+            services: data.services || [],
+          }),
+        },
+        create: {
+          userId: user.id,
+          artistSettings: JSON.stringify({
+            certificates: data.certificates || [],
+            specialties: data.specialties || [],
+            services: data.services || [],
+          }),
+        },
+      });
+    }
+
+    return NextResponse.json({
+      message: "Artist settings updated successfully",
+      artist: updatedArtist,
+    });
+  } catch (error) {
+    console.error("Error updating artist settings:", error);
+    return NextResponse.json(
+      { error: "Failed to update artist settings" },
+      { status: 500 }
+    );
   }
 }

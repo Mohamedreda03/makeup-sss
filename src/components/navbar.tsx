@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "next/link";
 import { UserButton } from "@/components/user-button";
 import { MobileNav } from "@/components/mobile-nav";
@@ -8,17 +6,11 @@ import { usePathname } from "next/navigation";
 import { ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CartCount } from "@/components/cart-count";
+import NavLinks from "./NavLinks";
+import { auth } from "@/lib/auth";
 
-const navigationLinks = [
-  { href: "/", label: "HOME" },
-  { href: "/artists", label: "All Makeup Artists" },
-  { href: "/about", label: "ABOUT" },
-  { href: "/services", label: "Our Services" },
-  { href: "/contact", label: "CONTACT" },
-];
-
-export function Navbar() {
-  const pathname = usePathname();
+export async function Navbar() {
+  const session = await auth();
 
   return (
     <div className="w-full border-b border-gray-200 bg-white">
@@ -37,20 +29,7 @@ export function Navbar() {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-8">
-            {navigationLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={cn(
-                  "text-sm text-gray-700 hover:text-pink-500 transition-colors font-medium tracking-wide",
-                  pathname === link.href && "text-pink-500 font-semibold"
-                )}
-              >
-                {link.label}
-              </Link>
-            ))}
-          </nav>
+          <NavLinks />
 
           {/* Cart, User Button & Mobile Navigation */}
           <div className="flex items-center space-x-2">
@@ -60,7 +39,7 @@ export function Navbar() {
                 <CartCount />
               </Button>
             </Link>
-            <UserButton />
+            <UserButton session={session} />
             <MobileNav />
           </div>
         </div>

@@ -87,3 +87,8 @@ export async function PUT(request: Request) {
     );
   }
 }
+
+// Add POST handler that calls the same logic as the PUT handler
+export async function POST(request: Request) {
+  return PUT(request);
+}

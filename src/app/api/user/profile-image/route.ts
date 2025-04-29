@@ -31,10 +31,13 @@ export async function POST(request: Request) {
       );
     }
 
+    // Remove any existing cache-busting parameters
+    const cleanImageUrl = imageUrl.split("?")[0];
+
     console.log("Image URL format check:", {
-      isString: typeof imageUrl === "string",
-      length: imageUrl.length,
-      startsWithHttp: imageUrl.startsWith("http"),
+      isString: typeof cleanImageUrl === "string",
+      length: cleanImageUrl.length,
+      startsWithHttp: cleanImageUrl.startsWith("http"),
     });
 
     // Update user with the image URL
@@ -44,7 +47,7 @@ export async function POST(request: Request) {
         email: session.user.email!,
       },
       data: {
-        image: imageUrl,
+        image: cleanImageUrl,
       },
       select: {
         id: true,
@@ -59,10 +62,18 @@ export async function POST(request: Request) {
 
     console.log("User profile updated successfully");
 
+    // Add cache-busting timestamp to the returned image URL
+    const currentTimestamp = Date.now();
+    const cachedBustingImageUrl = `${cleanImageUrl}?t=${currentTimestamp}`;
+
     return NextResponse.json({
       message: "Profile image updated successfully",
-      user,
-      imageUrl,
+      user: {
+        ...user,
+        image: cachedBustingImageUrl,
+      },
+      imageUrl: cachedBustingImageUrl,
+      timestamp: currentTimestamp,
     });
   } catch (error) {
     console.error("Error updating profile image:", error);

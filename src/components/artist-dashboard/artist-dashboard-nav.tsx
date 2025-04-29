@@ -90,12 +90,6 @@ export function ArtistDashboardNav({
         {user && (
           <div className="flex flex-col gap-2 rounded-lg border p-3">
             <div className="flex items-center gap-3">
-              <Avatar className="h-9 w-9">
-                <AvatarImage src={user.image || ""} alt={user.name || ""} />
-                <AvatarFallback>
-                  {user.name?.substring(0, 2) || "U"}
-                </AvatarFallback>
-              </Avatar>
               <div className="flex flex-col">
                 <span className="text-sm font-medium">{user.name}</span>
                 <span className="text-xs text-muted-foreground truncate max-w-[150px]">
