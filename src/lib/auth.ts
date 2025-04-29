@@ -21,14 +21,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     jwt({ token, user }: any) {
       if (user) {
         token.id = user.id;
-        token.role = user.role;
+        token.role = user.role || UserRole.CUSTOMER;
       }
+
+      console.log("JWT callback - token:", { id: token.id, role: token.role });
+
       return token;
     },
     session({ session, token }: any) {
       if (token && session.user) {
         session.user.id = token.id;
         session.user.role = token.role;
+
+        console.log("Session callback - user:", {
+          id: session.user.id,
+          role: session.user.role,
+        });
       }
       return session;
     },

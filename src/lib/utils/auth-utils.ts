@@ -13,21 +13,38 @@ export const getCurrentUser = async () => {
 };
 
 export const checkRole = async (allowedRoles: UserRole[]) => {
-  const session = await auth();
+  try {
+    const session = await auth();
 
-  if (!session?.user) {
+    if (!session?.user) {
+      console.log("No session found, redirecting to sign-in");
+      redirect("/sign-in");
+    }
+
+    // Use any as a workaround for type issues
+    const user = session.user as any;
+
+    // Add debugging
+    console.log("User role:", user.role);
+
+    if (!user.role) {
+      console.log("Role is undefined, redirecting to sign-in");
+      redirect("/sign-in");
+    }
+
+    if (!allowedRoles.includes(user.role)) {
+      // Redirect users without proper role to the home page
+      console.log(
+        `Role ${user.role} not in allowed roles: ${allowedRoles.join(", ")}`
+      );
+      redirect("/");
+    }
+
+    return user;
+  } catch (error) {
+    console.error("Error in checkRole:", error);
     redirect("/sign-in");
   }
-
-  // Use any as a workaround for type issues
-  const user = session.user as any;
-
-  if (!allowedRoles.includes(user.role)) {
-    // Redirect users without proper role to the home page
-    redirect("/");
-  }
-
-  return user;
 };
 
 // Only Admin can access
