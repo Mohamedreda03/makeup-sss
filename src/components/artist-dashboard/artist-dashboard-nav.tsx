@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { LogOut, Menu } from "lucide-react";
+import { LogOut, Menu, ExternalLink, ArrowLeft, Home } from "lucide-react";
 import { signOut } from "next-auth/react";
 
 interface NavItem {
@@ -86,6 +86,20 @@ export function ArtistDashboardNav({
           ))}
         </div>
       </div>
+
+      {/* Return to Website Button */}
+      <div className="px-3">
+        <Link href="/" className="block">
+          <Button
+            variant="secondary"
+            className="w-full bg-gradient-to-r from-rose-100 to-pink-100 hover:from-rose-200 hover:to-pink-200 text-rose-600 font-medium border border-rose-200 shadow-sm transition-all duration-200 hover:shadow flex items-center gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span>Return to Website</span>
+          </Button>
+        </Link>
+      </div>
+
       <div className="mt-auto px-3 py-2">
         {user && (
           <div className="flex flex-col gap-2 rounded-lg border p-3">
@@ -134,6 +148,19 @@ export function ArtistDashboardNav({
         </Sheet>
         <div className="flex items-center gap-2">
           <span className="font-semibold">Artist Dashboard</span>
+        </div>
+        {/* Mobile Return to Website Button */}
+        <div className="ml-auto">
+          <Link href="/">
+            <Button
+              variant="secondary"
+              size="sm"
+              className="bg-gradient-to-r from-rose-100 to-pink-100 hover:from-rose-200 hover:to-pink-200 text-rose-600 font-medium border border-rose-200 shadow-sm transition-all"
+            >
+              <Home className="h-4 w-4 mr-2" />
+              <span className="sr-only md:not-sr-only">Website</span>
+            </Button>
+          </Link>
         </div>
       </div>
 

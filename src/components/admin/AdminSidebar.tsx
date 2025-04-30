@@ -12,6 +12,8 @@ import {
   LogOut,
   UserCog,
   ShoppingBag,
+  ArrowLeft,
+  Home,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
@@ -90,7 +92,18 @@ export default function AdminSidebar() {
         ))}
       </div>
 
-      <div className="absolute bottom-0 w-full p-6">
+      <div className="absolute bottom-0 w-full p-6 space-y-4">
+        {/* Return to Website Button */}
+        <Link href="/" className="block">
+          <Button
+            variant="secondary"
+            className="w-full bg-gradient-to-r from-rose-100 to-pink-100 hover:from-rose-200 hover:to-pink-200 text-rose-600 font-medium border border-rose-200 shadow-sm transition-all duration-200 hover:shadow flex items-center justify-center gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span>Return to Website</span>
+          </Button>
+        </Link>
+
         <Button
           variant="outline"
           className="w-full flex items-center space-x-2 border-rose-200 text-rose-700 hover:bg-rose-50 dark:border-rose-800 dark:text-rose-300 dark:hover:bg-rose-900/20"
@@ -100,7 +113,7 @@ export default function AdminSidebar() {
           <span>Sign Out</span>
         </Button>
         <div className="mt-4 text-center text-xs text-gray-500">
-          MakeupPro Admin v1.0
+          BrideGlam Admin v1.0
         </div>
       </div>
     </div>
