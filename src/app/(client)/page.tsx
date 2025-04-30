@@ -198,32 +198,12 @@ export default async function HomePage() {
           <div className="w-full lg:w-1/2 relative">
             <div className="relative rounded-lg overflow-hidden shadow-xl">
               <Image
-                src="/images/hero-makeup.jpg"
+                src="/images/cta-makeup.jpg"
                 alt="Makeup artist applying makeup"
                 width={600}
                 height={400}
                 className="w-full h-auto object-cover rounded-lg"
               />
-
-              {/* Small decorative images overlapping the main image */}
-              <div className="absolute -bottom-5 -left-5 w-24 h-24 rounded-lg border-4 border-white overflow-hidden shadow-md">
-                <Image
-                  src="/images/about-makeup-1.jpg"
-                  alt="Makeup detail"
-                  width={96}
-                  height={96}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="absolute -top-5 -right-5 w-24 h-24 rounded-lg border-4 border-white overflow-hidden shadow-md">
-                <Image
-                  src="/images/about-makeup-2.jpg"
-                  alt="Makeup detail"
-                  width={96}
-                  height={96}
-                  className="w-full h-full object-cover"
-                />
-              </div>
             </div>
           </div>
         </div>
