@@ -12,6 +12,7 @@ import {
   Info,
   Phone,
   Palette,
+  ShoppingBag,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -19,6 +20,7 @@ import { useState } from "react";
 const navigationLinks = [
   { href: "/", label: "HOME", icon: Home },
   { href: "/artists", label: "All Makeup Artists", icon: Palette },
+  { href: "/products", label: "Products", icon: ShoppingBag },
   { href: "/about", label: "ABOUT", icon: Info },
   { href: "/services", label: "Our Services", icon: Palette },
   { href: "/contact", label: "CONTACT", icon: Phone },
@@ -55,24 +57,6 @@ export function MobileNav() {
                 {link.label}
               </Link>
             ))}
-            <div className="border-t border-gray-100 pt-5">
-              <Link
-                href="/cart"
-                className="flex items-center text-base font-medium transition-colors hover:text-pink-500"
-                onClick={() => setIsOpen(false)}
-              >
-                <ShoppingCart className="mr-2 h-4 w-4" />
-                Shopping Cart
-              </Link>
-              <Link
-                href="/account"
-                className="flex items-center text-base font-medium transition-colors hover:text-pink-500 mt-4"
-                onClick={() => setIsOpen(false)}
-              >
-                <User className="mr-2 h-4 w-4" />
-                My Account
-              </Link>
-            </div>
           </div>
         </div>
       </SheetContent>

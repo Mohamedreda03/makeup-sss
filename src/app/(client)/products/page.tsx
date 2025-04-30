@@ -1,19 +1,19 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { Heart, ShoppingCart } from "lucide-react";
+import { Heart, ShoppingCart, Filter, Search } from "lucide-react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Product, ProductsResponse } from "@/types/product";
 import { formatPrice } from "@/lib/utils";
 
-// Disable caching to ensure fresh data on each request
+// Ensure server rendering with no caching
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 // Fetch products from the API with pagination and optional filters
 async function getProducts(
   page: number = 1,
-  limit: number = 6,
+  limit: number = 9,
   category?: string
 ): Promise<{
   products: Product[];
@@ -80,18 +80,13 @@ export default async function ProductsPage({
   const page = isNaN(rawPage) || rawPage < 1 ? 1 : rawPage;
 
   const category = searchParams?.category || undefined;
-  const pageSize = 6; // Number of products per page
+  const pageSize = 9; // Number of products per page
 
   // Fetch products with pagination
-  const { products, total, totalPages, categories } = await getProducts(
+  const { products, total, totalPages } = await getProducts(
     page,
     pageSize,
     category
-  );
-
-  // Log debugging information
-  console.log(
-    `Page rendering: page=${page}, total=${total}, totalPages=${totalPages}, products=${products.length}`
   );
 
   // Generate page numbers to display (implement logic to show ellipsis)
@@ -154,46 +149,56 @@ export default async function ProductsPage({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-rose-50 to-pink-50 dark:from-gray-950 dark:to-gray-900">
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-r from-rose-500 to-rose-600 text-white py-16 md:py-24">
-        <div className="absolute inset-0 overflow-hidden opacity-10">
-          <div className="absolute w-[500px] h-[500px] -top-[250px] -right-[100px] rounded-full bg-rose-300 blur-[100px]"></div>
-          <div className="absolute w-[500px] h-[500px] -bottom-[250px] -left-[100px] rounded-full bg-rose-700 blur-[100px]"></div>
-        </div>
+      <section className="relative py-20">
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-rose-400/20 to-pink-500/20 dark:from-rose-900/20 dark:to-pink-800/20 z-0 pointer-events-none"></div>
+        <div className="absolute top-1/4 right-1/3 w-64 h-64 rounded-full bg-rose-400/10 dark:bg-rose-700/10 z-0 pointer-events-none"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full bg-pink-300/10 dark:bg-pink-800/10 z-0 pointer-events-none"></div>
 
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-3xl mx-auto text-center">
-            <h1 className="text-4xl md:text-5xl font-bold mb-6">
-              Our Beauty Products
+            <h1 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-rose-500 to-pink-600 bg-clip-text text-transparent">
+              Beauty Products Collection
             </h1>
-            <p className="text-lg md:text-xl text-white/90 mb-8">
-              Discover our range of high-quality makeup and beauty products,
-              carefully selected for professional results.
+            <p className="text-lg md:text-xl text-gray-600 dark:text-gray-300 mb-8">
+              Discover our premium range of makeup products, handpicked for
+              professionals and beauty enthusiasts alike.
             </p>
           </div>
         </div>
-
-        <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-gray-50 to-transparent"></div>
       </section>
 
       {/* Products Grid */}
-      <section className="container mx-auto px-4 py-4 mb-16 mt-11">
+      <section className="container mx-auto px-4 py-10 pb-16 relative z-10">
         {products.length === 0 ? (
-          <div className="text-center py-12">
-            <h3 className="text-xl font-medium text-gray-700">
+          <div className="text-center py-16 bg-white rounded-xl shadow-sm border border-rose-100">
+            <Image
+              src="/images/no-results.svg"
+              alt="No products found"
+              width={150}
+              height={150}
+              className="mx-auto mb-6"
+            />
+            <h3 className="text-xl font-medium text-gray-800 mb-2">
               No products found
             </h3>
-            <p className="text-gray-500 mt-2">
-              Try changing your filters or check back later.
+            <p className="text-gray-500 mb-6">
+              We couldn't find any products. Please check back later.
             </p>
+            <Button
+              className="bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white"
+              asChild
+            >
+              <Link href="/products">View All Products</Link>
+            </Button>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {products.map((product) => (
               <div
                 key={product.id}
-                className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-md hover:shadow-lg transition-all group"
+                className="bg-white rounded-xl border border-rose-100 overflow-hidden shadow-md hover:shadow-xl transition-all group"
               >
                 <Link href={`/product/${product.id}`}>
                   <div className="relative h-64 overflow-hidden">
@@ -207,7 +212,17 @@ export default async function ProductsPage({
                       className="object-cover group-hover:scale-105 transition-transform duration-300"
                     />
 
-                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/50 to-transparent h-1/3"></div>
+                    {product.featured && (
+                      <div className="absolute top-4 left-4 bg-gradient-to-r from-rose-500 to-pink-600 text-white text-xs font-bold px-3 py-1 rounded-full">
+                        Featured
+                      </div>
+                    )}
+
+                    {!product.inStock && (
+                      <div className="absolute top-4 right-4 bg-gray-700 text-white text-xs font-bold px-3 py-1 rounded-full">
+                        Out of Stock
+                      </div>
+                    )}
                   </div>
                 </Link>
 
@@ -225,16 +240,16 @@ export default async function ProductsPage({
                   </p>
 
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-lg">
+                    <span className="font-bold text-lg bg-gradient-to-r from-rose-500 to-pink-600 bg-clip-text text-transparent">
                       {formatPrice(product.price)}
                     </span>
                     <Link href={`/product/${product.id}`}>
                       <Button
                         size="sm"
-                        className="bg-rose-500 hover:bg-rose-600 text-white"
+                        className="bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white"
                       >
                         <ShoppingCart className="h-4 w-4 mr-1" />
-                        View Product
+                        View
                       </Button>
                     </Link>
                   </div>
@@ -246,83 +261,65 @@ export default async function ProductsPage({
 
         {/* Pagination */}
         {totalPages > 0 && (
-          <div className="flex justify-center items-center mt-8 gap-1 overflow-x-auto max-w-full px-2 whitespace-nowrap">
+          <div className="flex justify-center items-center mt-12 gap-1">
             {/* Previous Button */}
-            <Link
-              href={getPaginationUrl(page > 1 ? page - 1 : 1)}
-              className={`px-4 py-2 rounded border text-sm font-medium transition-colors flex items-center ${
-                page === 1
-                  ? "bg-gray-200 text-gray-400 border-gray-200 cursor-not-allowed pointer-events-none"
-                  : "bg-white text-rose-500 border-rose-200 hover:bg-rose-50"
-              }`}
-              aria-disabled={page === 1}
-            >
-              <ChevronLeft className="h-4 w-4 mr-1" /> Previous
-            </Link>
+            {page > 1 && (
+              <Link href={getPaginationUrl(page - 1)}>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-10 w-10 border-rose-200"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  <span className="sr-only">Previous page</span>
+                </Button>
+              </Link>
+            )}
 
             {/* Page Numbers */}
             {getPageNumbers().map((pageNum, index) => {
-              if (typeof pageNum === "string") {
+              if (pageNum === "dots-start" || pageNum === "dots-end") {
                 return (
-                  <span key={pageNum} className="px-2 text-gray-400">
+                  <span
+                    key={`dots-${index}`}
+                    className="px-3 py-2 text-gray-500"
+                  >
                     ...
                   </span>
                 );
               }
+
               return (
-                <Link
-                  key={pageNum}
-                  href={getPaginationUrl(pageNum as number)}
-                  className={`px-4 py-2 rounded border text-sm font-medium transition-colors ${
-                    page === Number(pageNum)
-                      ? "bg-rose-500 text-white border-rose-500"
-                      : "bg-white text-rose-500 border-rose-200 hover:bg-rose-50"
-                  }`}
-                >
-                  {pageNum}
+                <Link key={pageNum} href={getPaginationUrl(pageNum as number)}>
+                  <Button
+                    variant={page === pageNum ? "default" : "outline"}
+                    className={`h-10 w-10 ${
+                      page === pageNum
+                        ? "bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white"
+                        : "border-rose-200 text-gray-600 hover:bg-rose-50"
+                    }`}
+                  >
+                    {pageNum}
+                  </Button>
                 </Link>
               );
             })}
 
             {/* Next Button */}
-            <Link
-              href={getPaginationUrl(page < totalPages ? page + 1 : totalPages)}
-              className={`px-4 py-2 rounded border text-sm font-medium transition-colors flex items-center ${
-                page === totalPages
-                  ? "bg-gray-200 text-gray-400 border-gray-200 cursor-not-allowed pointer-events-none"
-                  : "bg-white text-rose-500 border-rose-200 hover:bg-rose-50"
-              }`}
-              aria-disabled={page === totalPages}
-            >
-              Next <ChevronRight className="h-4 w-4 ml-1" />
-            </Link>
+            {page < totalPages && (
+              <Link href={getPaginationUrl(page + 1)}>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-10 w-10 border-rose-200"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                  <span className="sr-only">Next page</span>
+                </Button>
+              </Link>
+            )}
           </div>
         )}
-      </section>
-
-      {/* CTA Section */}
-      <section className="bg-gradient-to-r from-gray-100 to-gray-200 py-16">
-        <div className="container mx-auto px-4 text-center">
-          <div className="max-w-2xl mx-auto">
-            <h2 className="text-3xl font-bold mb-4 text-gray-800">
-              Join Our Beauty Community
-            </h2>
-            <p className="text-gray-600 mb-8">
-              Subscribe to our newsletter for exclusive product launches, beauty
-              tips, and special offers.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-2 max-w-md mx-auto">
-              <input
-                type="email"
-                placeholder="Your email address"
-                className="flex-grow px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-rose-400"
-              />
-              <Button className="bg-rose-500 hover:bg-rose-600 text-white">
-                Subscribe
-              </Button>
-            </div>
-          </div>
-        </div>
       </section>
     </div>
   );

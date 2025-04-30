@@ -13,7 +13,7 @@ export async function Navbar() {
   const session = await auth();
 
   return (
-    <div className="w-full border-b border-gray-200 bg-white">
+    <div className="w-full border-b border-gray-200 bg-white z-50">
       <div className="container max-w-7xl mx-auto px-4">
         <div className="flex items-center justify-between h-20">
           {/* Logo */}

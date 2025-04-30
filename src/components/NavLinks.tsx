@@ -8,6 +8,7 @@ import React from "react";
 const navigationLinks = [
   { href: "/", label: "HOME" },
   { href: "/artists", label: "All Makeup Artists" },
+  { href: "/products", label: "Products" },
   { href: "/about", label: "ABOUT" },
   { href: "/services", label: "Our Services" },
   { href: "/contact", label: "CONTACT" },

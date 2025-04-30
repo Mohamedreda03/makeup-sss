@@ -8,9 +8,12 @@ import {
   Heart,
   Star,
   Users,
+  ShoppingCart,
+  ShoppingBag,
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { CATEGORIES } from "./artists/utils";
+import { formatPrice } from "@/lib/utils";
 
 // تخصصات المكياج للعرض
 const specialties = [
@@ -35,6 +38,27 @@ const specialties = [
     image: "/images/specialty-henna.jpg",
   },
 ];
+
+// دالة للحصول على المنتجات المميزة
+async function getFeaturedProducts() {
+  try {
+    const products = await db.product.findMany({
+      where: {
+        featured: true,
+        inStock: true,
+      },
+      take: 4, // الحد الأقصى للمنتجات المميزة
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    return products;
+  } catch (error) {
+    console.error("Error fetching featured products:", error);
+    return [];
+  }
+}
 
 // دالة للحصول على الفنانين المميزين
 async function getFeaturedArtists() {
@@ -112,12 +136,15 @@ export default async function HomePage() {
   // استدعاء دالة الحصول على الفنانين المميزين
   const featuredArtists = await getFeaturedArtists();
 
+  // استدعاء دالة الحصول على المنتجات المميزة
+  const featuredProducts = await getFeaturedProducts();
+
   return (
     <div className="flex flex-col min-h-screen">
       {/* قسم الحجز الرئيسي */}
-      <section className="relative py-16 bg-pink-50">
+      <section className="relative py-16 bg-gradient-to-br from-pink-50 to-rose-50">
         <div className="container mx-auto px-4 md:px-8 flex flex-col lg:flex-row items-center">
-          <div className="w-full lg:w-1/2 mb-8 lg:mb-0 pr-0 lg:pr-8">
+          <div className="w-full lg:w-1/2 mb-8 lg:mb-0 pr-0 lg:pr-8 z-10">
             <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">
               Book Appointment
               <br />
@@ -126,11 +153,38 @@ export default async function HomePage() {
               Artists
             </h1>
 
-            {/* أيقونات المستخدمين */}
-            <div className="flex -space-x-2 mb-6">
-              <div className="w-10 h-10 rounded-full border-2 border-white overflow-hidden bg-gray-300"></div>
-              <div className="w-10 h-10 rounded-full border-2 border-white overflow-hidden bg-gray-300"></div>
-              <div className="w-10 h-10 rounded-full border-2 border-white overflow-hidden bg-gray-300"></div>
+            {/* Artist icons */}
+            <div className="flex -space-x-3 mb-6">
+              <div className="w-10 h-10 rounded-full border-2 border-white overflow-hidden">
+                <Image
+                  src="/images/artist-1.jpg"
+                  alt="Makeup artist"
+                  width={40}
+                  height={40}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="w-10 h-10 rounded-full border-2 border-white overflow-hidden">
+                <Image
+                  src="/images/artist-2.jpg"
+                  alt="Makeup artist"
+                  width={40}
+                  height={40}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="w-10 h-10 rounded-full border-2 border-white overflow-hidden">
+                <Image
+                  src="/images/artist-3.jpg"
+                  alt="Makeup artist"
+                  width={40}
+                  height={40}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="w-10 h-10 rounded-full border-2 border-white bg-pink-400 flex items-center justify-center text-white text-xs font-medium">
+                +20
+              </div>
             </div>
 
             <Button className="bg-white text-pink-500 hover:bg-gray-100 shadow-sm transition-all hover:shadow-md group">
@@ -141,18 +195,43 @@ export default async function HomePage() {
             </Button>
           </div>
 
-          <div className="w-full lg:w-1/2">
-            <div className="relative rounded-lg overflow-hidden">
+          <div className="w-full lg:w-1/2 relative">
+            <div className="relative rounded-lg overflow-hidden shadow-xl">
               <Image
-                src="/images/cta-makeup.jpg"
+                src="/images/hero-makeup.jpg"
                 alt="Makeup artist applying makeup"
                 width={600}
                 height={400}
                 className="w-full h-auto object-cover rounded-lg"
               />
+
+              {/* Small decorative images overlapping the main image */}
+              <div className="absolute -bottom-5 -left-5 w-24 h-24 rounded-lg border-4 border-white overflow-hidden shadow-md">
+                <Image
+                  src="/images/about-makeup-1.jpg"
+                  alt="Makeup detail"
+                  width={96}
+                  height={96}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="absolute -top-5 -right-5 w-24 h-24 rounded-lg border-4 border-white overflow-hidden shadow-md">
+                <Image
+                  src="/images/about-makeup-2.jpg"
+                  alt="Makeup detail"
+                  width={96}
+                  height={96}
+                  className="w-full h-full object-cover"
+                />
+              </div>
             </div>
           </div>
         </div>
+
+        {/* Decorative circles */}
+        <div className="absolute top-12 left-12 w-24 h-24 rounded-full bg-pink-200/30 blur-xl"></div>
+        <div className="absolute bottom-12 right-12 w-32 h-32 rounded-full bg-rose-200/30 blur-xl"></div>
+        <div className="absolute top-1/2 right-1/4 w-20 h-20 rounded-full bg-pink-300/20 blur-lg"></div>
       </section>
 
       {/* قسم البحث حسب التخصص */}
@@ -186,6 +265,101 @@ export default async function HomePage() {
                 </span>
               </Link>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* قسم المنتجات المميزة */}
+      <section className="py-16 bg-gradient-to-br from-rose-50 to-pink-50 relative">
+        {/* Decorative elements with pointer-events-none */}
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-rose-400/10 to-pink-500/10 z-0 pointer-events-none"></div>
+        <div className="absolute top-1/4 right-1/3 w-48 h-48 rounded-full bg-rose-400/5 z-0 pointer-events-none"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-64 h-64 rounded-full bg-pink-300/5 z-0 pointer-events-none"></div>
+
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="max-w-3xl mx-auto text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 bg-gradient-to-r from-rose-500 to-pink-600 bg-clip-text text-transparent">
+              Featured Beauty Products
+            </h2>
+            <p className="text-gray-600 max-w-2xl mx-auto">
+              Discover our carefully selected premium makeup products, perfect
+              for enhancing your natural beauty and creating stunning looks.
+            </p>
+          </div>
+
+          {featuredProducts.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {featuredProducts.map((product: any) => (
+                <div
+                  key={product.id}
+                  className="bg-white rounded-xl border border-rose-100 overflow-hidden shadow-md hover:shadow-xl transition-all group"
+                >
+                  <Link href={`/product/${product.id}`}>
+                    <div className="relative h-52 overflow-hidden">
+                      <Image
+                        src={
+                          product.imageUrl ||
+                          "https://placehold.co/400x400/rose/white?text=No+Image"
+                        }
+                        alt={product.name}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                      <div className="absolute top-3 left-3 bg-gradient-to-r from-rose-500 to-pink-600 text-white text-xs font-bold px-3 py-1 rounded-full">
+                        Featured
+                      </div>
+                    </div>
+                  </Link>
+
+                  <div className="p-4">
+                    <Link
+                      href={`/product/${product.id}`}
+                      className="block hover:text-rose-600 transition-colors"
+                    >
+                      <h3 className="font-bold text-gray-800 mt-2 mb-1 line-clamp-1">
+                        {product.name}
+                      </h3>
+                    </Link>
+
+                    <div className="flex items-center justify-between mt-3">
+                      <span className="font-bold text-lg bg-gradient-to-r from-rose-500 to-pink-600 bg-clip-text text-transparent">
+                        {formatPrice(product.price)}
+                      </span>
+                      <Button
+                        size="sm"
+                        className="bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white"
+                        asChild
+                      >
+                        <Link href={`/product/${product.id}`}>
+                          <ShoppingCart className="h-3.5 w-3.5 mr-1" />
+                          View
+                        </Link>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-10 bg-white rounded-xl shadow-sm">
+              <p className="text-gray-500">
+                No featured products available right now.
+              </p>
+            </div>
+          )}
+
+          <div className="flex justify-center mt-10">
+            <Button
+              variant="outline"
+              className="border-rose-200 text-rose-600 hover:bg-rose-50 hover:border-rose-300 transition-all group"
+              asChild
+            >
+              <Link href="/products" className="flex items-center gap-2">
+                <ShoppingBag className="h-4 w-4 mr-1" />
+                <span>Browse All Products</span>
+                <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </Button>
           </div>
         </div>
       </section>
