@@ -14,11 +14,8 @@ export async function uploadImageToCloudinary(
 ): Promise<string> {
   return new Promise(async (resolve, reject) => {
     try {
-      console.log("Starting Cloudinary upload process for file:", file.name);
-
       // Safety check for file type
       if (!file.type.includes("image")) {
-        console.error("Invalid file type:", file.type);
         reject(new Error("Invalid file type. Please upload an image."));
         return;
       }
@@ -102,12 +99,8 @@ export async function uploadImageToCloudinary(
           if (onProgress) onProgress(100);
         }
 
-        // Return the secure URL from Cloudinary
-        console.log("Upload successful. Cloudinary URL:", data.secure_url);
         resolve(data.secure_url);
       } catch (uploadError) {
-        console.error("Error uploading to Cloudinary:", uploadError);
-
         // Clean up progress interval if exists
         if (progressIntervalId) {
           clearInterval(progressIntervalId);
@@ -115,15 +108,13 @@ export async function uploadImageToCloudinary(
 
         // Use a default placeholder image as fallback
         const fallbackUrl = `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/v1/placeholders/profile_placeholder.jpg`;
-        console.log("Using fallback URL due to upload error:", fallbackUrl);
+
         resolve(fallbackUrl);
       }
     } catch (error) {
-      console.error("Unexpected error in upload process:", error);
-
       // Use a default placeholder image as fallback
       const fallbackUrl = `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/v1/placeholders/profile_placeholder.jpg`;
-      console.log("Using fallback URL due to unexpected error:", fallbackUrl);
+
       resolve(fallbackUrl);
     }
   });
