@@ -36,7 +36,8 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 export default function SignInForm() {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isCredentialLoading, setIsCredentialLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const router = useRouter();
@@ -50,7 +51,7 @@ export default function SignInForm() {
   });
 
   const onSubmit = async (values: FormValues) => {
-    setIsLoading(true);
+    setIsCredentialLoading(true);
     setErrorMessage(null);
 
     try {
@@ -139,16 +140,16 @@ export default function SignInForm() {
       );
       toast.error("Something went wrong during sign in");
     } finally {
-      setIsLoading(false);
+      setIsCredentialLoading(false);
     }
   };
 
   const handleGoogleSignIn = () => {
-    setIsLoading(true);
+    setIsGoogleLoading(true);
     setErrorMessage(null);
 
     signIn("google", { callbackUrl: "/" }).catch((error) => {
-      setIsLoading(false);
+      setIsGoogleLoading(false);
       setErrorMessage(
         "Google sign-in failed. Unable to authenticate with Google. Please try again or use email and password."
       );
@@ -158,15 +159,6 @@ export default function SignInForm() {
 
   return (
     <div className="w-full space-y-6">
-      <div className="space-y-2 text-center">
-        <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-rose-500 to-pink-600 bg-clip-text text-transparent">
-          Welcome back
-        </h1>
-        <p className="text-gray-500 dark:text-gray-400 text-sm">
-          Enter your credentials to sign in to your account
-        </p>
-      </div>
-
       {errorMessage && (
         <Alert
           variant="destructive"
@@ -180,12 +172,21 @@ export default function SignInForm() {
       <Button
         variant="outline"
         type="button"
-        disabled={isLoading}
+        disabled={isGoogleLoading || isCredentialLoading}
         className="w-full flex items-center gap-2 py-5 border-gray-300 dark:border-gray-600"
         onClick={handleGoogleSignIn}
       >
-        <FcGoogle className="h-5 w-5" />
-        <span>Continue with Google</span>
+        {isGoogleLoading ? (
+          <div className="flex items-center gap-2">
+            <div className="h-4 w-4 border-2 border-rose-500 border-t-transparent rounded-full animate-spin"></div>
+            <span>Signing in...</span>
+          </div>
+        ) : (
+          <>
+            <FcGoogle className="h-5 w-5" />
+            <span>Continue with Google</span>
+          </>
+        )}
       </Button>
 
       <div className="relative">
@@ -216,7 +217,7 @@ export default function SignInForm() {
                       placeholder="name@example.com"
                       type="email"
                       className="pl-10 py-5 bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 focus-visible:ring-rose-500"
-                      disabled={isLoading}
+                      disabled={isCredentialLoading || isGoogleLoading}
                       {...field}
                     />
                   </div>
@@ -241,7 +242,7 @@ export default function SignInForm() {
                       placeholder="••••••••"
                       type={showPassword ? "text" : "password"}
                       className="pl-10 py-5 bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 focus-visible:ring-rose-500"
-                      disabled={isLoading}
+                      disabled={isCredentialLoading || isGoogleLoading}
                       {...field}
                     />
                     <Button
@@ -250,6 +251,7 @@ export default function SignInForm() {
                       size="sm"
                       className="absolute right-0 top-0 h-full px-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
                       onClick={() => setShowPassword(!showPassword)}
+                      disabled={isCredentialLoading || isGoogleLoading}
                     >
                       {showPassword ? (
                         <EyeOff className="h-4 w-4" />
@@ -267,36 +269,31 @@ export default function SignInForm() {
             )}
           />
 
+          <div className="text-right">
+            <a
+              href="/forgot-password"
+              className="text-sm text-rose-500 hover:text-rose-600 hover:underline"
+            >
+              Forgot password?
+            </a>
+          </div>
+
           <Button
             type="submit"
-            className="w-full bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 py-5 text-white"
-            disabled={isLoading}
+            disabled={isCredentialLoading || isGoogleLoading}
+            className="w-full py-5 bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white transition-colors"
           >
-            {isLoading ? "Signing in..." : "Sign in"}
+            {isCredentialLoading ? (
+              <div className="flex items-center gap-2">
+                <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <span>Signing in...</span>
+              </div>
+            ) : (
+              "Sign In"
+            )}
           </Button>
         </form>
       </Form>
-
-      <div className="text-center text-sm">
-        <p className="text-gray-500 dark:text-gray-400">
-          Don&apos;t have an account?{" "}
-          <Button
-            variant="link"
-            className="p-0 font-semibold text-rose-500 hover:text-rose-600 dark:text-rose-400 dark:hover:text-rose-500"
-            onClick={() => router.push("/sign-up")}
-          >
-            Sign up
-          </Button>
-        </p>
-
-        <Button
-          variant="link"
-          className="p-0 mt-1 text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-          onClick={() => router.push("/forgot-password")}
-        >
-          Forgot your password?
-        </Button>
-      </div>
     </div>
   );
 }

@@ -57,7 +57,8 @@ const formSchema = z
 type FormValues = z.infer<typeof formSchema>;
 
 export default function SignUpForm() {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isCredentialLoading, setIsCredentialLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -75,7 +76,7 @@ export default function SignUpForm() {
   });
 
   const onSubmit = async (values: FormValues) => {
-    setIsLoading(true);
+    setIsCredentialLoading(true);
     setErrorMessage(null);
     setSuccessMessage(null);
 
@@ -185,17 +186,17 @@ export default function SignUpForm() {
         error instanceof Error ? error.message : "Something went wrong"
       );
     } finally {
-      setIsLoading(false);
+      setIsCredentialLoading(false);
     }
   };
 
   const handleGoogleSignIn = () => {
-    setIsLoading(true);
+    setIsGoogleLoading(true);
     setErrorMessage(null);
     setSuccessMessage(null);
 
     signIn("google", { callbackUrl: "/" }).catch((error) => {
-      setIsLoading(false);
+      setIsGoogleLoading(false);
       setErrorMessage(
         "Google sign-up failed. Unable to authenticate with Google. Please try again or use email and password to create an account."
       );
@@ -205,15 +206,6 @@ export default function SignUpForm() {
 
   return (
     <div className="w-full space-y-6">
-      <div className="space-y-2 text-center">
-        <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-rose-500 to-pink-600 bg-clip-text text-transparent">
-          Create an account
-        </h1>
-        <p className="text-gray-500 dark:text-gray-400 text-sm">
-          Enter your information to create a new account
-        </p>
-      </div>
-
       {errorMessage && (
         <Alert
           variant="destructive"
@@ -234,12 +226,21 @@ export default function SignUpForm() {
       <Button
         variant="outline"
         type="button"
-        disabled={isLoading}
+        disabled={isGoogleLoading || isCredentialLoading}
         className="w-full flex items-center gap-2 py-5 border-gray-300 dark:border-gray-600"
         onClick={handleGoogleSignIn}
       >
-        <FcGoogle className="h-5 w-5" />
-        <span>Continue with Google</span>
+        {isGoogleLoading ? (
+          <div className="flex items-center gap-2">
+            <div className="h-4 w-4 border-2 border-rose-500 border-t-transparent rounded-full animate-spin"></div>
+            <span>Signing up...</span>
+          </div>
+        ) : (
+          <>
+            <FcGoogle className="h-5 w-5" />
+            <span>Continue with Google</span>
+          </>
+        )}
       </Button>
 
       <div className="relative">
@@ -261,15 +262,15 @@ export default function SignUpForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="text-gray-700 dark:text-gray-300">
-                  Name
+                  Full Name
                 </FormLabel>
                 <FormControl>
                   <div className="relative">
                     <User className="absolute left-3 top-3 h-4 w-4 text-gray-500 dark:text-gray-400" />
                     <Input
-                      placeholder="Your full name"
+                      placeholder="John Doe"
                       className="pl-10 py-5 bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 focus-visible:ring-rose-500"
-                      disabled={isLoading}
+                      disabled={isCredentialLoading || isGoogleLoading}
                       {...field}
                     />
                   </div>
@@ -278,7 +279,6 @@ export default function SignUpForm() {
               </FormItem>
             )}
           />
-
           <FormField
             control={form.control}
             name="email"
@@ -294,7 +294,7 @@ export default function SignUpForm() {
                       placeholder="name@example.com"
                       type="email"
                       className="pl-10 py-5 bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 focus-visible:ring-rose-500"
-                      disabled={isLoading}
+                      disabled={isCredentialLoading || isGoogleLoading}
                       {...field}
                     />
                   </div>
@@ -319,7 +319,7 @@ export default function SignUpForm() {
                       placeholder="••••••••"
                       type={showPassword ? "text" : "password"}
                       className="pl-10 py-5 bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 focus-visible:ring-rose-500"
-                      disabled={isLoading}
+                      disabled={isCredentialLoading || isGoogleLoading}
                       {...field}
                     />
                     <Button
@@ -328,6 +328,7 @@ export default function SignUpForm() {
                       size="sm"
                       className="absolute right-0 top-0 h-full px-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
                       onClick={() => setShowPassword(!showPassword)}
+                      disabled={isCredentialLoading || isGoogleLoading}
                     >
                       {showPassword ? (
                         <EyeOff className="h-4 w-4" />
@@ -360,7 +361,7 @@ export default function SignUpForm() {
                       placeholder="••••••••"
                       type={showConfirmPassword ? "text" : "password"}
                       className="pl-10 py-5 bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 focus-visible:ring-rose-500"
-                      disabled={isLoading}
+                      disabled={isCredentialLoading || isGoogleLoading}
                       {...field}
                     />
                     <Button
@@ -371,6 +372,7 @@ export default function SignUpForm() {
                       onClick={() =>
                         setShowConfirmPassword(!showConfirmPassword)
                       }
+                      disabled={isCredentialLoading || isGoogleLoading}
                     >
                       {showConfirmPassword ? (
                         <EyeOff className="h-4 w-4" />
@@ -379,8 +381,8 @@ export default function SignUpForm() {
                       )}
                       <span className="sr-only">
                         {showConfirmPassword
-                          ? "Hide password"
-                          : "Show password"}
+                          ? "Hide confirmed password"
+                          : "Show confirmed password"}
                       </span>
                     </Button>
                   </div>
@@ -392,26 +394,20 @@ export default function SignUpForm() {
 
           <Button
             type="submit"
-            className="w-full bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 py-5 text-white"
-            disabled={isLoading}
+            disabled={isCredentialLoading || isGoogleLoading}
+            className="w-full py-5 bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white transition-colors"
           >
-            {isLoading ? "Creating account..." : "Create account"}
+            {isCredentialLoading ? (
+              <div className="flex items-center gap-2">
+                <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <span>Creating account...</span>
+              </div>
+            ) : (
+              "Create Account"
+            )}
           </Button>
         </form>
       </Form>
-
-      <div className="text-center text-sm">
-        <p className="text-gray-500 dark:text-gray-400">
-          Already have an account?{" "}
-          <Button
-            variant="link"
-            className="p-0 font-semibold text-rose-500 hover:text-rose-600 dark:text-rose-400 dark:hover:text-rose-500"
-            onClick={() => router.push("/sign-in")}
-          >
-            Sign in
-          </Button>
-        </p>
-      </div>
     </div>
   );
 }
