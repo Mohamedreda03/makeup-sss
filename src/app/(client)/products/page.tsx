@@ -8,7 +8,6 @@ import { formatPrice } from "@/lib/utils";
 
 // Ensure server rendering with no caching
 export const dynamic = "force-dynamic";
-export const revalidate = 0;
 
 // Fetch products from the API with pagination and optional filters
 async function getProducts(
