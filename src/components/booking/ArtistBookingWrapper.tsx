@@ -49,9 +49,14 @@ export default function ArtistBookingWrapper({
     console.log("Regular days off:", availabilitySettings.regularDaysOff);
   }, [availabilitySettings]);
 
-  // Fetch artist data to get default price
+  // Only fetch artist data if user is logged in
   useEffect(() => {
     const fetchArtistData = async () => {
+      if (!isUserLoggedIn) {
+        setLoading(false);
+        return;
+      }
+
       try {
         const response = await fetch(`/api/artists/${artistId}/info`);
         if (response.ok) {
@@ -66,7 +71,7 @@ export default function ArtistBookingWrapper({
     };
 
     fetchArtistData();
-  }, [artistId]);
+  }, [artistId, isUserLoggedIn]);
 
   // Create default service using artist's default price
   const defaultService: Service = {
@@ -87,6 +92,7 @@ export default function ArtistBookingWrapper({
   // Update default service when artist data is loaded, but only if no real services exist
   useEffect(() => {
     if (
+      isUserLoggedIn &&
       artistData?.defaultPrice &&
       services.length === 0 &&
       !hasLoadedServices
@@ -110,10 +116,22 @@ export default function ArtistBookingWrapper({
       // We'll let ArtistBooking handle service selection
       setSelectedService(null);
     }
-  }, [artistData, artistId, services, hasLoadedServices, defaultService]);
+  }, [
+    artistData,
+    artistId,
+    services,
+    hasLoadedServices,
+    defaultService,
+    isUserLoggedIn,
+  ]);
 
   if (loading) {
     return <div className="text-center py-8">Loading...</div>;
+  }
+
+  // Don't render booking component for non-logged-in users
+  if (!isUserLoggedIn) {
+    return null;
   }
 
   // Only use the default service if there are no real services

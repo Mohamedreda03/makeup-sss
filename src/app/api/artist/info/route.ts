@@ -51,7 +51,7 @@ export async function GET(req: Request) {
     });
 
     // Parse metadata or use defaults
-    let specialties: string[] = [
+    const specialties: string[] = [
       "Bridal Makeup",
       "Party Makeup",
       "Editorial & Photoshoot",

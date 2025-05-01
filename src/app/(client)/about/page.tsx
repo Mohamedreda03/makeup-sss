@@ -46,7 +46,7 @@ export default function AboutPage() {
         <div className="grid grid-cols-2 gap-4">
           <div className="col-span-2">
             <Image
-              src="/images/about-makeup-1.jpg"
+              src="/images/about/about-1.jpg"
               alt="Makeup artist applying makeup"
               width={600}
               height={300}
@@ -55,7 +55,7 @@ export default function AboutPage() {
           </div>
           <div>
             <Image
-              src="/images/about-makeup-2.jpg"
+              src="/images/about/about-2.jpg"
               alt="Makeup brushes"
               width={280}
               height={200}
@@ -64,7 +64,7 @@ export default function AboutPage() {
           </div>
           <div>
             <Image
-              src="/images/about-makeup-3.jpg"
+              src="/images/about/about-3.jpg"
               alt="Makeup session"
               width={280}
               height={200}

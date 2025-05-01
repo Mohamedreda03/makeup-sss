@@ -363,7 +363,34 @@ export default function ArtistClientPage({
 
         <TabsContent value="services">
           <div className="w-full">
-            {bookingComponent ? (
+            {!isUserLoggedIn ? (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-8 text-center">
+                <div className="flex flex-col items-center gap-4">
+                  <div className="bg-amber-100 rounded-full p-3">
+                    <Calendar className="h-6 w-6 text-amber-700" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-amber-800">
+                    Sign in required
+                  </h3>
+                  <p className="text-amber-700 max-w-md mx-auto mb-2">
+                    Please sign in or create an account to book an appointment
+                    with this artist.
+                  </p>
+                  <div className="flex gap-4 mt-2">
+                    <Button asChild className="bg-amber-600 hover:bg-amber-700">
+                      <a href="/sign-in">Sign In</a>
+                    </Button>
+                    <Button
+                      asChild
+                      variant="outline"
+                      className="border-amber-200 text-amber-700 hover:bg-amber-100"
+                    >
+                      <a href="/sign-up">Create Account</a>
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ) : bookingComponent ? (
               bookingComponent
             ) : (
               <BookingForm

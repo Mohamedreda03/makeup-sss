@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
 
     // Get session ID from cookies or generate new one
     const cookieStore = cookies();
-    let sessionId = cookieStore.get("cart-session-id")?.value || null;
+    const sessionId = cookieStore.get("cart-session-id")?.value || null;
 
     // Get order details from request
     const orderPayload: OrderPayload = await request.json();

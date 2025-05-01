@@ -456,6 +456,11 @@ export default async function ArtistPage({
   // Check if user is logged in
   const isUserLoggedIn = !!session?.user;
 
+  console.log(
+    "User login status:",
+    isUserLoggedIn ? "Logged in" : "Not logged in"
+  );
+
   // Prepare data for our component
   const artistData = {
     id: artist?.id || "",

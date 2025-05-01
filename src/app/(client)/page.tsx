@@ -19,22 +19,22 @@ const specialties = [
   {
     id: "bridal",
     name: "Bridal Makeup",
-    image: "/images/specialty-bridal.jpg",
+    image: "/images/specialties/bridal.jpg",
   },
   {
     id: "party",
     name: "Party Makeup",
-    image: "/images/specialty-party.jpg",
+    image: "/images/specialties/party.jpg",
   },
   {
     id: "editorial",
     name: "Editorial & Photoshoot",
-    image: "/images/specialty-editorial.jpg",
+    image: "/images/specialties/photoshoot.jpg",
   },
   {
     id: "henna",
     name: "Henna Night & Engagement",
-    image: "/images/specialty-henna.jpg",
+    image: "/images/specialties/henna.jpg",
   },
 ];
 
@@ -140,68 +140,71 @@ export default async function HomePage() {
   return (
     <div className="flex flex-col min-h-screen">
       {/* قسم الحجز الرئيسي */}
-      <section className="relative py-16 bg-gradient-to-br from-pink-50 to-rose-50">
-        <div className="container mx-auto px-4 md:px-8 flex flex-col lg:flex-row items-center">
-          <div className="w-full lg:w-1/2 mb-8 lg:mb-0 pr-0 lg:pr-8 z-10">
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">
-              Book Appointment
-              <br />
-              With Trusted Makeup
-              <br />
-              Artists
-            </h1>
+      <section className="relative py-12 md:py-16 bg-gradient-to-br from-pink-50 to-rose-50 overflow-hidden">
+        <div className="container mx-auto px-4 md:px-8">
+          <div className="flex flex-col lg:flex-row items-center gap-8 md:gap-12">
+            <div className="w-full lg:w-1/2 z-10">
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-800 mb-4 leading-tight">
+                Book Appointment
+                <br />
+                With Trusted Makeup
+                <br />
+                Artists
+              </h1>
 
-            {/* Artist icons */}
-            <div className="flex -space-x-3 mb-6">
-              <div className="w-10 h-10 rounded-full border-2 border-white overflow-hidden">
-                <Image
-                  src="/images/artist-1.jpg"
-                  alt="Makeup artist"
-                  width={40}
-                  height={40}
-                  className="w-full h-full object-cover"
-                />
+              {/* Artist icons */}
+              <div className="flex -space-x-3 mb-6">
+                <div className="w-10 h-10 rounded-full border-2 border-white overflow-hidden">
+                  <Image
+                    src="/images/artist-1.jpg"
+                    alt="Makeup artist"
+                    width={40}
+                    height={40}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="w-10 h-10 rounded-full border-2 border-white overflow-hidden">
+                  <Image
+                    src="/images/artist-2.jpg"
+                    alt="Makeup artist"
+                    width={40}
+                    height={40}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="w-10 h-10 rounded-full border-2 border-white overflow-hidden">
+                  <Image
+                    src="/images/artist-3.jpg"
+                    alt="Makeup artist"
+                    width={40}
+                    height={40}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="w-10 h-10 rounded-full border-2 border-white bg-pink-400 flex items-center justify-center text-white text-xs font-medium">
+                  +20
+                </div>
               </div>
-              <div className="w-10 h-10 rounded-full border-2 border-white overflow-hidden">
-                <Image
-                  src="/images/artist-2.jpg"
-                  alt="Makeup artist"
-                  width={40}
-                  height={40}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="w-10 h-10 rounded-full border-2 border-white overflow-hidden">
-                <Image
-                  src="/images/artist-3.jpg"
-                  alt="Makeup artist"
-                  width={40}
-                  height={40}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="w-10 h-10 rounded-full border-2 border-white bg-pink-400 flex items-center justify-center text-white text-xs font-medium">
-                +20
-              </div>
+
+              <Button className="bg-white text-pink-500 hover:bg-gray-100 shadow-sm transition-all hover:shadow-md group">
+                <Link href="/artists" className="flex items-center space-x-2">
+                  <span>Book Appointment</span>
+                  <ArrowRight className="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                </Link>
+              </Button>
             </div>
 
-            <Button className="bg-white text-pink-500 hover:bg-gray-100 shadow-sm transition-all hover:shadow-md group">
-              <Link href="/artists" className="flex items-center space-x-2">
-                <span>Book Appointment</span>
-                <ArrowRight className="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform" />
-              </Link>
-            </Button>
-          </div>
-
-          <div className="w-full lg:w-1/2 relative">
-            <div className="relative rounded-lg overflow-hidden shadow-xl">
-              <Image
-                src="/images/cta-makeup.jpg"
-                alt="Makeup artist applying makeup"
-                width={600}
-                height={400}
-                className="w-full h-auto object-cover rounded-lg"
-              />
+            <div className="w-full lg:w-1/2 max-w-xl mx-auto lg:mx-0">
+              <div className="relative aspect-[5/5] rounded-lg overflow-hidden shadow-xl">
+                <Image
+                  src="/images/hero.jpg"
+                  alt="Makeup artist applying makeup"
+                  fill
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 700px"
+                  priority
+                  className="object-cover object-center rounded-lg transform hover:scale-105 transition-transform duration-500"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -273,7 +276,7 @@ export default async function HomePage() {
                   className="bg-white rounded-xl border border-rose-100 overflow-hidden shadow-md hover:shadow-xl transition-all group"
                 >
                   <Link href={`/product/${product.id}`}>
-                    <div className="relative h-52 overflow-hidden">
+                    <div className="relative h-60 overflow-hidden">
                       <Image
                         src={
                           product.imageUrl ||
@@ -281,7 +284,8 @@ export default async function HomePage() {
                         }
                         alt={product.name}
                         fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                        className="object-cover object-center group-hover:scale-110 transition-transform duration-300"
                       />
                       <div className="absolute top-3 left-3 bg-gradient-to-r from-rose-500 to-pink-600 text-white text-xs font-bold px-3 py-1 rounded-full">
                         Featured
@@ -360,13 +364,14 @@ export default async function HomePage() {
                   key={artist.id}
                   className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden"
                 >
-                  <div className="relative h-48 w-full">
+                  <div className="relative h-56 w-full">
                     {artist.image ? (
                       <Image
                         src={artist.image}
                         alt={artist.name || "Artist"}
                         fill
-                        className="object-cover"
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                        className="object-cover object-center transition-transform duration-300 hover:scale-105"
                       />
                     ) : (
                       <div className="absolute inset-0 flex items-center justify-center bg-gray-100 text-gray-400">
@@ -436,13 +441,13 @@ export default async function HomePage() {
                 </Button>
               </div>
               <div className="w-full md:w-1/2">
-                <div className="relative h-full">
+                <div className="relative h-96 md:h-[400px] lg:h-[450px]">
                   <Image
                     src="/images/cta-makeup.jpg"
                     alt="Makeup session"
-                    width={600}
-                    height={400}
-                    className="w-full h-auto object-cover"
+                    fill
+                    sizes="(max-width: 768px) 100vw, 60vw"
+                    className="object-cover object-center"
                     priority
                   />
                 </div>

@@ -274,6 +274,14 @@ exports.Prisma.PaymentDetailScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.PasswordResetScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  token: 'token',
+  expiresAt: 'expiresAt',
+  createdAt: 'createdAt'
+};
+
 exports.Prisma.TransactionScalarFieldEnum = {
   id: 'id',
   artistAccountId: 'artistAccountId',
@@ -387,6 +395,7 @@ exports.Prisma.ModelName = {
   Appointment: 'Appointment',
   Review: 'Review',
   PaymentDetail: 'PaymentDetail',
+  PasswordReset: 'PasswordReset',
   Transaction: 'Transaction',
   ArtistAccount: 'ArtistAccount',
   ArtistService: 'ArtistService'

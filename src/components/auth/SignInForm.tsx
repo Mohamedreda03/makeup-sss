@@ -249,9 +249,8 @@ export default function SignInForm() {
                       type="button"
                       variant="ghost"
                       size="sm"
-                      className="absolute right-0 top-0 h-full px-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                      className="absolute right-2 top-2 h-8 w-8 p-0"
                       onClick={() => setShowPassword(!showPassword)}
-                      disabled={isCredentialLoading || isGoogleLoading}
                     >
                       {showPassword ? (
                         <EyeOff className="h-4 w-4" />
@@ -264,19 +263,18 @@ export default function SignInForm() {
                     </Button>
                   </div>
                 </FormControl>
+                <div className="flex justify-end">
+                  <a
+                    href="/forgot-password"
+                    className="text-xs text-rose-500 hover:text-rose-600 dark:text-rose-400 dark:hover:text-rose-300"
+                  >
+                    Forgot password?
+                  </a>
+                </div>
                 <FormMessage />
               </FormItem>
             )}
           />
-
-          <div className="text-right">
-            <a
-              href="/forgot-password"
-              className="text-sm text-rose-500 hover:text-rose-600 hover:underline"
-            >
-              Forgot password?
-            </a>
-          </div>
 
           <Button
             type="submit"

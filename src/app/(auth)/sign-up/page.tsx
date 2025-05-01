@@ -54,6 +54,14 @@ export default async function SignUpPage() {
                 Sign In
               </a>
             </p>
+            <p className="mt-2">
+              <a
+                href="/forgot-password"
+                className="text-rose-500 hover:text-rose-600 font-medium"
+              >
+                Forgot your password?
+              </a>
+            </p>
           </div>
         </div>
       </div>
