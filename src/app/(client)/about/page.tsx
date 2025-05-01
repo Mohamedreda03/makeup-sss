@@ -49,8 +49,9 @@ export default function AboutPage() {
               src="/images/about/about-1.jpg"
               alt="Makeup artist applying makeup"
               width={600}
-              height={300}
-              className="rounded-lg object-cover h-64 w-full"
+              height={450}
+              className="rounded-lg object-cover h-[400px] w-full object-top shadow-md hover:shadow-lg transition-shadow duration-300"
+              priority
             />
           </div>
           <div>
