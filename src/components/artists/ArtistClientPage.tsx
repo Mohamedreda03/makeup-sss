@@ -73,7 +73,6 @@ interface Artist {
   bio: string | null;
   yearsOfExperience?: number | null;
   defaultPrice?: number | null;
-  category?: string;
   _count: {
     artistAppointments: number;
   };
@@ -142,17 +141,6 @@ export default function ArtistClientPage({
     ? JSON.parse(artist.metadata.artistSettings)
     : null;
 
-  // Use fixed specialties instead of dynamic ones
-  const fixedSpecialties = [
-    "Bridal Makeup",
-    "Party Makeup",
-    "Editorial & Photoshoot",
-    "Henna Night & Engagement",
-    "Bridal & Reception",
-    "Photoshoot Makeup",
-    "Runway & Fashion Show",
-  ];
-
   // Check if artist has specialties or certificates
   const hasSpecialties = true; // Always show fixed categories
   const hasCertificates = artistSettings?.certificates?.length > 0;
@@ -212,16 +200,6 @@ export default function ArtistClientPage({
               <CheckCircle className="h-3 w-3" />
               Verified Professional
             </Badge>
-
-            {/* Display first two specialties */}
-            {artist.category && (
-              <Badge
-                variant="outline"
-                className="bg-rose-50 text-rose-700 border-rose-200"
-              >
-                {artist.category}
-              </Badge>
-            )}
           </div>
 
           {artist.defaultPrice && (

@@ -28,7 +28,8 @@ import {
 } from "@/components/ui/card";
 import { useSession } from "next-auth/react";
 import { Loader2, ArrowLeft } from "lucide-react";
-import { CategorySelector } from "@/components/admin/CategorySelector";
+
+import { AdminImageUpload } from "@/components/admin/AdminImageUpload";
 
 // Form validation schema
 const formSchema = z.object({
@@ -51,12 +52,24 @@ const formSchema = z.object({
   yearsOfExperience: z.coerce.number().min(0).optional(),
   category: z.string().optional(),
   defaultPrice: z.coerce.number().min(0).optional(),
+  image: z.string().optional(),
 });
+
+// Service interface
+interface Service {
+  id: string;
+  name: string;
+  description?: string;
+  price: number;
+  duration?: number;
+  isActive?: boolean;
+}
 
 export default function NewArtistPage() {
   const { data: session } = useSession();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [services, setServices] = useState<Service[]>([]);
 
   // Initialize the form
   const form = useForm<z.infer<typeof formSchema>>({
@@ -75,59 +88,78 @@ export default function NewArtistPage() {
       yearsOfExperience: 0,
       category: "",
       defaultPrice: 0,
+      image: "",
     },
   });
+
+  // Handle image upload
+  const handleImageUploaded = (imageUrl: string) => {
+    form.setValue("image", imageUrl);
+  };
+
+  // Handle services change
+  const handleServicesChange = (updatedServices: Service[]) => {
+    setServices(updatedServices);
+  };
 
   // Handle form submission
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
 
     try {
-      console.log("Creating artist with data:", { ...values, role: "ARTIST" });
+      console.log("Creating artist with data:", {
+        ...values,
+        role: "ARTIST",
+        image: values.image,
+      });
+
+      // Make sure all fields are properly included
+      const createData = {
+        ...values,
+        role: "ARTIST",
+        image: values.image || null,
+      };
+
       // Create the artist account
       const response = await fetch("/api/admin/artists", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          ...values,
-          role: "ARTIST",
-        }),
+        body: JSON.stringify(createData),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
+        console.error("API error response:", errorData);
         throw new Error(errorData.message || "Failed to create artist");
       }
 
       const artistData = await response.json();
       console.log("Artist created successfully:", artistData);
 
-      // Initialize artist settings with category
-      if (values.category) {
-        console.log("Setting artist category:", values.category);
-        const settingsResponse = await fetch(
-          `/api/artist/settings?artistId=${artistData.id}`,
-          {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              category: values.category,
-              specialties: [],
-              certificates: [],
-              services: [],
-            }),
-          }
-        );
-
-        if (!settingsResponse.ok) {
-          console.error("Warning: Failed to set artist category");
-        } else {
-          console.log("Artist category set successfully");
+      // Initialize artist settings with category and services
+      console.log("Setting artist category and services");
+      const settingsResponse = await fetch(
+        `/api/artist/settings?artistId=${artistData.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            category: values.category || "",
+            specialties: [],
+            certificates: [],
+            services: services,
+          }),
         }
+      );
+
+      if (!settingsResponse.ok) {
+        console.error("Warning: Failed to set artist settings");
+      } else {
+        console.log("Artist settings set successfully");
       }
 
       toast({
@@ -172,6 +204,32 @@ export default function NewArtistPage() {
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
             <CardContent className="space-y-6">
+              {/* Profile Image Upload */}
+              <FormField
+                control={form.control}
+                name="image"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Profile Image</FormLabel>
+                    <FormControl>
+                      <div className="flex justify-center">
+                        <AdminImageUpload
+                          currentImage={field.value}
+                          name={form.getValues("name")}
+                          onImageUploaded={handleImageUploaded}
+                          folder="artist-profiles"
+                        />
+                      </div>
+                    </FormControl>
+                    <FormDescription>
+                      Upload a profile image for the artist. Recommended size:
+                      400x400 pixels.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <div className="space-y-4">
                 <h3 className="text-lg font-medium">Basic Information</h3>
                 <FormField
@@ -257,70 +315,6 @@ export default function NewArtistPage() {
                       <FormDescription>
                         The default price for the artist's services in Egyptian
                         Pound
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">Professional Details</h3>
-                <FormField
-                  control={form.control}
-                  name="category"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Artist Category</FormLabel>
-                      <FormControl>
-                        <CategorySelector
-                          value={field.value}
-                          onChange={field.onChange}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Select the artist's primary makeup specialty
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="yearsOfExperience"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Years of Experience</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          placeholder="Enter years of experience"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        How many years of experience does the artist have?
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="bio"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Bio</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Artist's professional bio"
-                          className="min-h-[120px]"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Describe the artist's experience, skills, and
-                        specialties.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>

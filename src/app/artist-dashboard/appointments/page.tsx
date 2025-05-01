@@ -534,7 +534,11 @@ export default function AppointmentsPage() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          ${appointment.totalPrice.toFixed(2)}
+                          <div className="mt-1">
+                            <span className="text-gray-700 font-medium">
+                              EGP {appointment.totalPrice.toFixed(2)}
+                            </span>
+                          </div>
                         </TableCell>
                         <TableCell>
                           <Badge
@@ -689,12 +693,12 @@ export default function AppointmentsPage() {
                   </span>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-x-6">
                 <div>
-                  <span className="text-sm font-medium text-muted-foreground">
-                    Price
-                  </span>
-                  <p>${selectedAppointment.totalPrice.toFixed(2)}</p>
+                  <p className="text-sm text-gray-500">Price</p>
+                  <p className="font-medium">
+                    EGP {selectedAppointment.totalPrice.toFixed(2)}
+                  </p>
                 </div>
                 <div>
                   <span className="text-sm font-medium text-muted-foreground">

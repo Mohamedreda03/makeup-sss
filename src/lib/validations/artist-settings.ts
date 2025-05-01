@@ -6,7 +6,7 @@ export const artistServiceSchema = z.object({
   name: z.string().min(2, "Service name must be at least 2 characters"),
   description: z.string().optional(),
   price: z.number().min(0, "Price cannot be negative").optional(),
-  duration: z.number().min(0, "Duration cannot be negative").optional(),
+  isActive: z.boolean().default(true),
 });
 
 // Schema for artist settings validation
@@ -21,7 +21,6 @@ export const artistSettingsSchema = z.object({
   tiktok: z.string().optional(),
   website: z.string().url().optional().or(z.literal("")),
   defaultPrice: z.number().min(0).optional().nullable(),
-  category: z.string().optional(),
   certificates: z.array(z.string()).optional(),
   services: z.array(artistServiceSchema).optional(),
   specialties: z.array(z.string()).optional(),

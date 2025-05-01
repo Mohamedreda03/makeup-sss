@@ -191,7 +191,6 @@ async function getArtist(id: string) {
       twitter: true,
       tiktok: true,
       website: true,
-      category: true,
       bio: true,
       yearsOfExperience: true,
       defaultPrice: true,
@@ -420,7 +419,6 @@ export default async function ArtistPage({
   // تحويل updatedAt من نوع Date إلى string لكل تعيين فني
   const formattedArtist = {
     ...artist,
-    category: artist.category || undefined,
     averageRating,
     totalReviews,
     artistAppointments: artist.artistAppointments.map((appointment: any) => ({
@@ -458,10 +456,36 @@ export default async function ArtistPage({
   // Check if user is logged in
   const isUserLoggedIn = !!session?.user;
 
+  // Prepare data for our component
+  const artistData = {
+    id: artist?.id || "",
+    name: artist?.name || "",
+    email: artist?.email || null,
+    image: artist?.image || null,
+    phone: artist?.phone || null,
+    bio: artist?.bio || "",
+    instagram: artist?.instagram || null,
+    facebook: artist?.facebook || null,
+    twitter: artist?.twitter || null,
+    tiktok: artist?.tiktok || null,
+    website: artist?.website || null,
+    yearsOfExperience: artist?.yearsOfExperience || 0,
+    defaultPrice: artist?.defaultPrice || null,
+    _count: artist?._count || { artistAppointments: 0 },
+    artistAppointments:
+      artist?.artistAppointments?.map((appointment: any) => ({
+        ...appointment,
+        updatedAt: appointment.updatedAt.toISOString(), // Convert Date to string
+      })) || [],
+    metadata: artist?.metadata || null,
+    averageRating: averageRating,
+    totalReviews: totalReviews,
+  };
+
   return (
     <main>
       <ArtistClientPage
-        artist={formattedArtist}
+        artist={artistData}
         services={services}
         isUserLoggedIn={isUserLoggedIn}
         bookingComponent={

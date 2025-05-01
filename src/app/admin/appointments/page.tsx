@@ -583,7 +583,10 @@ function AdminAppointmentsPage() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        ${appointment.totalPrice.toFixed(2)}
+                        <p className="mt-1">
+                          <span className="text-gray-500">Total:</span> EGP{" "}
+                          {appointment.totalPrice.toFixed(2)}
+                        </p>
                       </TableCell>
                       <TableCell>
                         <div className="flex space-x-2">
@@ -829,7 +832,7 @@ function AdminAppointmentsPage() {
                 <div className="space-y-2">
                   <h3 className="text-sm font-medium text-gray-500">Price</h3>
                   <p className="font-medium">
-                    $
+                    EGP{" "}
                     {appointments
                       .find((a) => a.id === appointmentToUpdate)
                       ?.totalPrice.toFixed(2)}

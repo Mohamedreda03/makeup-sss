@@ -187,8 +187,7 @@ export default function AppointmentsPage() {
 
   // Group appointments by status for better organization
   const pendingAppointments = filteredAppointments.filter(
-    (appointment) =>
-      appointment.status === "PENDING" || appointment.status === "CONFIRMED"
+    (appointment) => appointment.status === "CONFIRMED"
   );
 
   const completedAppointments = filteredAppointments.filter(
@@ -258,7 +257,6 @@ export default function AppointmentsPage() {
         >
           <TabsList className="mb-8">
             <TabsTrigger value="all">All</TabsTrigger>
-            <TabsTrigger value="PENDING">Pending</TabsTrigger>
             <TabsTrigger value="CONFIRMED">Confirmed</TabsTrigger>
             <TabsTrigger value="COMPLETED">Completed</TabsTrigger>
             <TabsTrigger value="CANCELLED">Cancelled</TabsTrigger>
@@ -269,7 +267,9 @@ export default function AppointmentsPage() {
       {/* Pending Appointments */}
       {pendingAppointments.length > 0 && (
         <div className="mb-8">
-          <h2 className="text-2xl font-semibold mb-6">Upcoming Appointments</h2>
+          <h2 className="text-2xl font-semibold mb-6">
+            Confirmed Appointments
+          </h2>
           <div className="grid gap-4 sm:grid-cols-2">
             {pendingAppointments.map((appointment) => (
               <Card
@@ -292,8 +292,7 @@ export default function AppointmentsPage() {
                       }
                       className="px-2 py-0.5 text-xs font-medium"
                     >
-                      {appointment.status.charAt(0) +
-                        appointment.status.slice(1).toLowerCase()}
+                      Confirmed
                     </Badge>
                   </div>
 
@@ -312,7 +311,7 @@ export default function AppointmentsPage() {
                     </div>
                     <div className="flex items-center">
                       <DollarSign className="h-3 w-3 mr-1 text-gray-500" />
-                      <span>${appointment.totalPrice}</span>
+                      <span>EGP {appointment.totalPrice}</span>
                     </div>
                   </div>
 
@@ -425,7 +424,7 @@ export default function AppointmentsPage() {
 
                     <div className="flex items-center">
                       <DollarSign className="h-4 w-4 mr-2 text-gray-500" />
-                      <span>${appointment.totalPrice}</span>
+                      <span>EGP {appointment.totalPrice}</span>
                     </div>
                   </div>
                 </div>
@@ -485,7 +484,7 @@ export default function AppointmentsPage() {
                     </div>
                     <div className="flex items-center">
                       <DollarSign className="h-4 w-4 mr-2 text-gray-500" />
-                      <span>${appointment.totalPrice}</span>
+                      <span>EGP {appointment.totalPrice}</span>
                     </div>
                   </div>
                 </CardContent>

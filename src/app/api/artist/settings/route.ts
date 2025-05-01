@@ -41,6 +41,8 @@ export async function GET() {
         ArtistAccount: true,
         // Include metadata for additional artist data
         metadata: true,
+        // Include services
+        services: true,
       },
     });
 
@@ -51,14 +53,12 @@ export async function GET() {
     // Parse additional artist settings from metadata if available
     let certificates: string[] = [];
     let specialties: string[] = [];
-    let services: any[] = [];
 
     if (artistUser.metadata?.artistSettings) {
       try {
         const artistSettings = JSON.parse(artistUser.metadata.artistSettings);
         certificates = artistSettings.certificates || [];
         specialties = artistSettings.specialties || [];
-        services = artistSettings.services || [];
       } catch (e) {
         console.error("Error parsing artist settings from metadata:", e);
       }
@@ -66,8 +66,9 @@ export async function GET() {
 
     // Transform the artist data to match our schema
     const artistSettings = {
-      name: artistUser.name || "",
-      email: artistUser.email || "",
+      name: artistUser.name,
+      email: artistUser.email,
+      image: artistUser.image,
       yearsOfExperience: artistUser.yearsOfExperience,
       bio: artistUser.bio,
       instagram: artistUser.instagram,
@@ -76,9 +77,8 @@ export async function GET() {
       tiktok: artistUser.tiktok,
       website: artistUser.website,
       defaultPrice: artistUser.defaultPrice,
-      category: artistUser.category,
       certificates,
-      services,
+      services: artistUser.services,
       specialties,
     };
 
@@ -134,41 +134,38 @@ export async function PUT(request: Request) {
       where: {
         id: user.id,
       },
+      include: {
+        services: true,
+      },
     });
 
     if (!artistUser) {
       return NextResponse.json({ error: "Artist not found" }, { status: 404 });
     }
 
-    // Update the user data with artist settings
-    const updatedArtist = await prisma.user.update({
-      where: {
-        id: user.id,
-      },
-      data: {
-        name: data.name,
-        email: data.email,
-        yearsOfExperience: data.yearsOfExperience,
-        bio: data.bio,
-        instagram: data.instagram,
-        facebook: data.facebook,
-        twitter: data.twitter,
-        tiktok: data.tiktok,
-        website: data.website,
-        defaultPrice: data.defaultPrice,
-        category: data.category,
-        // For certificates, specialties, and services, we may need to use UserMetadata
-      },
-    });
+    // Start a transaction to update everything
+    await prisma.$transaction(async (tx) => {
+      // Update the user data with artist settings
+      await tx.user.update({
+        where: {
+          id: user.id,
+        },
+        data: {
+          name: data.name,
+          email: data.email,
+          yearsOfExperience: data.yearsOfExperience,
+          bio: data.bio,
+          instagram: data.instagram,
+          facebook: data.facebook,
+          twitter: data.twitter,
+          tiktok: data.tiktok,
+          website: data.website,
+          defaultPrice: data.defaultPrice,
+        },
+      });
 
-    // Consider updating metadata for any additional fields not in the User model directly
-    if (
-      (data.certificates && data.certificates.length > 0) ||
-      (data.specialties && data.specialties.length > 0) ||
-      (data.services && data.services.length > 0)
-    ) {
-      // Find or create metadata record
-      const metadata = await prisma.userMetadata.upsert({
+      // Update metadata for certificates and specialties
+      await tx.userMetadata.upsert({
         where: {
           userId: user.id,
         },
@@ -176,7 +173,6 @@ export async function PUT(request: Request) {
           artistSettings: JSON.stringify({
             certificates: data.certificates || [],
             specialties: data.specialties || [],
-            services: data.services || [],
           }),
         },
         create: {
@@ -184,15 +180,68 @@ export async function PUT(request: Request) {
           artistSettings: JSON.stringify({
             certificates: data.certificates || [],
             specialties: data.specialties || [],
-            services: data.services || [],
           }),
         },
       });
-    }
+
+      // Handle services
+      if (data.services && data.services.length > 0) {
+        // Get existing service IDs
+        const existingServiceIds = artistUser.services.map(
+          (service) => service.id
+        );
+
+        // Find services to delete (those in existingServiceIds but not in the incoming data.services)
+        const incomingServiceIds = data.services
+          .filter((service) => service.id)
+          .map((service) => service.id as string);
+
+        const serviceIdsToDelete = existingServiceIds.filter(
+          (id) => !incomingServiceIds.includes(id)
+        );
+
+        // Delete services that are no longer needed
+        if (serviceIdsToDelete.length > 0) {
+          await tx.artistService.deleteMany({
+            where: {
+              id: {
+                in: serviceIdsToDelete,
+              },
+            },
+          });
+        }
+
+        // Update or create services
+        for (const service of data.services) {
+          if (service.id) {
+            // Update existing service
+            await tx.artistService.update({
+              where: {
+                id: service.id,
+              },
+              data: {
+                name: service.name,
+                description: service.description || "",
+                price: service.price || 0,
+              },
+            });
+          } else {
+            // Create new service
+            await tx.artistService.create({
+              data: {
+                name: service.name,
+                description: service.description || "",
+                price: service.price || 0,
+                artistId: user.id,
+              },
+            });
+          }
+        }
+      }
+    });
 
     return NextResponse.json({
       message: "Artist settings updated successfully",
-      artist: updatedArtist,
     });
   } catch (error) {
     console.error("Error updating artist settings:", error);

@@ -6,9 +6,11 @@ import ArtistBooking from "./ArtistBooking";
 interface Service {
   id: string;
   name: string;
-  description: string;
+  description: string | null;
   price: number;
-  duration: number;
+  duration?: number;
+  isActive: boolean;
+  artistId: string;
 }
 
 interface AvailabilitySettings {
@@ -36,6 +38,7 @@ export default function ArtistBookingWrapper({
 }: ArtistBookingWrapperProps) {
   const [artistData, setArtistData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [hasLoadedServices, setHasLoadedServices] = useState(false);
 
   // Log availability settings for debugging
   useEffect(() => {
@@ -67,22 +70,28 @@ export default function ArtistBookingWrapper({
 
   // Create default service using artist's default price
   const defaultService: Service = {
-    id: "default-service",
+    id: "default-service", // Using a special ID to identify default service
     name: artistData?.name
       ? `Standard Session with ${artistData.name}`
       : "Standard Session",
     description: "Book a standard appointment with the artist",
     price: artistData?.defaultPrice || 0, // Use artist's default price if available
     duration: 60, // Duration can be adjusted as needed
+    isActive: true,
+    artistId: artistId,
   };
 
-  // Use default service instead of null
-  const [selectedService, setSelectedService] =
-    useState<Service>(defaultService);
+  // Use null for initial state instead of defaultService
+  const [selectedService, setSelectedService] = useState<Service | null>(null);
 
-  // Update default service when artist data is loaded
+  // Update default service when artist data is loaded, but only if no real services exist
   useEffect(() => {
-    if (artistData?.defaultPrice) {
+    if (
+      artistData?.defaultPrice &&
+      services.length === 0 &&
+      !hasLoadedServices
+    ) {
+      // Only set a default service if we have NO real services
       setSelectedService({
         ...defaultService,
         name: `Standard Session with ${artistData.name || "Artist"}`,
@@ -90,16 +99,26 @@ export default function ArtistBookingWrapper({
           artistData.name || "the artist"
         }`,
         price: artistData.defaultPrice,
+        isActive: true,
+        artistId: artistId,
       });
+
+      setHasLoadedServices(true);
+    } else if (services.length > 0 && !hasLoadedServices) {
+      // If we have real services, we don't need a default one
+      setHasLoadedServices(true);
+      // We'll let ArtistBooking handle service selection
+      setSelectedService(null);
     }
-  }, [artistData]);
+  }, [artistData, artistId, services, hasLoadedServices, defaultService]);
 
   if (loading) {
     return <div className="text-center py-8">Loading...</div>;
   }
 
-  // Display default service only if there are no other services
-  const availableServices = services.length > 0 ? services : [selectedService];
+  // Only use the default service if there are no real services
+  const availableServices =
+    services.length > 0 ? services : selectedService ? [selectedService] : [];
 
   return (
     <ArtistBooking

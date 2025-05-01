@@ -12,7 +12,6 @@ import {
   ShoppingBag,
 } from "lucide-react";
 import { db } from "@/lib/db";
-import { CATEGORIES } from "./artists/utils";
 import { formatPrice } from "@/lib/utils";
 
 // تخصصات المكياج للعرض
@@ -72,7 +71,6 @@ async function getFeaturedArtists() {
         id: true,
         name: true,
         image: true,
-        category: true,
         // استخراج البيانات الوصفية للتحقق من التوفر
         metadata: {
           select: {
@@ -121,7 +119,7 @@ async function getFeaturedArtists() {
         id: artist.id,
         name: artist.name,
         image: artist.image,
-        category: artist.category || "Makeup Artist",
+        category: "Makeup Artist", // Default category since we removed the field
         rating: averageRating,
         isAvailable: isAvailable,
       };
@@ -228,7 +226,7 @@ export default async function HomePage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {specialties.map((specialty) => (
               <Link
-                href={`/artists?category=${specialty.id}`}
+                href="/artists"
                 key={specialty.id}
                 className="flex flex-col items-center group"
               >

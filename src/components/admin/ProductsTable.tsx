@@ -265,7 +265,9 @@ export default function ProductsTable({
                     </div>
                   </TableCell>
                   <TableCell className="text-right font-medium">
-                    ${product.price.toFixed(2)}
+                    <div className="font-medium text-gray-900">
+                      EGP {product.price.toFixed(2)}
+                    </div>
                   </TableCell>
                   <TableCell>
                     {product.inStock ? (

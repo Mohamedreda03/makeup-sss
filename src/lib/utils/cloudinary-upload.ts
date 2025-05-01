@@ -56,6 +56,10 @@ export async function uploadImageToCloudinary(
         });
 
         if (!signatureResponse.ok) {
+          console.error(
+            "Signature response not OK:",
+            await signatureResponse.text()
+          );
           throw new Error("Failed to get signature for upload");
         }
 
@@ -65,6 +69,14 @@ export async function uploadImageToCloudinary(
           cloudName,
           apiKey,
         } = await signatureResponse.json();
+
+        console.log("Got signature for Cloudinary upload:", {
+          folder,
+          publicId: uniqueFilename,
+          cloudName,
+          hasSignature: !!signature,
+          hasApiKey: !!apiKey,
+        });
 
         // 2. Create FormData for upload
         const formData = new FormData();
@@ -76,6 +88,7 @@ export async function uploadImageToCloudinary(
         formData.append("public_id", uniqueFilename);
 
         // 3. Upload to Cloudinary using the signed data
+        console.log("Sending upload to Cloudinary...");
         const uploadResponse = await fetch(
           `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
           {
@@ -85,12 +98,19 @@ export async function uploadImageToCloudinary(
         );
 
         if (!uploadResponse.ok) {
+          const errorText = await uploadResponse.text();
+          console.error("Cloudinary upload failed:", errorText);
           throw new Error(
             `Cloudinary upload failed: ${uploadResponse.statusText}`
           );
         }
 
         const data = await uploadResponse.json();
+        console.log("Cloudinary upload successful, received data:", {
+          publicId: data.public_id,
+          url: data.secure_url,
+          format: data.format,
+        });
 
         // Clean up progress interval
         if (progressIntervalId) {
@@ -106,14 +126,35 @@ export async function uploadImageToCloudinary(
           clearInterval(progressIntervalId);
         }
 
+        console.error("Error during Cloudinary upload:", uploadError);
+
         // Use a default placeholder image as fallback
         const fallbackUrl = `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/v1/placeholders/profile_placeholder.jpg`;
+        console.warn("Using fallback image URL:", fallbackUrl);
+
+        // In production we use a fallback, but in development we should know about the error
+        if (process.env.NODE_ENV === "development") {
+          reject(uploadError);
+          return;
+        }
 
         resolve(fallbackUrl);
       }
     } catch (error) {
+      console.error("Unexpected error in uploadImageToCloudinary:", error);
+
       // Use a default placeholder image as fallback
       const fallbackUrl = `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/v1/placeholders/profile_placeholder.jpg`;
+      console.warn(
+        "Using fallback image URL due to unexpected error:",
+        fallbackUrl
+      );
+
+      // In production we use a fallback, but in development we should know about the error
+      if (process.env.NODE_ENV === "development") {
+        reject(error);
+        return;
+      }
 
       resolve(fallbackUrl);
     }

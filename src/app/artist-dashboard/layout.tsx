@@ -8,6 +8,7 @@ import {
   Users,
   LogOut,
   Home,
+  Briefcase,
 } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
@@ -65,6 +66,11 @@ export default async function ArtistDashboardLayout({
       href: "/artist-dashboard/availability",
       icon: <Clock className="h-4 w-4" />,
       title: "Availability",
+    },
+    {
+      href: "/artist-dashboard/services",
+      icon: <Briefcase className="h-4 w-4" />,
+      title: "Services",
     },
     {
       href: "/artist-dashboard/settings",

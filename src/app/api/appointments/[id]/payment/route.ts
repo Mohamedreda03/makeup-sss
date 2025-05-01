@@ -50,13 +50,13 @@ export async function POST(
       );
     }
 
-    // 2. Update appointment status to COMPLETED
+    // 2. Update appointment status to CONFIRMED
     const updatedAppointment = await db.appointment.update({
       where: { id: appointment.id },
-      data: { status: AppointmentStatus.COMPLETED },
+      data: { status: AppointmentStatus.CONFIRMED },
     });
 
-    console.log("Updated appointment status to COMPLETED");
+    console.log("Updated appointment status to CONFIRMED");
 
     // 3. Create payment record
     const paymentDetail = await db.paymentDetail.create({
@@ -173,8 +173,9 @@ export async function GET(
       );
     }
 
-    // Check if appointment is paid - consider COMPLETED status as paid
-    const isPaid = appointment.status === "COMPLETED";
+    // Check if appointment is paid - consider CONFIRMED or COMPLETED status as paid
+    const isPaid =
+      appointment.status === "CONFIRMED" || appointment.status === "COMPLETED";
 
     return NextResponse.json({
       id: appointment.id,

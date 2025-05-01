@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,8 +19,19 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Upload } from "lucide-react";
+import { Loader2, Upload, Plus, Trash2 } from "lucide-react";
 import { uploadImageToFirebase } from "@/lib/utils/upload";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+// Service schema for validation
+const serviceSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().min(2, "Service name is required"),
+  description: z.string().optional(),
+  price: z.coerce.number().min(0, "Price must be a positive number").optional(),
+  isActive: z.boolean().default(true),
+});
 
 // Artist form schema
 const artistFormSchema = z.object({
@@ -38,6 +49,7 @@ const artistFormSchema = z.object({
     })
     .optional(),
   image: z.string().optional(),
+  services: z.array(serviceSchema).optional(),
 });
 
 type ArtistFormValues = z.infer<typeof artistFormSchema>;
@@ -49,6 +61,13 @@ interface ArtistFormProps {
     email: string | null;
     image: string | null;
     phone: string | null;
+    services?: Array<{
+      id: string;
+      name: string;
+      description?: string | null;
+      price: number;
+      isActive: boolean;
+    }>;
   };
   mode?: "create" | "edit";
 }
@@ -75,7 +94,29 @@ export default function ArtistForm({
       phone: artist?.phone || "",
       password: "",
       image: artist?.image || "",
+      services: artist?.services?.length
+        ? artist.services.map((service) => ({
+            id: service.id,
+            name: service.name,
+            description: service.description || "",
+            price: service.price,
+            isActive: service.isActive,
+          }))
+        : [
+            {
+              name: "",
+              description: "",
+              price: 0,
+              isActive: true,
+            },
+          ],
     },
+  });
+
+  // Setup field array for services
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "services",
   });
 
   // Handle image upload
@@ -146,7 +187,7 @@ export default function ArtistForm({
           ? `/api/admin/artists/${artist?.id}`
           : "/api/admin/artists";
 
-      const method = mode === "edit" ? "PUT" : "POST";
+      const method = mode === "edit" ? "PATCH" : "POST";
 
       // Submit form
       const response = await fetch(endpoint, {
@@ -307,6 +348,100 @@ export default function ArtistForm({
             />
           )}
         </div>
+
+        {/* Artist Services Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Artist Services</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {fields.map((field, index) => (
+                <div key={field.id} className="border p-4 rounded-md relative">
+                  <div className="absolute top-2 right-2">
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => remove(index)}
+                      disabled={fields.length === 1}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name={`services.${index}.name`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Service Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Bridal Makeup" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name={`services.${index}.price`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Price</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              placeholder="100"
+                              min="0"
+                              step="0.01"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name={`services.${index}.description`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Description (Optional)</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder="Brief description of the service"
+                              className="min-h-[80px]"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+              ))}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  append({
+                    name: "",
+                    description: "",
+                    price: 0,
+                    isActive: true,
+                  })
+                }
+                className="mt-4"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Service
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Form Actions */}
         <div className="flex justify-end gap-4">

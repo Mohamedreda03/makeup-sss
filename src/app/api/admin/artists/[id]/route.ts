@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { hash } from "bcrypt";
 
@@ -9,6 +10,15 @@ interface ExtendedUser {
   id: string;
   role: string;
 }
+
+// Service schema for validation
+const serviceSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().min(2),
+  description: z.string().optional(),
+  price: z.coerce.number().min(0).optional(),
+  isActive: z.boolean().optional(),
+});
 
 // Schema for updating an artist
 const updateArtistSchema = z.object({
@@ -25,6 +35,8 @@ const updateArtistSchema = z.object({
   yearsOfExperience: z.coerce.number().min(0).optional(),
   category: z.string().optional().nullable(),
   defaultPrice: z.coerce.number().min(0).optional(),
+  image: z.string().optional().nullable(),
+  services: z.array(serviceSchema).optional(),
 });
 
 export async function GET(
@@ -42,27 +54,13 @@ export async function GET(
     const artistId = params.id;
 
     // Find artist in database
-    const artist = await db.user.findUnique({
+    const artist = await prisma.user.findUnique({
       where: {
         id: artistId,
         role: "ARTIST",
       },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        image: true,
-        phone: true,
-        instagram: true,
-        facebook: true,
-        twitter: true,
-        tiktok: true,
-        website: true,
-        bio: true,
-        createdAt: true,
-        yearsOfExperience: true,
-        category: true,
-        defaultPrice: true,
+      include: {
+        services: true,
       },
     });
 
@@ -98,10 +96,13 @@ export async function PATCH(
     const artistId = params.id;
 
     // Check if artist exists
-    const existingArtist = await db.user.findUnique({
+    const existingArtist = await prisma.user.findUnique({
       where: {
         id: artistId,
         role: "ARTIST",
+      },
+      include: {
+        services: true,
       },
     });
 
@@ -114,16 +115,31 @@ export async function PATCH(
 
     // Parse request body
     const body = await request.json();
+    console.log("[API] PATCH artist - Request body:", {
+      ...body,
+      password: body.password ? "****" : undefined,
+    });
+
     const validation = updateArtistSchema.safeParse(body);
 
     if (!validation.success) {
+      console.error(
+        "[API] PATCH artist - Validation errors:",
+        validation.error.errors
+      );
       return NextResponse.json(
         { message: "Invalid data", errors: validation.error.errors },
         { status: 400 }
       );
     }
 
-    const { password, ...updateData } = validation.data;
+    const { password, services, ...updateData } = validation.data;
+
+    // Log the image URL for debugging
+    console.log("[API] PATCH artist - Image being updated:", {
+      current: existingArtist.image,
+      new: updateData.image,
+    });
 
     // Prepare update data
     const updatePayload: any = { ...updateData };
@@ -133,27 +149,84 @@ export async function PATCH(
       updatePayload.password = await hash(password, 10);
     }
 
-    // Update artist
-    const updatedArtist = await db.user.update({
+    // Use a transaction to update the artist and their services
+    await prisma.$transaction(async (tx) => {
+      // Update artist
+      await tx.user.update({
+        where: { id: artistId },
+        data: updatePayload,
+      });
+
+      // Handle services if provided
+      if (services && services.length > 0) {
+        // Get existing service IDs
+        const existingServiceIds = existingArtist.services.map(
+          (service: any) => service.id
+        );
+
+        // Find services to delete (those in existingServiceIds but not in the incoming services)
+        const incomingServiceIds = services
+          .filter((service) => service.id)
+          .map((service) => service.id as string);
+
+        const serviceIdsToDelete = existingServiceIds.filter(
+          (id: string) => !incomingServiceIds.includes(id)
+        );
+
+        // Delete services that are no longer needed
+        if (serviceIdsToDelete.length > 0) {
+          await tx.artistService.deleteMany({
+            where: {
+              id: {
+                in: serviceIdsToDelete,
+              },
+            },
+          });
+        }
+
+        // Update or create services
+        for (const service of services) {
+          if (service.id) {
+            // Update existing service
+            await tx.artistService.update({
+              where: {
+                id: service.id,
+              },
+              data: {
+                name: service.name,
+                description: service.description || "",
+                price: service.price || 0,
+                isActive: service.isActive ?? true,
+              },
+            });
+          } else {
+            // Create new service
+            await tx.artistService.create({
+              data: {
+                name: service.name,
+                description: service.description || "",
+                price: service.price || 0,
+                isActive: service.isActive ?? true,
+                artistId: artistId,
+              },
+            });
+          }
+        }
+      }
+    });
+
+    // Fetch updated artist with services to return
+    const updatedArtist = await prisma.user.findUnique({
       where: { id: artistId },
-      data: updatePayload,
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        image: true,
-        phone: true,
-        instagram: true,
-        facebook: true,
-        twitter: true,
-        tiktok: true,
-        website: true,
-        bio: true,
-        yearsOfExperience: true,
-        category: true,
-        defaultPrice: true,
+      include: {
+        services: true,
       },
     });
+
+    console.log(
+      "[API] PATCH artist - Update successful, image in DB:",
+      updatedArtist?.image
+    );
 
     return NextResponse.json(updatedArtist);
   } catch (error) {

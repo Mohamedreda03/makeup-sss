@@ -88,6 +88,11 @@ export type Transaction = $Result.DefaultSelection<Prisma.$TransactionPayload>
  * 
  */
 export type ArtistAccount = $Result.DefaultSelection<Prisma.$ArtistAccountPayload>
+/**
+ * Model ArtistService
+ * 
+ */
+export type ArtistService = $Result.DefaultSelection<Prisma.$ArtistServicePayload>
 
 /**
  * Enums
@@ -449,6 +454,16 @@ export class PrismaClient<
     * ```
     */
   get artistAccount(): Prisma.ArtistAccountDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.artistService`: Exposes CRUD operations for the **ArtistService** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more ArtistServices
+    * const artistServices = await prisma.artistService.findMany()
+    * ```
+    */
+  get artistService(): Prisma.ArtistServiceDelegate<ExtArgs, ClientOptions>;
 }
 
 export namespace Prisma {
@@ -903,7 +918,8 @@ export namespace Prisma {
     Review: 'Review',
     PaymentDetail: 'PaymentDetail',
     Transaction: 'Transaction',
-    ArtistAccount: 'ArtistAccount'
+    ArtistAccount: 'ArtistAccount',
+    ArtistService: 'ArtistService'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -922,7 +938,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "user" | "userMetadata" | "account" | "session" | "verificationToken" | "product" | "cart" | "cartItem" | "order" | "orderItem" | "appointment" | "review" | "paymentDetail" | "transaction" | "artistAccount"
+      modelProps: "user" | "userMetadata" | "account" | "session" | "verificationToken" | "product" | "cart" | "cartItem" | "order" | "orderItem" | "appointment" | "review" | "paymentDetail" | "transaction" | "artistAccount" | "artistService"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -2036,6 +2052,80 @@ export namespace Prisma {
           }
         }
       }
+      ArtistService: {
+        payload: Prisma.$ArtistServicePayload<ExtArgs>
+        fields: Prisma.ArtistServiceFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.ArtistServiceFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ArtistServicePayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.ArtistServiceFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ArtistServicePayload>
+          }
+          findFirst: {
+            args: Prisma.ArtistServiceFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ArtistServicePayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.ArtistServiceFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ArtistServicePayload>
+          }
+          findMany: {
+            args: Prisma.ArtistServiceFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ArtistServicePayload>[]
+          }
+          create: {
+            args: Prisma.ArtistServiceCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ArtistServicePayload>
+          }
+          createMany: {
+            args: Prisma.ArtistServiceCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.ArtistServiceCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ArtistServicePayload>[]
+          }
+          delete: {
+            args: Prisma.ArtistServiceDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ArtistServicePayload>
+          }
+          update: {
+            args: Prisma.ArtistServiceUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ArtistServicePayload>
+          }
+          deleteMany: {
+            args: Prisma.ArtistServiceDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.ArtistServiceUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.ArtistServiceUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ArtistServicePayload>[]
+          }
+          upsert: {
+            args: Prisma.ArtistServiceUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ArtistServicePayload>
+          }
+          aggregate: {
+            args: Prisma.ArtistServiceAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateArtistService>
+          }
+          groupBy: {
+            args: Prisma.ArtistServiceGroupByArgs<ExtArgs>
+            result: $Utils.Optional<ArtistServiceGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.ArtistServiceCountArgs<ExtArgs>
+            result: $Utils.Optional<ArtistServiceCountAggregateOutputType> | number
+          }
+        }
+      }
     }
   } & {
     other: {
@@ -2135,6 +2225,7 @@ export namespace Prisma {
     paymentDetail?: PaymentDetailOmit
     transaction?: TransactionOmit
     artistAccount?: ArtistAccountOmit
+    artistService?: ArtistServiceOmit
   }
 
   /* Types for Logging */
@@ -2237,6 +2328,7 @@ export namespace Prisma {
     artistReviews: number
     orders: number
     Transaction: number
+    services: number
   }
 
   export type UserCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -2248,6 +2340,7 @@ export namespace Prisma {
     artistReviews?: boolean | UserCountOutputTypeCountArtistReviewsArgs
     orders?: boolean | UserCountOutputTypeCountOrdersArgs
     Transaction?: boolean | UserCountOutputTypeCountTransactionArgs
+    services?: boolean | UserCountOutputTypeCountServicesArgs
   }
 
   // Custom InputTypes
@@ -2315,6 +2408,13 @@ export namespace Prisma {
    */
   export type UserCountOutputTypeCountTransactionArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: TransactionWhereInput
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountServicesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ArtistServiceWhereInput
   }
 
 
@@ -2534,7 +2634,6 @@ export namespace Prisma {
     bio: string | null
     yearsOfExperience: number | null
     defaultPrice: number | null
-    category: string | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -2556,7 +2655,6 @@ export namespace Prisma {
     bio: string | null
     yearsOfExperience: number | null
     defaultPrice: number | null
-    category: string | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -2578,7 +2676,6 @@ export namespace Prisma {
     bio: number
     yearsOfExperience: number
     defaultPrice: number
-    category: number
     createdAt: number
     updatedAt: number
     _all: number
@@ -2612,7 +2709,6 @@ export namespace Prisma {
     bio?: true
     yearsOfExperience?: true
     defaultPrice?: true
-    category?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -2634,7 +2730,6 @@ export namespace Prisma {
     bio?: true
     yearsOfExperience?: true
     defaultPrice?: true
-    category?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -2656,7 +2751,6 @@ export namespace Prisma {
     bio?: true
     yearsOfExperience?: true
     defaultPrice?: true
-    category?: true
     createdAt?: true
     updatedAt?: true
     _all?: true
@@ -2765,7 +2859,6 @@ export namespace Prisma {
     bio: string | null
     yearsOfExperience: number | null
     defaultPrice: number | null
-    category: string | null
     createdAt: Date
     updatedAt: Date
     _count: UserCountAggregateOutputType | null
@@ -2806,7 +2899,6 @@ export namespace Prisma {
     bio?: boolean
     yearsOfExperience?: boolean
     defaultPrice?: boolean
-    category?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     accounts?: boolean | User$accountsArgs<ExtArgs>
@@ -2819,6 +2911,7 @@ export namespace Prisma {
     orders?: boolean | User$ordersArgs<ExtArgs>
     Transaction?: boolean | User$TransactionArgs<ExtArgs>
     ArtistAccount?: boolean | User$ArtistAccountArgs<ExtArgs>
+    services?: boolean | User$servicesArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["user"]>
 
@@ -2839,7 +2932,6 @@ export namespace Prisma {
     bio?: boolean
     yearsOfExperience?: boolean
     defaultPrice?: boolean
-    category?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }, ExtArgs["result"]["user"]>
@@ -2861,7 +2953,6 @@ export namespace Prisma {
     bio?: boolean
     yearsOfExperience?: boolean
     defaultPrice?: boolean
-    category?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }, ExtArgs["result"]["user"]>
@@ -2883,12 +2974,11 @@ export namespace Prisma {
     bio?: boolean
     yearsOfExperience?: boolean
     defaultPrice?: boolean
-    category?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type UserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "email" | "emailVerified" | "image" | "password" | "phone" | "role" | "instagram" | "facebook" | "twitter" | "tiktok" | "website" | "bio" | "yearsOfExperience" | "defaultPrice" | "category" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
+  export type UserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "email" | "emailVerified" | "image" | "password" | "phone" | "role" | "instagram" | "facebook" | "twitter" | "tiktok" | "website" | "bio" | "yearsOfExperience" | "defaultPrice" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
   export type UserInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     accounts?: boolean | User$accountsArgs<ExtArgs>
     sessions?: boolean | User$sessionsArgs<ExtArgs>
@@ -2900,6 +2990,7 @@ export namespace Prisma {
     orders?: boolean | User$ordersArgs<ExtArgs>
     Transaction?: boolean | User$TransactionArgs<ExtArgs>
     ArtistAccount?: boolean | User$ArtistAccountArgs<ExtArgs>
+    services?: boolean | User$servicesArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type UserIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
@@ -2918,6 +3009,7 @@ export namespace Prisma {
       orders: Prisma.$OrderPayload<ExtArgs>[]
       Transaction: Prisma.$TransactionPayload<ExtArgs>[]
       ArtistAccount: Prisma.$ArtistAccountPayload<ExtArgs> | null
+      services: Prisma.$ArtistServicePayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -2936,7 +3028,6 @@ export namespace Prisma {
       bio: string | null
       yearsOfExperience: number | null
       defaultPrice: number | null
-      category: string | null
       createdAt: Date
       updatedAt: Date
     }, ExtArgs["result"]["user"]>
@@ -3343,6 +3434,7 @@ export namespace Prisma {
     orders<T extends User$ordersArgs<ExtArgs> = {}>(args?: Subset<T, User$ordersArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$OrderPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     Transaction<T extends User$TransactionArgs<ExtArgs> = {}>(args?: Subset<T, User$TransactionArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TransactionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     ArtistAccount<T extends User$ArtistAccountArgs<ExtArgs> = {}>(args?: Subset<T, User$ArtistAccountArgs<ExtArgs>>): Prisma__ArtistAccountClient<$Result.GetResult<Prisma.$ArtistAccountPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    services<T extends User$servicesArgs<ExtArgs> = {}>(args?: Subset<T, User$servicesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ArtistServicePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -3388,7 +3480,6 @@ export namespace Prisma {
     readonly bio: FieldRef<"User", 'String'>
     readonly yearsOfExperience: FieldRef<"User", 'Int'>
     readonly defaultPrice: FieldRef<"User", 'Float'>
-    readonly category: FieldRef<"User", 'String'>
     readonly createdAt: FieldRef<"User", 'DateTime'>
     readonly updatedAt: FieldRef<"User", 'DateTime'>
   }
@@ -4006,6 +4097,30 @@ export namespace Prisma {
      */
     include?: ArtistAccountInclude<ExtArgs> | null
     where?: ArtistAccountWhereInput
+  }
+
+  /**
+   * User.services
+   */
+  export type User$servicesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ArtistService
+     */
+    select?: ArtistServiceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ArtistService
+     */
+    omit?: ArtistServiceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ArtistServiceInclude<ExtArgs> | null
+    where?: ArtistServiceWhereInput
+    orderBy?: ArtistServiceOrderByWithRelationInput | ArtistServiceOrderByWithRelationInput[]
+    cursor?: ArtistServiceWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: ArtistServiceScalarFieldEnum | ArtistServiceScalarFieldEnum[]
   }
 
   /**
@@ -20085,6 +20200,1137 @@ export namespace Prisma {
 
 
   /**
+   * Model ArtistService
+   */
+
+  export type AggregateArtistService = {
+    _count: ArtistServiceCountAggregateOutputType | null
+    _avg: ArtistServiceAvgAggregateOutputType | null
+    _sum: ArtistServiceSumAggregateOutputType | null
+    _min: ArtistServiceMinAggregateOutputType | null
+    _max: ArtistServiceMaxAggregateOutputType | null
+  }
+
+  export type ArtistServiceAvgAggregateOutputType = {
+    price: number | null
+  }
+
+  export type ArtistServiceSumAggregateOutputType = {
+    price: number | null
+  }
+
+  export type ArtistServiceMinAggregateOutputType = {
+    id: string | null
+    name: string | null
+    description: string | null
+    price: number | null
+    isActive: boolean | null
+    createdAt: Date | null
+    updatedAt: Date | null
+    artistId: string | null
+  }
+
+  export type ArtistServiceMaxAggregateOutputType = {
+    id: string | null
+    name: string | null
+    description: string | null
+    price: number | null
+    isActive: boolean | null
+    createdAt: Date | null
+    updatedAt: Date | null
+    artistId: string | null
+  }
+
+  export type ArtistServiceCountAggregateOutputType = {
+    id: number
+    name: number
+    description: number
+    price: number
+    isActive: number
+    createdAt: number
+    updatedAt: number
+    artistId: number
+    _all: number
+  }
+
+
+  export type ArtistServiceAvgAggregateInputType = {
+    price?: true
+  }
+
+  export type ArtistServiceSumAggregateInputType = {
+    price?: true
+  }
+
+  export type ArtistServiceMinAggregateInputType = {
+    id?: true
+    name?: true
+    description?: true
+    price?: true
+    isActive?: true
+    createdAt?: true
+    updatedAt?: true
+    artistId?: true
+  }
+
+  export type ArtistServiceMaxAggregateInputType = {
+    id?: true
+    name?: true
+    description?: true
+    price?: true
+    isActive?: true
+    createdAt?: true
+    updatedAt?: true
+    artistId?: true
+  }
+
+  export type ArtistServiceCountAggregateInputType = {
+    id?: true
+    name?: true
+    description?: true
+    price?: true
+    isActive?: true
+    createdAt?: true
+    updatedAt?: true
+    artistId?: true
+    _all?: true
+  }
+
+  export type ArtistServiceAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ArtistService to aggregate.
+     */
+    where?: ArtistServiceWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ArtistServices to fetch.
+     */
+    orderBy?: ArtistServiceOrderByWithRelationInput | ArtistServiceOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: ArtistServiceWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ArtistServices from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ArtistServices.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned ArtistServices
+    **/
+    _count?: true | ArtistServiceCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: ArtistServiceAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: ArtistServiceSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: ArtistServiceMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: ArtistServiceMaxAggregateInputType
+  }
+
+  export type GetArtistServiceAggregateType<T extends ArtistServiceAggregateArgs> = {
+        [P in keyof T & keyof AggregateArtistService]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateArtistService[P]>
+      : GetScalarType<T[P], AggregateArtistService[P]>
+  }
+
+
+
+
+  export type ArtistServiceGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ArtistServiceWhereInput
+    orderBy?: ArtistServiceOrderByWithAggregationInput | ArtistServiceOrderByWithAggregationInput[]
+    by: ArtistServiceScalarFieldEnum[] | ArtistServiceScalarFieldEnum
+    having?: ArtistServiceScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: ArtistServiceCountAggregateInputType | true
+    _avg?: ArtistServiceAvgAggregateInputType
+    _sum?: ArtistServiceSumAggregateInputType
+    _min?: ArtistServiceMinAggregateInputType
+    _max?: ArtistServiceMaxAggregateInputType
+  }
+
+  export type ArtistServiceGroupByOutputType = {
+    id: string
+    name: string
+    description: string | null
+    price: number
+    isActive: boolean
+    createdAt: Date
+    updatedAt: Date
+    artistId: string
+    _count: ArtistServiceCountAggregateOutputType | null
+    _avg: ArtistServiceAvgAggregateOutputType | null
+    _sum: ArtistServiceSumAggregateOutputType | null
+    _min: ArtistServiceMinAggregateOutputType | null
+    _max: ArtistServiceMaxAggregateOutputType | null
+  }
+
+  type GetArtistServiceGroupByPayload<T extends ArtistServiceGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<ArtistServiceGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof ArtistServiceGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], ArtistServiceGroupByOutputType[P]>
+            : GetScalarType<T[P], ArtistServiceGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type ArtistServiceSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    name?: boolean
+    description?: boolean
+    price?: boolean
+    isActive?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    artistId?: boolean
+    artist?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["artistService"]>
+
+  export type ArtistServiceSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    name?: boolean
+    description?: boolean
+    price?: boolean
+    isActive?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    artistId?: boolean
+    artist?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["artistService"]>
+
+  export type ArtistServiceSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    name?: boolean
+    description?: boolean
+    price?: boolean
+    isActive?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    artistId?: boolean
+    artist?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["artistService"]>
+
+  export type ArtistServiceSelectScalar = {
+    id?: boolean
+    name?: boolean
+    description?: boolean
+    price?: boolean
+    isActive?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    artistId?: boolean
+  }
+
+  export type ArtistServiceOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "description" | "price" | "isActive" | "createdAt" | "updatedAt" | "artistId", ExtArgs["result"]["artistService"]>
+  export type ArtistServiceInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    artist?: boolean | UserDefaultArgs<ExtArgs>
+  }
+  export type ArtistServiceIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    artist?: boolean | UserDefaultArgs<ExtArgs>
+  }
+  export type ArtistServiceIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    artist?: boolean | UserDefaultArgs<ExtArgs>
+  }
+
+  export type $ArtistServicePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "ArtistService"
+    objects: {
+      artist: Prisma.$UserPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      name: string
+      description: string | null
+      price: number
+      isActive: boolean
+      createdAt: Date
+      updatedAt: Date
+      artistId: string
+    }, ExtArgs["result"]["artistService"]>
+    composites: {}
+  }
+
+  type ArtistServiceGetPayload<S extends boolean | null | undefined | ArtistServiceDefaultArgs> = $Result.GetResult<Prisma.$ArtistServicePayload, S>
+
+  type ArtistServiceCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<ArtistServiceFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: ArtistServiceCountAggregateInputType | true
+    }
+
+  export interface ArtistServiceDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['ArtistService'], meta: { name: 'ArtistService' } }
+    /**
+     * Find zero or one ArtistService that matches the filter.
+     * @param {ArtistServiceFindUniqueArgs} args - Arguments to find a ArtistService
+     * @example
+     * // Get one ArtistService
+     * const artistService = await prisma.artistService.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends ArtistServiceFindUniqueArgs>(args: SelectSubset<T, ArtistServiceFindUniqueArgs<ExtArgs>>): Prisma__ArtistServiceClient<$Result.GetResult<Prisma.$ArtistServicePayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one ArtistService that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {ArtistServiceFindUniqueOrThrowArgs} args - Arguments to find a ArtistService
+     * @example
+     * // Get one ArtistService
+     * const artistService = await prisma.artistService.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends ArtistServiceFindUniqueOrThrowArgs>(args: SelectSubset<T, ArtistServiceFindUniqueOrThrowArgs<ExtArgs>>): Prisma__ArtistServiceClient<$Result.GetResult<Prisma.$ArtistServicePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first ArtistService that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ArtistServiceFindFirstArgs} args - Arguments to find a ArtistService
+     * @example
+     * // Get one ArtistService
+     * const artistService = await prisma.artistService.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends ArtistServiceFindFirstArgs>(args?: SelectSubset<T, ArtistServiceFindFirstArgs<ExtArgs>>): Prisma__ArtistServiceClient<$Result.GetResult<Prisma.$ArtistServicePayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first ArtistService that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ArtistServiceFindFirstOrThrowArgs} args - Arguments to find a ArtistService
+     * @example
+     * // Get one ArtistService
+     * const artistService = await prisma.artistService.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends ArtistServiceFindFirstOrThrowArgs>(args?: SelectSubset<T, ArtistServiceFindFirstOrThrowArgs<ExtArgs>>): Prisma__ArtistServiceClient<$Result.GetResult<Prisma.$ArtistServicePayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more ArtistServices that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ArtistServiceFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all ArtistServices
+     * const artistServices = await prisma.artistService.findMany()
+     * 
+     * // Get first 10 ArtistServices
+     * const artistServices = await prisma.artistService.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const artistServiceWithIdOnly = await prisma.artistService.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends ArtistServiceFindManyArgs>(args?: SelectSubset<T, ArtistServiceFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ArtistServicePayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a ArtistService.
+     * @param {ArtistServiceCreateArgs} args - Arguments to create a ArtistService.
+     * @example
+     * // Create one ArtistService
+     * const ArtistService = await prisma.artistService.create({
+     *   data: {
+     *     // ... data to create a ArtistService
+     *   }
+     * })
+     * 
+     */
+    create<T extends ArtistServiceCreateArgs>(args: SelectSubset<T, ArtistServiceCreateArgs<ExtArgs>>): Prisma__ArtistServiceClient<$Result.GetResult<Prisma.$ArtistServicePayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many ArtistServices.
+     * @param {ArtistServiceCreateManyArgs} args - Arguments to create many ArtistServices.
+     * @example
+     * // Create many ArtistServices
+     * const artistService = await prisma.artistService.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends ArtistServiceCreateManyArgs>(args?: SelectSubset<T, ArtistServiceCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many ArtistServices and returns the data saved in the database.
+     * @param {ArtistServiceCreateManyAndReturnArgs} args - Arguments to create many ArtistServices.
+     * @example
+     * // Create many ArtistServices
+     * const artistService = await prisma.artistService.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many ArtistServices and only return the `id`
+     * const artistServiceWithIdOnly = await prisma.artistService.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends ArtistServiceCreateManyAndReturnArgs>(args?: SelectSubset<T, ArtistServiceCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ArtistServicePayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a ArtistService.
+     * @param {ArtistServiceDeleteArgs} args - Arguments to delete one ArtistService.
+     * @example
+     * // Delete one ArtistService
+     * const ArtistService = await prisma.artistService.delete({
+     *   where: {
+     *     // ... filter to delete one ArtistService
+     *   }
+     * })
+     * 
+     */
+    delete<T extends ArtistServiceDeleteArgs>(args: SelectSubset<T, ArtistServiceDeleteArgs<ExtArgs>>): Prisma__ArtistServiceClient<$Result.GetResult<Prisma.$ArtistServicePayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one ArtistService.
+     * @param {ArtistServiceUpdateArgs} args - Arguments to update one ArtistService.
+     * @example
+     * // Update one ArtistService
+     * const artistService = await prisma.artistService.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends ArtistServiceUpdateArgs>(args: SelectSubset<T, ArtistServiceUpdateArgs<ExtArgs>>): Prisma__ArtistServiceClient<$Result.GetResult<Prisma.$ArtistServicePayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more ArtistServices.
+     * @param {ArtistServiceDeleteManyArgs} args - Arguments to filter ArtistServices to delete.
+     * @example
+     * // Delete a few ArtistServices
+     * const { count } = await prisma.artistService.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends ArtistServiceDeleteManyArgs>(args?: SelectSubset<T, ArtistServiceDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more ArtistServices.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ArtistServiceUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many ArtistServices
+     * const artistService = await prisma.artistService.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends ArtistServiceUpdateManyArgs>(args: SelectSubset<T, ArtistServiceUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more ArtistServices and returns the data updated in the database.
+     * @param {ArtistServiceUpdateManyAndReturnArgs} args - Arguments to update many ArtistServices.
+     * @example
+     * // Update many ArtistServices
+     * const artistService = await prisma.artistService.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more ArtistServices and only return the `id`
+     * const artistServiceWithIdOnly = await prisma.artistService.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends ArtistServiceUpdateManyAndReturnArgs>(args: SelectSubset<T, ArtistServiceUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ArtistServicePayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one ArtistService.
+     * @param {ArtistServiceUpsertArgs} args - Arguments to update or create a ArtistService.
+     * @example
+     * // Update or create a ArtistService
+     * const artistService = await prisma.artistService.upsert({
+     *   create: {
+     *     // ... data to create a ArtistService
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the ArtistService we want to update
+     *   }
+     * })
+     */
+    upsert<T extends ArtistServiceUpsertArgs>(args: SelectSubset<T, ArtistServiceUpsertArgs<ExtArgs>>): Prisma__ArtistServiceClient<$Result.GetResult<Prisma.$ArtistServicePayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of ArtistServices.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ArtistServiceCountArgs} args - Arguments to filter ArtistServices to count.
+     * @example
+     * // Count the number of ArtistServices
+     * const count = await prisma.artistService.count({
+     *   where: {
+     *     // ... the filter for the ArtistServices we want to count
+     *   }
+     * })
+    **/
+    count<T extends ArtistServiceCountArgs>(
+      args?: Subset<T, ArtistServiceCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], ArtistServiceCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a ArtistService.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ArtistServiceAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends ArtistServiceAggregateArgs>(args: Subset<T, ArtistServiceAggregateArgs>): Prisma.PrismaPromise<GetArtistServiceAggregateType<T>>
+
+    /**
+     * Group by ArtistService.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ArtistServiceGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends ArtistServiceGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: ArtistServiceGroupByArgs['orderBy'] }
+        : { orderBy?: ArtistServiceGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, ArtistServiceGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetArtistServiceGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the ArtistService model
+   */
+  readonly fields: ArtistServiceFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for ArtistService.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__ArtistServiceClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    artist<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the ArtistService model
+   */
+  interface ArtistServiceFieldRefs {
+    readonly id: FieldRef<"ArtistService", 'String'>
+    readonly name: FieldRef<"ArtistService", 'String'>
+    readonly description: FieldRef<"ArtistService", 'String'>
+    readonly price: FieldRef<"ArtistService", 'Float'>
+    readonly isActive: FieldRef<"ArtistService", 'Boolean'>
+    readonly createdAt: FieldRef<"ArtistService", 'DateTime'>
+    readonly updatedAt: FieldRef<"ArtistService", 'DateTime'>
+    readonly artistId: FieldRef<"ArtistService", 'String'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * ArtistService findUnique
+   */
+  export type ArtistServiceFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ArtistService
+     */
+    select?: ArtistServiceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ArtistService
+     */
+    omit?: ArtistServiceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ArtistServiceInclude<ExtArgs> | null
+    /**
+     * Filter, which ArtistService to fetch.
+     */
+    where: ArtistServiceWhereUniqueInput
+  }
+
+  /**
+   * ArtistService findUniqueOrThrow
+   */
+  export type ArtistServiceFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ArtistService
+     */
+    select?: ArtistServiceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ArtistService
+     */
+    omit?: ArtistServiceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ArtistServiceInclude<ExtArgs> | null
+    /**
+     * Filter, which ArtistService to fetch.
+     */
+    where: ArtistServiceWhereUniqueInput
+  }
+
+  /**
+   * ArtistService findFirst
+   */
+  export type ArtistServiceFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ArtistService
+     */
+    select?: ArtistServiceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ArtistService
+     */
+    omit?: ArtistServiceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ArtistServiceInclude<ExtArgs> | null
+    /**
+     * Filter, which ArtistService to fetch.
+     */
+    where?: ArtistServiceWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ArtistServices to fetch.
+     */
+    orderBy?: ArtistServiceOrderByWithRelationInput | ArtistServiceOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ArtistServices.
+     */
+    cursor?: ArtistServiceWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ArtistServices from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ArtistServices.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ArtistServices.
+     */
+    distinct?: ArtistServiceScalarFieldEnum | ArtistServiceScalarFieldEnum[]
+  }
+
+  /**
+   * ArtistService findFirstOrThrow
+   */
+  export type ArtistServiceFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ArtistService
+     */
+    select?: ArtistServiceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ArtistService
+     */
+    omit?: ArtistServiceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ArtistServiceInclude<ExtArgs> | null
+    /**
+     * Filter, which ArtistService to fetch.
+     */
+    where?: ArtistServiceWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ArtistServices to fetch.
+     */
+    orderBy?: ArtistServiceOrderByWithRelationInput | ArtistServiceOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ArtistServices.
+     */
+    cursor?: ArtistServiceWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ArtistServices from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ArtistServices.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ArtistServices.
+     */
+    distinct?: ArtistServiceScalarFieldEnum | ArtistServiceScalarFieldEnum[]
+  }
+
+  /**
+   * ArtistService findMany
+   */
+  export type ArtistServiceFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ArtistService
+     */
+    select?: ArtistServiceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ArtistService
+     */
+    omit?: ArtistServiceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ArtistServiceInclude<ExtArgs> | null
+    /**
+     * Filter, which ArtistServices to fetch.
+     */
+    where?: ArtistServiceWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ArtistServices to fetch.
+     */
+    orderBy?: ArtistServiceOrderByWithRelationInput | ArtistServiceOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing ArtistServices.
+     */
+    cursor?: ArtistServiceWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ArtistServices from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ArtistServices.
+     */
+    skip?: number
+    distinct?: ArtistServiceScalarFieldEnum | ArtistServiceScalarFieldEnum[]
+  }
+
+  /**
+   * ArtistService create
+   */
+  export type ArtistServiceCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ArtistService
+     */
+    select?: ArtistServiceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ArtistService
+     */
+    omit?: ArtistServiceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ArtistServiceInclude<ExtArgs> | null
+    /**
+     * The data needed to create a ArtistService.
+     */
+    data: XOR<ArtistServiceCreateInput, ArtistServiceUncheckedCreateInput>
+  }
+
+  /**
+   * ArtistService createMany
+   */
+  export type ArtistServiceCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many ArtistServices.
+     */
+    data: ArtistServiceCreateManyInput | ArtistServiceCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * ArtistService createManyAndReturn
+   */
+  export type ArtistServiceCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ArtistService
+     */
+    select?: ArtistServiceSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the ArtistService
+     */
+    omit?: ArtistServiceOmit<ExtArgs> | null
+    /**
+     * The data used to create many ArtistServices.
+     */
+    data: ArtistServiceCreateManyInput | ArtistServiceCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ArtistServiceIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * ArtistService update
+   */
+  export type ArtistServiceUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ArtistService
+     */
+    select?: ArtistServiceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ArtistService
+     */
+    omit?: ArtistServiceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ArtistServiceInclude<ExtArgs> | null
+    /**
+     * The data needed to update a ArtistService.
+     */
+    data: XOR<ArtistServiceUpdateInput, ArtistServiceUncheckedUpdateInput>
+    /**
+     * Choose, which ArtistService to update.
+     */
+    where: ArtistServiceWhereUniqueInput
+  }
+
+  /**
+   * ArtistService updateMany
+   */
+  export type ArtistServiceUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update ArtistServices.
+     */
+    data: XOR<ArtistServiceUpdateManyMutationInput, ArtistServiceUncheckedUpdateManyInput>
+    /**
+     * Filter which ArtistServices to update
+     */
+    where?: ArtistServiceWhereInput
+    /**
+     * Limit how many ArtistServices to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * ArtistService updateManyAndReturn
+   */
+  export type ArtistServiceUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ArtistService
+     */
+    select?: ArtistServiceSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the ArtistService
+     */
+    omit?: ArtistServiceOmit<ExtArgs> | null
+    /**
+     * The data used to update ArtistServices.
+     */
+    data: XOR<ArtistServiceUpdateManyMutationInput, ArtistServiceUncheckedUpdateManyInput>
+    /**
+     * Filter which ArtistServices to update
+     */
+    where?: ArtistServiceWhereInput
+    /**
+     * Limit how many ArtistServices to update.
+     */
+    limit?: number
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ArtistServiceIncludeUpdateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * ArtistService upsert
+   */
+  export type ArtistServiceUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ArtistService
+     */
+    select?: ArtistServiceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ArtistService
+     */
+    omit?: ArtistServiceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ArtistServiceInclude<ExtArgs> | null
+    /**
+     * The filter to search for the ArtistService to update in case it exists.
+     */
+    where: ArtistServiceWhereUniqueInput
+    /**
+     * In case the ArtistService found by the `where` argument doesn't exist, create a new ArtistService with this data.
+     */
+    create: XOR<ArtistServiceCreateInput, ArtistServiceUncheckedCreateInput>
+    /**
+     * In case the ArtistService was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<ArtistServiceUpdateInput, ArtistServiceUncheckedUpdateInput>
+  }
+
+  /**
+   * ArtistService delete
+   */
+  export type ArtistServiceDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ArtistService
+     */
+    select?: ArtistServiceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ArtistService
+     */
+    omit?: ArtistServiceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ArtistServiceInclude<ExtArgs> | null
+    /**
+     * Filter which ArtistService to delete.
+     */
+    where: ArtistServiceWhereUniqueInput
+  }
+
+  /**
+   * ArtistService deleteMany
+   */
+  export type ArtistServiceDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ArtistServices to delete
+     */
+    where?: ArtistServiceWhereInput
+    /**
+     * Limit how many ArtistServices to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * ArtistService without action
+   */
+  export type ArtistServiceDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ArtistService
+     */
+    select?: ArtistServiceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ArtistService
+     */
+    omit?: ArtistServiceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ArtistServiceInclude<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -20115,7 +21361,6 @@ export namespace Prisma {
     bio: 'bio',
     yearsOfExperience: 'yearsOfExperience',
     defaultPrice: 'defaultPrice',
-    category: 'category',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
   };
@@ -20320,6 +21565,20 @@ export namespace Prisma {
   };
 
   export type ArtistAccountScalarFieldEnum = (typeof ArtistAccountScalarFieldEnum)[keyof typeof ArtistAccountScalarFieldEnum]
+
+
+  export const ArtistServiceScalarFieldEnum: {
+    id: 'id',
+    name: 'name',
+    description: 'description',
+    price: 'price',
+    isActive: 'isActive',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt',
+    artistId: 'artistId'
+  };
+
+  export type ArtistServiceScalarFieldEnum = (typeof ArtistServiceScalarFieldEnum)[keyof typeof ArtistServiceScalarFieldEnum]
 
 
   export const SortOrder: {
@@ -20552,7 +21811,6 @@ export namespace Prisma {
     bio?: StringNullableFilter<"User"> | string | null
     yearsOfExperience?: IntNullableFilter<"User"> | number | null
     defaultPrice?: FloatNullableFilter<"User"> | number | null
-    category?: StringNullableFilter<"User"> | string | null
     createdAt?: DateTimeFilter<"User"> | Date | string
     updatedAt?: DateTimeFilter<"User"> | Date | string
     accounts?: AccountListRelationFilter
@@ -20565,6 +21823,7 @@ export namespace Prisma {
     orders?: OrderListRelationFilter
     Transaction?: TransactionListRelationFilter
     ArtistAccount?: XOR<ArtistAccountNullableScalarRelationFilter, ArtistAccountWhereInput> | null
+    services?: ArtistServiceListRelationFilter
   }
 
   export type UserOrderByWithRelationInput = {
@@ -20584,7 +21843,6 @@ export namespace Prisma {
     bio?: SortOrderInput | SortOrder
     yearsOfExperience?: SortOrderInput | SortOrder
     defaultPrice?: SortOrderInput | SortOrder
-    category?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     accounts?: AccountOrderByRelationAggregateInput
@@ -20597,6 +21855,7 @@ export namespace Prisma {
     orders?: OrderOrderByRelationAggregateInput
     Transaction?: TransactionOrderByRelationAggregateInput
     ArtistAccount?: ArtistAccountOrderByWithRelationInput
+    services?: ArtistServiceOrderByRelationAggregateInput
   }
 
   export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -20619,7 +21878,6 @@ export namespace Prisma {
     bio?: StringNullableFilter<"User"> | string | null
     yearsOfExperience?: IntNullableFilter<"User"> | number | null
     defaultPrice?: FloatNullableFilter<"User"> | number | null
-    category?: StringNullableFilter<"User"> | string | null
     createdAt?: DateTimeFilter<"User"> | Date | string
     updatedAt?: DateTimeFilter<"User"> | Date | string
     accounts?: AccountListRelationFilter
@@ -20632,6 +21890,7 @@ export namespace Prisma {
     orders?: OrderListRelationFilter
     Transaction?: TransactionListRelationFilter
     ArtistAccount?: XOR<ArtistAccountNullableScalarRelationFilter, ArtistAccountWhereInput> | null
+    services?: ArtistServiceListRelationFilter
   }, "id" | "email">
 
   export type UserOrderByWithAggregationInput = {
@@ -20651,7 +21910,6 @@ export namespace Prisma {
     bio?: SortOrderInput | SortOrder
     yearsOfExperience?: SortOrderInput | SortOrder
     defaultPrice?: SortOrderInput | SortOrder
-    category?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: UserCountOrderByAggregateInput
@@ -20681,7 +21939,6 @@ export namespace Prisma {
     bio?: StringNullableWithAggregatesFilter<"User"> | string | null
     yearsOfExperience?: IntNullableWithAggregatesFilter<"User"> | number | null
     defaultPrice?: FloatNullableWithAggregatesFilter<"User"> | number | null
-    category?: StringNullableWithAggregatesFilter<"User"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"User"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"User"> | Date | string
   }
@@ -21745,6 +23002,78 @@ export namespace Prisma {
     updatedAt?: DateTimeWithAggregatesFilter<"ArtistAccount"> | Date | string
   }
 
+  export type ArtistServiceWhereInput = {
+    AND?: ArtistServiceWhereInput | ArtistServiceWhereInput[]
+    OR?: ArtistServiceWhereInput[]
+    NOT?: ArtistServiceWhereInput | ArtistServiceWhereInput[]
+    id?: StringFilter<"ArtistService"> | string
+    name?: StringFilter<"ArtistService"> | string
+    description?: StringNullableFilter<"ArtistService"> | string | null
+    price?: FloatFilter<"ArtistService"> | number
+    isActive?: BoolFilter<"ArtistService"> | boolean
+    createdAt?: DateTimeFilter<"ArtistService"> | Date | string
+    updatedAt?: DateTimeFilter<"ArtistService"> | Date | string
+    artistId?: StringFilter<"ArtistService"> | string
+    artist?: XOR<UserScalarRelationFilter, UserWhereInput>
+  }
+
+  export type ArtistServiceOrderByWithRelationInput = {
+    id?: SortOrder
+    name?: SortOrder
+    description?: SortOrderInput | SortOrder
+    price?: SortOrder
+    isActive?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    artistId?: SortOrder
+    artist?: UserOrderByWithRelationInput
+  }
+
+  export type ArtistServiceWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    AND?: ArtistServiceWhereInput | ArtistServiceWhereInput[]
+    OR?: ArtistServiceWhereInput[]
+    NOT?: ArtistServiceWhereInput | ArtistServiceWhereInput[]
+    name?: StringFilter<"ArtistService"> | string
+    description?: StringNullableFilter<"ArtistService"> | string | null
+    price?: FloatFilter<"ArtistService"> | number
+    isActive?: BoolFilter<"ArtistService"> | boolean
+    createdAt?: DateTimeFilter<"ArtistService"> | Date | string
+    updatedAt?: DateTimeFilter<"ArtistService"> | Date | string
+    artistId?: StringFilter<"ArtistService"> | string
+    artist?: XOR<UserScalarRelationFilter, UserWhereInput>
+  }, "id">
+
+  export type ArtistServiceOrderByWithAggregationInput = {
+    id?: SortOrder
+    name?: SortOrder
+    description?: SortOrderInput | SortOrder
+    price?: SortOrder
+    isActive?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    artistId?: SortOrder
+    _count?: ArtistServiceCountOrderByAggregateInput
+    _avg?: ArtistServiceAvgOrderByAggregateInput
+    _max?: ArtistServiceMaxOrderByAggregateInput
+    _min?: ArtistServiceMinOrderByAggregateInput
+    _sum?: ArtistServiceSumOrderByAggregateInput
+  }
+
+  export type ArtistServiceScalarWhereWithAggregatesInput = {
+    AND?: ArtistServiceScalarWhereWithAggregatesInput | ArtistServiceScalarWhereWithAggregatesInput[]
+    OR?: ArtistServiceScalarWhereWithAggregatesInput[]
+    NOT?: ArtistServiceScalarWhereWithAggregatesInput | ArtistServiceScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"ArtistService"> | string
+    name?: StringWithAggregatesFilter<"ArtistService"> | string
+    description?: StringNullableWithAggregatesFilter<"ArtistService"> | string | null
+    price?: FloatWithAggregatesFilter<"ArtistService"> | number
+    isActive?: BoolWithAggregatesFilter<"ArtistService"> | boolean
+    createdAt?: DateTimeWithAggregatesFilter<"ArtistService"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"ArtistService"> | Date | string
+    artistId?: StringWithAggregatesFilter<"ArtistService"> | string
+  }
+
   export type UserCreateInput = {
     id?: string
     name?: string | null
@@ -21762,7 +23091,6 @@ export namespace Prisma {
     bio?: string | null
     yearsOfExperience?: number | null
     defaultPrice?: number | null
-    category?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     accounts?: AccountCreateNestedManyWithoutUserInput
@@ -21775,6 +23103,7 @@ export namespace Prisma {
     orders?: OrderCreateNestedManyWithoutUserInput
     Transaction?: TransactionCreateNestedManyWithoutUserInput
     ArtistAccount?: ArtistAccountCreateNestedOneWithoutUserInput
+    services?: ArtistServiceCreateNestedManyWithoutArtistInput
   }
 
   export type UserUncheckedCreateInput = {
@@ -21794,7 +23123,6 @@ export namespace Prisma {
     bio?: string | null
     yearsOfExperience?: number | null
     defaultPrice?: number | null
-    category?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
@@ -21807,6 +23135,7 @@ export namespace Prisma {
     orders?: OrderUncheckedCreateNestedManyWithoutUserInput
     Transaction?: TransactionUncheckedCreateNestedManyWithoutUserInput
     ArtistAccount?: ArtistAccountUncheckedCreateNestedOneWithoutUserInput
+    services?: ArtistServiceUncheckedCreateNestedManyWithoutArtistInput
   }
 
   export type UserUpdateInput = {
@@ -21826,7 +23155,6 @@ export namespace Prisma {
     bio?: NullableStringFieldUpdateOperationsInput | string | null
     yearsOfExperience?: NullableIntFieldUpdateOperationsInput | number | null
     defaultPrice?: NullableFloatFieldUpdateOperationsInput | number | null
-    category?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     accounts?: AccountUpdateManyWithoutUserNestedInput
@@ -21839,6 +23167,7 @@ export namespace Prisma {
     orders?: OrderUpdateManyWithoutUserNestedInput
     Transaction?: TransactionUpdateManyWithoutUserNestedInput
     ArtistAccount?: ArtistAccountUpdateOneWithoutUserNestedInput
+    services?: ArtistServiceUpdateManyWithoutArtistNestedInput
   }
 
   export type UserUncheckedUpdateInput = {
@@ -21858,7 +23187,6 @@ export namespace Prisma {
     bio?: NullableStringFieldUpdateOperationsInput | string | null
     yearsOfExperience?: NullableIntFieldUpdateOperationsInput | number | null
     defaultPrice?: NullableFloatFieldUpdateOperationsInput | number | null
-    category?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
@@ -21871,6 +23199,7 @@ export namespace Prisma {
     orders?: OrderUncheckedUpdateManyWithoutUserNestedInput
     Transaction?: TransactionUncheckedUpdateManyWithoutUserNestedInput
     ArtistAccount?: ArtistAccountUncheckedUpdateOneWithoutUserNestedInput
+    services?: ArtistServiceUncheckedUpdateManyWithoutArtistNestedInput
   }
 
   export type UserCreateManyInput = {
@@ -21890,7 +23219,6 @@ export namespace Prisma {
     bio?: string | null
     yearsOfExperience?: number | null
     defaultPrice?: number | null
-    category?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -21912,7 +23240,6 @@ export namespace Prisma {
     bio?: NullableStringFieldUpdateOperationsInput | string | null
     yearsOfExperience?: NullableIntFieldUpdateOperationsInput | number | null
     defaultPrice?: NullableFloatFieldUpdateOperationsInput | number | null
-    category?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -21934,7 +23261,6 @@ export namespace Prisma {
     bio?: NullableStringFieldUpdateOperationsInput | string | null
     yearsOfExperience?: NullableIntFieldUpdateOperationsInput | number | null
     defaultPrice?: NullableFloatFieldUpdateOperationsInput | number | null
-    category?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -23055,6 +24381,82 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type ArtistServiceCreateInput = {
+    id?: string
+    name: string
+    description?: string | null
+    price?: number
+    isActive?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    artist: UserCreateNestedOneWithoutServicesInput
+  }
+
+  export type ArtistServiceUncheckedCreateInput = {
+    id?: string
+    name: string
+    description?: string | null
+    price?: number
+    isActive?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    artistId: string
+  }
+
+  export type ArtistServiceUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    price?: FloatFieldUpdateOperationsInput | number
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    artist?: UserUpdateOneRequiredWithoutServicesNestedInput
+  }
+
+  export type ArtistServiceUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    price?: FloatFieldUpdateOperationsInput | number
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    artistId?: StringFieldUpdateOperationsInput | string
+  }
+
+  export type ArtistServiceCreateManyInput = {
+    id?: string
+    name: string
+    description?: string | null
+    price?: number
+    isActive?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    artistId: string
+  }
+
+  export type ArtistServiceUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    price?: FloatFieldUpdateOperationsInput | number
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ArtistServiceUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    price?: FloatFieldUpdateOperationsInput | number
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    artistId?: StringFieldUpdateOperationsInput | string
+  }
+
   export type StringFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel>
     in?: string[] | ListStringFieldRefInput<$PrismaModel>
@@ -23182,6 +24584,12 @@ export namespace Prisma {
     isNot?: ArtistAccountWhereInput | null
   }
 
+  export type ArtistServiceListRelationFilter = {
+    every?: ArtistServiceWhereInput
+    some?: ArtistServiceWhereInput
+    none?: ArtistServiceWhereInput
+  }
+
   export type SortOrderInput = {
     sort: SortOrder
     nulls?: NullsOrder
@@ -23211,6 +24619,10 @@ export namespace Prisma {
     _count?: SortOrder
   }
 
+  export type ArtistServiceOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
   export type UserCountOrderByAggregateInput = {
     id?: SortOrder
     name?: SortOrder
@@ -23228,7 +24640,6 @@ export namespace Prisma {
     bio?: SortOrder
     yearsOfExperience?: SortOrder
     defaultPrice?: SortOrder
-    category?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -23255,7 +24666,6 @@ export namespace Prisma {
     bio?: SortOrder
     yearsOfExperience?: SortOrder
     defaultPrice?: SortOrder
-    category?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -23277,7 +24687,6 @@ export namespace Prisma {
     bio?: SortOrder
     yearsOfExperience?: SortOrder
     defaultPrice?: SortOrder
-    category?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -24234,6 +25643,47 @@ export namespace Prisma {
     availableBalance?: SortOrder
   }
 
+  export type ArtistServiceCountOrderByAggregateInput = {
+    id?: SortOrder
+    name?: SortOrder
+    description?: SortOrder
+    price?: SortOrder
+    isActive?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    artistId?: SortOrder
+  }
+
+  export type ArtistServiceAvgOrderByAggregateInput = {
+    price?: SortOrder
+  }
+
+  export type ArtistServiceMaxOrderByAggregateInput = {
+    id?: SortOrder
+    name?: SortOrder
+    description?: SortOrder
+    price?: SortOrder
+    isActive?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    artistId?: SortOrder
+  }
+
+  export type ArtistServiceMinOrderByAggregateInput = {
+    id?: SortOrder
+    name?: SortOrder
+    description?: SortOrder
+    price?: SortOrder
+    isActive?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    artistId?: SortOrder
+  }
+
+  export type ArtistServiceSumOrderByAggregateInput = {
+    price?: SortOrder
+  }
+
   export type AccountCreateNestedManyWithoutUserInput = {
     create?: XOR<AccountCreateWithoutUserInput, AccountUncheckedCreateWithoutUserInput> | AccountCreateWithoutUserInput[] | AccountUncheckedCreateWithoutUserInput[]
     connectOrCreate?: AccountCreateOrConnectWithoutUserInput | AccountCreateOrConnectWithoutUserInput[]
@@ -24302,6 +25752,13 @@ export namespace Prisma {
     connect?: ArtistAccountWhereUniqueInput
   }
 
+  export type ArtistServiceCreateNestedManyWithoutArtistInput = {
+    create?: XOR<ArtistServiceCreateWithoutArtistInput, ArtistServiceUncheckedCreateWithoutArtistInput> | ArtistServiceCreateWithoutArtistInput[] | ArtistServiceUncheckedCreateWithoutArtistInput[]
+    connectOrCreate?: ArtistServiceCreateOrConnectWithoutArtistInput | ArtistServiceCreateOrConnectWithoutArtistInput[]
+    createMany?: ArtistServiceCreateManyArtistInputEnvelope
+    connect?: ArtistServiceWhereUniqueInput | ArtistServiceWhereUniqueInput[]
+  }
+
   export type AccountUncheckedCreateNestedManyWithoutUserInput = {
     create?: XOR<AccountCreateWithoutUserInput, AccountUncheckedCreateWithoutUserInput> | AccountCreateWithoutUserInput[] | AccountUncheckedCreateWithoutUserInput[]
     connectOrCreate?: AccountCreateOrConnectWithoutUserInput | AccountCreateOrConnectWithoutUserInput[]
@@ -24368,6 +25825,13 @@ export namespace Prisma {
     create?: XOR<ArtistAccountCreateWithoutUserInput, ArtistAccountUncheckedCreateWithoutUserInput>
     connectOrCreate?: ArtistAccountCreateOrConnectWithoutUserInput
     connect?: ArtistAccountWhereUniqueInput
+  }
+
+  export type ArtistServiceUncheckedCreateNestedManyWithoutArtistInput = {
+    create?: XOR<ArtistServiceCreateWithoutArtistInput, ArtistServiceUncheckedCreateWithoutArtistInput> | ArtistServiceCreateWithoutArtistInput[] | ArtistServiceUncheckedCreateWithoutArtistInput[]
+    connectOrCreate?: ArtistServiceCreateOrConnectWithoutArtistInput | ArtistServiceCreateOrConnectWithoutArtistInput[]
+    createMany?: ArtistServiceCreateManyArtistInputEnvelope
+    connect?: ArtistServiceWhereUniqueInput | ArtistServiceWhereUniqueInput[]
   }
 
   export type StringFieldUpdateOperationsInput = {
@@ -24538,6 +26002,20 @@ export namespace Prisma {
     update?: XOR<XOR<ArtistAccountUpdateToOneWithWhereWithoutUserInput, ArtistAccountUpdateWithoutUserInput>, ArtistAccountUncheckedUpdateWithoutUserInput>
   }
 
+  export type ArtistServiceUpdateManyWithoutArtistNestedInput = {
+    create?: XOR<ArtistServiceCreateWithoutArtistInput, ArtistServiceUncheckedCreateWithoutArtistInput> | ArtistServiceCreateWithoutArtistInput[] | ArtistServiceUncheckedCreateWithoutArtistInput[]
+    connectOrCreate?: ArtistServiceCreateOrConnectWithoutArtistInput | ArtistServiceCreateOrConnectWithoutArtistInput[]
+    upsert?: ArtistServiceUpsertWithWhereUniqueWithoutArtistInput | ArtistServiceUpsertWithWhereUniqueWithoutArtistInput[]
+    createMany?: ArtistServiceCreateManyArtistInputEnvelope
+    set?: ArtistServiceWhereUniqueInput | ArtistServiceWhereUniqueInput[]
+    disconnect?: ArtistServiceWhereUniqueInput | ArtistServiceWhereUniqueInput[]
+    delete?: ArtistServiceWhereUniqueInput | ArtistServiceWhereUniqueInput[]
+    connect?: ArtistServiceWhereUniqueInput | ArtistServiceWhereUniqueInput[]
+    update?: ArtistServiceUpdateWithWhereUniqueWithoutArtistInput | ArtistServiceUpdateWithWhereUniqueWithoutArtistInput[]
+    updateMany?: ArtistServiceUpdateManyWithWhereWithoutArtistInput | ArtistServiceUpdateManyWithWhereWithoutArtistInput[]
+    deleteMany?: ArtistServiceScalarWhereInput | ArtistServiceScalarWhereInput[]
+  }
+
   export type AccountUncheckedUpdateManyWithoutUserNestedInput = {
     create?: XOR<AccountCreateWithoutUserInput, AccountUncheckedCreateWithoutUserInput> | AccountCreateWithoutUserInput[] | AccountUncheckedCreateWithoutUserInput[]
     connectOrCreate?: AccountCreateOrConnectWithoutUserInput | AccountCreateOrConnectWithoutUserInput[]
@@ -24668,6 +26146,20 @@ export namespace Prisma {
     delete?: ArtistAccountWhereInput | boolean
     connect?: ArtistAccountWhereUniqueInput
     update?: XOR<XOR<ArtistAccountUpdateToOneWithWhereWithoutUserInput, ArtistAccountUpdateWithoutUserInput>, ArtistAccountUncheckedUpdateWithoutUserInput>
+  }
+
+  export type ArtistServiceUncheckedUpdateManyWithoutArtistNestedInput = {
+    create?: XOR<ArtistServiceCreateWithoutArtistInput, ArtistServiceUncheckedCreateWithoutArtistInput> | ArtistServiceCreateWithoutArtistInput[] | ArtistServiceUncheckedCreateWithoutArtistInput[]
+    connectOrCreate?: ArtistServiceCreateOrConnectWithoutArtistInput | ArtistServiceCreateOrConnectWithoutArtistInput[]
+    upsert?: ArtistServiceUpsertWithWhereUniqueWithoutArtistInput | ArtistServiceUpsertWithWhereUniqueWithoutArtistInput[]
+    createMany?: ArtistServiceCreateManyArtistInputEnvelope
+    set?: ArtistServiceWhereUniqueInput | ArtistServiceWhereUniqueInput[]
+    disconnect?: ArtistServiceWhereUniqueInput | ArtistServiceWhereUniqueInput[]
+    delete?: ArtistServiceWhereUniqueInput | ArtistServiceWhereUniqueInput[]
+    connect?: ArtistServiceWhereUniqueInput | ArtistServiceWhereUniqueInput[]
+    update?: ArtistServiceUpdateWithWhereUniqueWithoutArtistInput | ArtistServiceUpdateWithWhereUniqueWithoutArtistInput[]
+    updateMany?: ArtistServiceUpdateManyWithWhereWithoutArtistInput | ArtistServiceUpdateManyWithWhereWithoutArtistInput[]
+    deleteMany?: ArtistServiceScalarWhereInput | ArtistServiceScalarWhereInput[]
   }
 
   export type UserCreateNestedOneWithoutMetadataInput = {
@@ -25342,6 +26834,20 @@ export namespace Prisma {
     update?: TransactionUpdateWithWhereUniqueWithoutArtistAccountInput | TransactionUpdateWithWhereUniqueWithoutArtistAccountInput[]
     updateMany?: TransactionUpdateManyWithWhereWithoutArtistAccountInput | TransactionUpdateManyWithWhereWithoutArtistAccountInput[]
     deleteMany?: TransactionScalarWhereInput | TransactionScalarWhereInput[]
+  }
+
+  export type UserCreateNestedOneWithoutServicesInput = {
+    create?: XOR<UserCreateWithoutServicesInput, UserUncheckedCreateWithoutServicesInput>
+    connectOrCreate?: UserCreateOrConnectWithoutServicesInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type UserUpdateOneRequiredWithoutServicesNestedInput = {
+    create?: XOR<UserCreateWithoutServicesInput, UserUncheckedCreateWithoutServicesInput>
+    connectOrCreate?: UserCreateOrConnectWithoutServicesInput
+    upsert?: UserUpsertWithoutServicesInput
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutServicesInput, UserUpdateWithoutServicesInput>, UserUncheckedUpdateWithoutServicesInput>
   }
 
   export type NestedStringFilter<$PrismaModel = never> = {
@@ -26038,6 +27544,36 @@ export namespace Prisma {
     create: XOR<ArtistAccountCreateWithoutUserInput, ArtistAccountUncheckedCreateWithoutUserInput>
   }
 
+  export type ArtistServiceCreateWithoutArtistInput = {
+    id?: string
+    name: string
+    description?: string | null
+    price?: number
+    isActive?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type ArtistServiceUncheckedCreateWithoutArtistInput = {
+    id?: string
+    name: string
+    description?: string | null
+    price?: number
+    isActive?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type ArtistServiceCreateOrConnectWithoutArtistInput = {
+    where: ArtistServiceWhereUniqueInput
+    create: XOR<ArtistServiceCreateWithoutArtistInput, ArtistServiceUncheckedCreateWithoutArtistInput>
+  }
+
+  export type ArtistServiceCreateManyArtistInputEnvelope = {
+    data: ArtistServiceCreateManyArtistInput | ArtistServiceCreateManyArtistInput[]
+    skipDuplicates?: boolean
+  }
+
   export type AccountUpsertWithWhereUniqueWithoutUserInput = {
     where: AccountWhereUniqueInput
     update: XOR<AccountUpdateWithoutUserInput, AccountUncheckedUpdateWithoutUserInput>
@@ -26320,6 +27856,36 @@ export namespace Prisma {
     transactions?: TransactionUncheckedUpdateManyWithoutArtistAccountNestedInput
   }
 
+  export type ArtistServiceUpsertWithWhereUniqueWithoutArtistInput = {
+    where: ArtistServiceWhereUniqueInput
+    update: XOR<ArtistServiceUpdateWithoutArtistInput, ArtistServiceUncheckedUpdateWithoutArtistInput>
+    create: XOR<ArtistServiceCreateWithoutArtistInput, ArtistServiceUncheckedCreateWithoutArtistInput>
+  }
+
+  export type ArtistServiceUpdateWithWhereUniqueWithoutArtistInput = {
+    where: ArtistServiceWhereUniqueInput
+    data: XOR<ArtistServiceUpdateWithoutArtistInput, ArtistServiceUncheckedUpdateWithoutArtistInput>
+  }
+
+  export type ArtistServiceUpdateManyWithWhereWithoutArtistInput = {
+    where: ArtistServiceScalarWhereInput
+    data: XOR<ArtistServiceUpdateManyMutationInput, ArtistServiceUncheckedUpdateManyWithoutArtistInput>
+  }
+
+  export type ArtistServiceScalarWhereInput = {
+    AND?: ArtistServiceScalarWhereInput | ArtistServiceScalarWhereInput[]
+    OR?: ArtistServiceScalarWhereInput[]
+    NOT?: ArtistServiceScalarWhereInput | ArtistServiceScalarWhereInput[]
+    id?: StringFilter<"ArtistService"> | string
+    name?: StringFilter<"ArtistService"> | string
+    description?: StringNullableFilter<"ArtistService"> | string | null
+    price?: FloatFilter<"ArtistService"> | number
+    isActive?: BoolFilter<"ArtistService"> | boolean
+    createdAt?: DateTimeFilter<"ArtistService"> | Date | string
+    updatedAt?: DateTimeFilter<"ArtistService"> | Date | string
+    artistId?: StringFilter<"ArtistService"> | string
+  }
+
   export type UserCreateWithoutMetadataInput = {
     id?: string
     name?: string | null
@@ -26337,7 +27903,6 @@ export namespace Prisma {
     bio?: string | null
     yearsOfExperience?: number | null
     defaultPrice?: number | null
-    category?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     accounts?: AccountCreateNestedManyWithoutUserInput
@@ -26349,6 +27914,7 @@ export namespace Prisma {
     orders?: OrderCreateNestedManyWithoutUserInput
     Transaction?: TransactionCreateNestedManyWithoutUserInput
     ArtistAccount?: ArtistAccountCreateNestedOneWithoutUserInput
+    services?: ArtistServiceCreateNestedManyWithoutArtistInput
   }
 
   export type UserUncheckedCreateWithoutMetadataInput = {
@@ -26368,7 +27934,6 @@ export namespace Prisma {
     bio?: string | null
     yearsOfExperience?: number | null
     defaultPrice?: number | null
-    category?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
@@ -26380,6 +27945,7 @@ export namespace Prisma {
     orders?: OrderUncheckedCreateNestedManyWithoutUserInput
     Transaction?: TransactionUncheckedCreateNestedManyWithoutUserInput
     ArtistAccount?: ArtistAccountUncheckedCreateNestedOneWithoutUserInput
+    services?: ArtistServiceUncheckedCreateNestedManyWithoutArtistInput
   }
 
   export type UserCreateOrConnectWithoutMetadataInput = {
@@ -26415,7 +27981,6 @@ export namespace Prisma {
     bio?: NullableStringFieldUpdateOperationsInput | string | null
     yearsOfExperience?: NullableIntFieldUpdateOperationsInput | number | null
     defaultPrice?: NullableFloatFieldUpdateOperationsInput | number | null
-    category?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     accounts?: AccountUpdateManyWithoutUserNestedInput
@@ -26427,6 +27992,7 @@ export namespace Prisma {
     orders?: OrderUpdateManyWithoutUserNestedInput
     Transaction?: TransactionUpdateManyWithoutUserNestedInput
     ArtistAccount?: ArtistAccountUpdateOneWithoutUserNestedInput
+    services?: ArtistServiceUpdateManyWithoutArtistNestedInput
   }
 
   export type UserUncheckedUpdateWithoutMetadataInput = {
@@ -26446,7 +28012,6 @@ export namespace Prisma {
     bio?: NullableStringFieldUpdateOperationsInput | string | null
     yearsOfExperience?: NullableIntFieldUpdateOperationsInput | number | null
     defaultPrice?: NullableFloatFieldUpdateOperationsInput | number | null
-    category?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
@@ -26458,6 +28023,7 @@ export namespace Prisma {
     orders?: OrderUncheckedUpdateManyWithoutUserNestedInput
     Transaction?: TransactionUncheckedUpdateManyWithoutUserNestedInput
     ArtistAccount?: ArtistAccountUncheckedUpdateOneWithoutUserNestedInput
+    services?: ArtistServiceUncheckedUpdateManyWithoutArtistNestedInput
   }
 
   export type UserCreateWithoutAccountsInput = {
@@ -26477,7 +28043,6 @@ export namespace Prisma {
     bio?: string | null
     yearsOfExperience?: number | null
     defaultPrice?: number | null
-    category?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     sessions?: SessionCreateNestedManyWithoutUserInput
@@ -26489,6 +28054,7 @@ export namespace Prisma {
     orders?: OrderCreateNestedManyWithoutUserInput
     Transaction?: TransactionCreateNestedManyWithoutUserInput
     ArtistAccount?: ArtistAccountCreateNestedOneWithoutUserInput
+    services?: ArtistServiceCreateNestedManyWithoutArtistInput
   }
 
   export type UserUncheckedCreateWithoutAccountsInput = {
@@ -26508,7 +28074,6 @@ export namespace Prisma {
     bio?: string | null
     yearsOfExperience?: number | null
     defaultPrice?: number | null
-    category?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     sessions?: SessionUncheckedCreateNestedManyWithoutUserInput
@@ -26520,6 +28085,7 @@ export namespace Prisma {
     orders?: OrderUncheckedCreateNestedManyWithoutUserInput
     Transaction?: TransactionUncheckedCreateNestedManyWithoutUserInput
     ArtistAccount?: ArtistAccountUncheckedCreateNestedOneWithoutUserInput
+    services?: ArtistServiceUncheckedCreateNestedManyWithoutArtistInput
   }
 
   export type UserCreateOrConnectWithoutAccountsInput = {
@@ -26555,7 +28121,6 @@ export namespace Prisma {
     bio?: NullableStringFieldUpdateOperationsInput | string | null
     yearsOfExperience?: NullableIntFieldUpdateOperationsInput | number | null
     defaultPrice?: NullableFloatFieldUpdateOperationsInput | number | null
-    category?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     sessions?: SessionUpdateManyWithoutUserNestedInput
@@ -26567,6 +28132,7 @@ export namespace Prisma {
     orders?: OrderUpdateManyWithoutUserNestedInput
     Transaction?: TransactionUpdateManyWithoutUserNestedInput
     ArtistAccount?: ArtistAccountUpdateOneWithoutUserNestedInput
+    services?: ArtistServiceUpdateManyWithoutArtistNestedInput
   }
 
   export type UserUncheckedUpdateWithoutAccountsInput = {
@@ -26586,7 +28152,6 @@ export namespace Prisma {
     bio?: NullableStringFieldUpdateOperationsInput | string | null
     yearsOfExperience?: NullableIntFieldUpdateOperationsInput | number | null
     defaultPrice?: NullableFloatFieldUpdateOperationsInput | number | null
-    category?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     sessions?: SessionUncheckedUpdateManyWithoutUserNestedInput
@@ -26598,6 +28163,7 @@ export namespace Prisma {
     orders?: OrderUncheckedUpdateManyWithoutUserNestedInput
     Transaction?: TransactionUncheckedUpdateManyWithoutUserNestedInput
     ArtistAccount?: ArtistAccountUncheckedUpdateOneWithoutUserNestedInput
+    services?: ArtistServiceUncheckedUpdateManyWithoutArtistNestedInput
   }
 
   export type UserCreateWithoutSessionsInput = {
@@ -26617,7 +28183,6 @@ export namespace Prisma {
     bio?: string | null
     yearsOfExperience?: number | null
     defaultPrice?: number | null
-    category?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     accounts?: AccountCreateNestedManyWithoutUserInput
@@ -26629,6 +28194,7 @@ export namespace Prisma {
     orders?: OrderCreateNestedManyWithoutUserInput
     Transaction?: TransactionCreateNestedManyWithoutUserInput
     ArtistAccount?: ArtistAccountCreateNestedOneWithoutUserInput
+    services?: ArtistServiceCreateNestedManyWithoutArtistInput
   }
 
   export type UserUncheckedCreateWithoutSessionsInput = {
@@ -26648,7 +28214,6 @@ export namespace Prisma {
     bio?: string | null
     yearsOfExperience?: number | null
     defaultPrice?: number | null
-    category?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
@@ -26660,6 +28225,7 @@ export namespace Prisma {
     orders?: OrderUncheckedCreateNestedManyWithoutUserInput
     Transaction?: TransactionUncheckedCreateNestedManyWithoutUserInput
     ArtistAccount?: ArtistAccountUncheckedCreateNestedOneWithoutUserInput
+    services?: ArtistServiceUncheckedCreateNestedManyWithoutArtistInput
   }
 
   export type UserCreateOrConnectWithoutSessionsInput = {
@@ -26695,7 +28261,6 @@ export namespace Prisma {
     bio?: NullableStringFieldUpdateOperationsInput | string | null
     yearsOfExperience?: NullableIntFieldUpdateOperationsInput | number | null
     defaultPrice?: NullableFloatFieldUpdateOperationsInput | number | null
-    category?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     accounts?: AccountUpdateManyWithoutUserNestedInput
@@ -26707,6 +28272,7 @@ export namespace Prisma {
     orders?: OrderUpdateManyWithoutUserNestedInput
     Transaction?: TransactionUpdateManyWithoutUserNestedInput
     ArtistAccount?: ArtistAccountUpdateOneWithoutUserNestedInput
+    services?: ArtistServiceUpdateManyWithoutArtistNestedInput
   }
 
   export type UserUncheckedUpdateWithoutSessionsInput = {
@@ -26726,7 +28292,6 @@ export namespace Prisma {
     bio?: NullableStringFieldUpdateOperationsInput | string | null
     yearsOfExperience?: NullableIntFieldUpdateOperationsInput | number | null
     defaultPrice?: NullableFloatFieldUpdateOperationsInput | number | null
-    category?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
@@ -26738,6 +28303,7 @@ export namespace Prisma {
     orders?: OrderUncheckedUpdateManyWithoutUserNestedInput
     Transaction?: TransactionUncheckedUpdateManyWithoutUserNestedInput
     ArtistAccount?: ArtistAccountUncheckedUpdateOneWithoutUserNestedInput
+    services?: ArtistServiceUncheckedUpdateManyWithoutArtistNestedInput
   }
 
   export type CartItemCreateWithoutProductInput = {
@@ -27063,7 +28629,6 @@ export namespace Prisma {
     bio?: string | null
     yearsOfExperience?: number | null
     defaultPrice?: number | null
-    category?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     accounts?: AccountCreateNestedManyWithoutUserInput
@@ -27075,6 +28640,7 @@ export namespace Prisma {
     metadata?: UserMetadataCreateNestedOneWithoutUserInput
     Transaction?: TransactionCreateNestedManyWithoutUserInput
     ArtistAccount?: ArtistAccountCreateNestedOneWithoutUserInput
+    services?: ArtistServiceCreateNestedManyWithoutArtistInput
   }
 
   export type UserUncheckedCreateWithoutOrdersInput = {
@@ -27094,7 +28660,6 @@ export namespace Prisma {
     bio?: string | null
     yearsOfExperience?: number | null
     defaultPrice?: number | null
-    category?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
@@ -27106,6 +28671,7 @@ export namespace Prisma {
     metadata?: UserMetadataUncheckedCreateNestedOneWithoutUserInput
     Transaction?: TransactionUncheckedCreateNestedManyWithoutUserInput
     ArtistAccount?: ArtistAccountUncheckedCreateNestedOneWithoutUserInput
+    services?: ArtistServiceUncheckedCreateNestedManyWithoutArtistInput
   }
 
   export type UserCreateOrConnectWithoutOrdersInput = {
@@ -27193,7 +28759,6 @@ export namespace Prisma {
     bio?: NullableStringFieldUpdateOperationsInput | string | null
     yearsOfExperience?: NullableIntFieldUpdateOperationsInput | number | null
     defaultPrice?: NullableFloatFieldUpdateOperationsInput | number | null
-    category?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     accounts?: AccountUpdateManyWithoutUserNestedInput
@@ -27205,6 +28770,7 @@ export namespace Prisma {
     metadata?: UserMetadataUpdateOneWithoutUserNestedInput
     Transaction?: TransactionUpdateManyWithoutUserNestedInput
     ArtistAccount?: ArtistAccountUpdateOneWithoutUserNestedInput
+    services?: ArtistServiceUpdateManyWithoutArtistNestedInput
   }
 
   export type UserUncheckedUpdateWithoutOrdersInput = {
@@ -27224,7 +28790,6 @@ export namespace Prisma {
     bio?: NullableStringFieldUpdateOperationsInput | string | null
     yearsOfExperience?: NullableIntFieldUpdateOperationsInput | number | null
     defaultPrice?: NullableFloatFieldUpdateOperationsInput | number | null
-    category?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
@@ -27236,6 +28801,7 @@ export namespace Prisma {
     metadata?: UserMetadataUncheckedUpdateOneWithoutUserNestedInput
     Transaction?: TransactionUncheckedUpdateManyWithoutUserNestedInput
     ArtistAccount?: ArtistAccountUncheckedUpdateOneWithoutUserNestedInput
+    services?: ArtistServiceUncheckedUpdateManyWithoutArtistNestedInput
   }
 
   export type TransactionUpsertWithWhereUniqueWithoutOrderInput = {
@@ -27505,7 +29071,6 @@ export namespace Prisma {
     bio?: string | null
     yearsOfExperience?: number | null
     defaultPrice?: number | null
-    category?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     accounts?: AccountCreateNestedManyWithoutUserInput
@@ -27517,6 +29082,7 @@ export namespace Prisma {
     orders?: OrderCreateNestedManyWithoutUserInput
     Transaction?: TransactionCreateNestedManyWithoutUserInput
     ArtistAccount?: ArtistAccountCreateNestedOneWithoutUserInput
+    services?: ArtistServiceCreateNestedManyWithoutArtistInput
   }
 
   export type UserUncheckedCreateWithoutAppointmentsInput = {
@@ -27536,7 +29102,6 @@ export namespace Prisma {
     bio?: string | null
     yearsOfExperience?: number | null
     defaultPrice?: number | null
-    category?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
@@ -27548,6 +29113,7 @@ export namespace Prisma {
     orders?: OrderUncheckedCreateNestedManyWithoutUserInput
     Transaction?: TransactionUncheckedCreateNestedManyWithoutUserInput
     ArtistAccount?: ArtistAccountUncheckedCreateNestedOneWithoutUserInput
+    services?: ArtistServiceUncheckedCreateNestedManyWithoutArtistInput
   }
 
   export type UserCreateOrConnectWithoutAppointmentsInput = {
@@ -27572,7 +29138,6 @@ export namespace Prisma {
     bio?: string | null
     yearsOfExperience?: number | null
     defaultPrice?: number | null
-    category?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     accounts?: AccountCreateNestedManyWithoutUserInput
@@ -27584,6 +29149,7 @@ export namespace Prisma {
     orders?: OrderCreateNestedManyWithoutUserInput
     Transaction?: TransactionCreateNestedManyWithoutUserInput
     ArtistAccount?: ArtistAccountCreateNestedOneWithoutUserInput
+    services?: ArtistServiceCreateNestedManyWithoutArtistInput
   }
 
   export type UserUncheckedCreateWithoutArtistAppointmentsInput = {
@@ -27603,7 +29169,6 @@ export namespace Prisma {
     bio?: string | null
     yearsOfExperience?: number | null
     defaultPrice?: number | null
-    category?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
@@ -27615,6 +29180,7 @@ export namespace Prisma {
     orders?: OrderUncheckedCreateNestedManyWithoutUserInput
     Transaction?: TransactionUncheckedCreateNestedManyWithoutUserInput
     ArtistAccount?: ArtistAccountUncheckedCreateNestedOneWithoutUserInput
+    services?: ArtistServiceUncheckedCreateNestedManyWithoutArtistInput
   }
 
   export type UserCreateOrConnectWithoutArtistAppointmentsInput = {
@@ -27736,7 +29302,6 @@ export namespace Prisma {
     bio?: NullableStringFieldUpdateOperationsInput | string | null
     yearsOfExperience?: NullableIntFieldUpdateOperationsInput | number | null
     defaultPrice?: NullableFloatFieldUpdateOperationsInput | number | null
-    category?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     accounts?: AccountUpdateManyWithoutUserNestedInput
@@ -27748,6 +29313,7 @@ export namespace Prisma {
     orders?: OrderUpdateManyWithoutUserNestedInput
     Transaction?: TransactionUpdateManyWithoutUserNestedInput
     ArtistAccount?: ArtistAccountUpdateOneWithoutUserNestedInput
+    services?: ArtistServiceUpdateManyWithoutArtistNestedInput
   }
 
   export type UserUncheckedUpdateWithoutAppointmentsInput = {
@@ -27767,7 +29333,6 @@ export namespace Prisma {
     bio?: NullableStringFieldUpdateOperationsInput | string | null
     yearsOfExperience?: NullableIntFieldUpdateOperationsInput | number | null
     defaultPrice?: NullableFloatFieldUpdateOperationsInput | number | null
-    category?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
@@ -27779,6 +29344,7 @@ export namespace Prisma {
     orders?: OrderUncheckedUpdateManyWithoutUserNestedInput
     Transaction?: TransactionUncheckedUpdateManyWithoutUserNestedInput
     ArtistAccount?: ArtistAccountUncheckedUpdateOneWithoutUserNestedInput
+    services?: ArtistServiceUncheckedUpdateManyWithoutArtistNestedInput
   }
 
   export type UserUpsertWithoutArtistAppointmentsInput = {
@@ -27809,7 +29375,6 @@ export namespace Prisma {
     bio?: NullableStringFieldUpdateOperationsInput | string | null
     yearsOfExperience?: NullableIntFieldUpdateOperationsInput | number | null
     defaultPrice?: NullableFloatFieldUpdateOperationsInput | number | null
-    category?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     accounts?: AccountUpdateManyWithoutUserNestedInput
@@ -27821,6 +29386,7 @@ export namespace Prisma {
     orders?: OrderUpdateManyWithoutUserNestedInput
     Transaction?: TransactionUpdateManyWithoutUserNestedInput
     ArtistAccount?: ArtistAccountUpdateOneWithoutUserNestedInput
+    services?: ArtistServiceUpdateManyWithoutArtistNestedInput
   }
 
   export type UserUncheckedUpdateWithoutArtistAppointmentsInput = {
@@ -27840,7 +29406,6 @@ export namespace Prisma {
     bio?: NullableStringFieldUpdateOperationsInput | string | null
     yearsOfExperience?: NullableIntFieldUpdateOperationsInput | number | null
     defaultPrice?: NullableFloatFieldUpdateOperationsInput | number | null
-    category?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
@@ -27852,6 +29417,7 @@ export namespace Prisma {
     orders?: OrderUncheckedUpdateManyWithoutUserNestedInput
     Transaction?: TransactionUncheckedUpdateManyWithoutUserNestedInput
     ArtistAccount?: ArtistAccountUncheckedUpdateOneWithoutUserNestedInput
+    services?: ArtistServiceUncheckedUpdateManyWithoutArtistNestedInput
   }
 
   export type AppointmentCreateWithoutReviewInput = {
@@ -27912,7 +29478,6 @@ export namespace Prisma {
     bio?: string | null
     yearsOfExperience?: number | null
     defaultPrice?: number | null
-    category?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     accounts?: AccountCreateNestedManyWithoutUserInput
@@ -27924,6 +29489,7 @@ export namespace Prisma {
     orders?: OrderCreateNestedManyWithoutUserInput
     Transaction?: TransactionCreateNestedManyWithoutUserInput
     ArtistAccount?: ArtistAccountCreateNestedOneWithoutUserInput
+    services?: ArtistServiceCreateNestedManyWithoutArtistInput
   }
 
   export type UserUncheckedCreateWithoutReviewsInput = {
@@ -27943,7 +29509,6 @@ export namespace Prisma {
     bio?: string | null
     yearsOfExperience?: number | null
     defaultPrice?: number | null
-    category?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
@@ -27955,6 +29520,7 @@ export namespace Prisma {
     orders?: OrderUncheckedCreateNestedManyWithoutUserInput
     Transaction?: TransactionUncheckedCreateNestedManyWithoutUserInput
     ArtistAccount?: ArtistAccountUncheckedCreateNestedOneWithoutUserInput
+    services?: ArtistServiceUncheckedCreateNestedManyWithoutArtistInput
   }
 
   export type UserCreateOrConnectWithoutReviewsInput = {
@@ -27979,7 +29545,6 @@ export namespace Prisma {
     bio?: string | null
     yearsOfExperience?: number | null
     defaultPrice?: number | null
-    category?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     accounts?: AccountCreateNestedManyWithoutUserInput
@@ -27991,6 +29556,7 @@ export namespace Prisma {
     orders?: OrderCreateNestedManyWithoutUserInput
     Transaction?: TransactionCreateNestedManyWithoutUserInput
     ArtistAccount?: ArtistAccountCreateNestedOneWithoutUserInput
+    services?: ArtistServiceCreateNestedManyWithoutArtistInput
   }
 
   export type UserUncheckedCreateWithoutArtistReviewsInput = {
@@ -28010,7 +29576,6 @@ export namespace Prisma {
     bio?: string | null
     yearsOfExperience?: number | null
     defaultPrice?: number | null
-    category?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
@@ -28022,6 +29587,7 @@ export namespace Prisma {
     orders?: OrderUncheckedCreateNestedManyWithoutUserInput
     Transaction?: TransactionUncheckedCreateNestedManyWithoutUserInput
     ArtistAccount?: ArtistAccountUncheckedCreateNestedOneWithoutUserInput
+    services?: ArtistServiceUncheckedCreateNestedManyWithoutArtistInput
   }
 
   export type UserCreateOrConnectWithoutArtistReviewsInput = {
@@ -28104,7 +29670,6 @@ export namespace Prisma {
     bio?: NullableStringFieldUpdateOperationsInput | string | null
     yearsOfExperience?: NullableIntFieldUpdateOperationsInput | number | null
     defaultPrice?: NullableFloatFieldUpdateOperationsInput | number | null
-    category?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     accounts?: AccountUpdateManyWithoutUserNestedInput
@@ -28116,6 +29681,7 @@ export namespace Prisma {
     orders?: OrderUpdateManyWithoutUserNestedInput
     Transaction?: TransactionUpdateManyWithoutUserNestedInput
     ArtistAccount?: ArtistAccountUpdateOneWithoutUserNestedInput
+    services?: ArtistServiceUpdateManyWithoutArtistNestedInput
   }
 
   export type UserUncheckedUpdateWithoutReviewsInput = {
@@ -28135,7 +29701,6 @@ export namespace Prisma {
     bio?: NullableStringFieldUpdateOperationsInput | string | null
     yearsOfExperience?: NullableIntFieldUpdateOperationsInput | number | null
     defaultPrice?: NullableFloatFieldUpdateOperationsInput | number | null
-    category?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
@@ -28147,6 +29712,7 @@ export namespace Prisma {
     orders?: OrderUncheckedUpdateManyWithoutUserNestedInput
     Transaction?: TransactionUncheckedUpdateManyWithoutUserNestedInput
     ArtistAccount?: ArtistAccountUncheckedUpdateOneWithoutUserNestedInput
+    services?: ArtistServiceUncheckedUpdateManyWithoutArtistNestedInput
   }
 
   export type UserUpsertWithoutArtistReviewsInput = {
@@ -28177,7 +29743,6 @@ export namespace Prisma {
     bio?: NullableStringFieldUpdateOperationsInput | string | null
     yearsOfExperience?: NullableIntFieldUpdateOperationsInput | number | null
     defaultPrice?: NullableFloatFieldUpdateOperationsInput | number | null
-    category?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     accounts?: AccountUpdateManyWithoutUserNestedInput
@@ -28189,6 +29754,7 @@ export namespace Prisma {
     orders?: OrderUpdateManyWithoutUserNestedInput
     Transaction?: TransactionUpdateManyWithoutUserNestedInput
     ArtistAccount?: ArtistAccountUpdateOneWithoutUserNestedInput
+    services?: ArtistServiceUpdateManyWithoutArtistNestedInput
   }
 
   export type UserUncheckedUpdateWithoutArtistReviewsInput = {
@@ -28208,7 +29774,6 @@ export namespace Prisma {
     bio?: NullableStringFieldUpdateOperationsInput | string | null
     yearsOfExperience?: NullableIntFieldUpdateOperationsInput | number | null
     defaultPrice?: NullableFloatFieldUpdateOperationsInput | number | null
-    category?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
@@ -28220,6 +29785,7 @@ export namespace Prisma {
     orders?: OrderUncheckedUpdateManyWithoutUserNestedInput
     Transaction?: TransactionUncheckedUpdateManyWithoutUserNestedInput
     ArtistAccount?: ArtistAccountUncheckedUpdateOneWithoutUserNestedInput
+    services?: ArtistServiceUncheckedUpdateManyWithoutArtistNestedInput
   }
 
   export type AppointmentCreateWithoutPaymentDetailsInput = {
@@ -28383,7 +29949,6 @@ export namespace Prisma {
     bio?: string | null
     yearsOfExperience?: number | null
     defaultPrice?: number | null
-    category?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     accounts?: AccountCreateNestedManyWithoutUserInput
@@ -28395,6 +29960,7 @@ export namespace Prisma {
     metadata?: UserMetadataCreateNestedOneWithoutUserInput
     orders?: OrderCreateNestedManyWithoutUserInput
     ArtistAccount?: ArtistAccountCreateNestedOneWithoutUserInput
+    services?: ArtistServiceCreateNestedManyWithoutArtistInput
   }
 
   export type UserUncheckedCreateWithoutTransactionInput = {
@@ -28414,7 +29980,6 @@ export namespace Prisma {
     bio?: string | null
     yearsOfExperience?: number | null
     defaultPrice?: number | null
-    category?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
@@ -28426,6 +29991,7 @@ export namespace Prisma {
     metadata?: UserMetadataUncheckedCreateNestedOneWithoutUserInput
     orders?: OrderUncheckedCreateNestedManyWithoutUserInput
     ArtistAccount?: ArtistAccountUncheckedCreateNestedOneWithoutUserInput
+    services?: ArtistServiceUncheckedCreateNestedManyWithoutArtistInput
   }
 
   export type UserCreateOrConnectWithoutTransactionInput = {
@@ -28570,7 +30136,6 @@ export namespace Prisma {
     bio?: NullableStringFieldUpdateOperationsInput | string | null
     yearsOfExperience?: NullableIntFieldUpdateOperationsInput | number | null
     defaultPrice?: NullableFloatFieldUpdateOperationsInput | number | null
-    category?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     accounts?: AccountUpdateManyWithoutUserNestedInput
@@ -28582,6 +30147,7 @@ export namespace Prisma {
     metadata?: UserMetadataUpdateOneWithoutUserNestedInput
     orders?: OrderUpdateManyWithoutUserNestedInput
     ArtistAccount?: ArtistAccountUpdateOneWithoutUserNestedInput
+    services?: ArtistServiceUpdateManyWithoutArtistNestedInput
   }
 
   export type UserUncheckedUpdateWithoutTransactionInput = {
@@ -28601,7 +30167,6 @@ export namespace Prisma {
     bio?: NullableStringFieldUpdateOperationsInput | string | null
     yearsOfExperience?: NullableIntFieldUpdateOperationsInput | number | null
     defaultPrice?: NullableFloatFieldUpdateOperationsInput | number | null
-    category?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
@@ -28613,6 +30178,7 @@ export namespace Prisma {
     metadata?: UserMetadataUncheckedUpdateOneWithoutUserNestedInput
     orders?: OrderUncheckedUpdateManyWithoutUserNestedInput
     ArtistAccount?: ArtistAccountUncheckedUpdateOneWithoutUserNestedInput
+    services?: ArtistServiceUncheckedUpdateManyWithoutArtistNestedInput
   }
 
   export type AppointmentUpsertWithoutTransactionsInput = {
@@ -28679,7 +30245,6 @@ export namespace Prisma {
     bio?: string | null
     yearsOfExperience?: number | null
     defaultPrice?: number | null
-    category?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     accounts?: AccountCreateNestedManyWithoutUserInput
@@ -28691,6 +30256,7 @@ export namespace Prisma {
     metadata?: UserMetadataCreateNestedOneWithoutUserInput
     orders?: OrderCreateNestedManyWithoutUserInput
     Transaction?: TransactionCreateNestedManyWithoutUserInput
+    services?: ArtistServiceCreateNestedManyWithoutArtistInput
   }
 
   export type UserUncheckedCreateWithoutArtistAccountInput = {
@@ -28710,7 +30276,6 @@ export namespace Prisma {
     bio?: string | null
     yearsOfExperience?: number | null
     defaultPrice?: number | null
-    category?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
@@ -28722,6 +30287,7 @@ export namespace Prisma {
     metadata?: UserMetadataUncheckedCreateNestedOneWithoutUserInput
     orders?: OrderUncheckedCreateNestedManyWithoutUserInput
     Transaction?: TransactionUncheckedCreateNestedManyWithoutUserInput
+    services?: ArtistServiceUncheckedCreateNestedManyWithoutArtistInput
   }
 
   export type UserCreateOrConnectWithoutArtistAccountInput = {
@@ -28793,7 +30359,6 @@ export namespace Prisma {
     bio?: NullableStringFieldUpdateOperationsInput | string | null
     yearsOfExperience?: NullableIntFieldUpdateOperationsInput | number | null
     defaultPrice?: NullableFloatFieldUpdateOperationsInput | number | null
-    category?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     accounts?: AccountUpdateManyWithoutUserNestedInput
@@ -28805,6 +30370,7 @@ export namespace Prisma {
     metadata?: UserMetadataUpdateOneWithoutUserNestedInput
     orders?: OrderUpdateManyWithoutUserNestedInput
     Transaction?: TransactionUpdateManyWithoutUserNestedInput
+    services?: ArtistServiceUpdateManyWithoutArtistNestedInput
   }
 
   export type UserUncheckedUpdateWithoutArtistAccountInput = {
@@ -28824,7 +30390,6 @@ export namespace Prisma {
     bio?: NullableStringFieldUpdateOperationsInput | string | null
     yearsOfExperience?: NullableIntFieldUpdateOperationsInput | number | null
     defaultPrice?: NullableFloatFieldUpdateOperationsInput | number | null
-    category?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
@@ -28836,6 +30401,7 @@ export namespace Prisma {
     metadata?: UserMetadataUncheckedUpdateOneWithoutUserNestedInput
     orders?: OrderUncheckedUpdateManyWithoutUserNestedInput
     Transaction?: TransactionUncheckedUpdateManyWithoutUserNestedInput
+    services?: ArtistServiceUncheckedUpdateManyWithoutArtistNestedInput
   }
 
   export type TransactionUpsertWithWhereUniqueWithoutArtistAccountInput = {
@@ -28852,6 +30418,146 @@ export namespace Prisma {
   export type TransactionUpdateManyWithWhereWithoutArtistAccountInput = {
     where: TransactionScalarWhereInput
     data: XOR<TransactionUpdateManyMutationInput, TransactionUncheckedUpdateManyWithoutArtistAccountInput>
+  }
+
+  export type UserCreateWithoutServicesInput = {
+    id?: string
+    name?: string | null
+    email?: string | null
+    emailVerified?: Date | string | null
+    image?: string | null
+    password?: string | null
+    phone?: string | null
+    role?: $Enums.UserRole
+    instagram?: string | null
+    facebook?: string | null
+    twitter?: string | null
+    tiktok?: string | null
+    website?: string | null
+    bio?: string | null
+    yearsOfExperience?: number | null
+    defaultPrice?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    accounts?: AccountCreateNestedManyWithoutUserInput
+    sessions?: SessionCreateNestedManyWithoutUserInput
+    appointments?: AppointmentCreateNestedManyWithoutUserInput
+    artistAppointments?: AppointmentCreateNestedManyWithoutArtistInput
+    reviews?: ReviewCreateNestedManyWithoutUserInput
+    artistReviews?: ReviewCreateNestedManyWithoutArtistInput
+    metadata?: UserMetadataCreateNestedOneWithoutUserInput
+    orders?: OrderCreateNestedManyWithoutUserInput
+    Transaction?: TransactionCreateNestedManyWithoutUserInput
+    ArtistAccount?: ArtistAccountCreateNestedOneWithoutUserInput
+  }
+
+  export type UserUncheckedCreateWithoutServicesInput = {
+    id?: string
+    name?: string | null
+    email?: string | null
+    emailVerified?: Date | string | null
+    image?: string | null
+    password?: string | null
+    phone?: string | null
+    role?: $Enums.UserRole
+    instagram?: string | null
+    facebook?: string | null
+    twitter?: string | null
+    tiktok?: string | null
+    website?: string | null
+    bio?: string | null
+    yearsOfExperience?: number | null
+    defaultPrice?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
+    sessions?: SessionUncheckedCreateNestedManyWithoutUserInput
+    appointments?: AppointmentUncheckedCreateNestedManyWithoutUserInput
+    artistAppointments?: AppointmentUncheckedCreateNestedManyWithoutArtistInput
+    reviews?: ReviewUncheckedCreateNestedManyWithoutUserInput
+    artistReviews?: ReviewUncheckedCreateNestedManyWithoutArtistInput
+    metadata?: UserMetadataUncheckedCreateNestedOneWithoutUserInput
+    orders?: OrderUncheckedCreateNestedManyWithoutUserInput
+    Transaction?: TransactionUncheckedCreateNestedManyWithoutUserInput
+    ArtistAccount?: ArtistAccountUncheckedCreateNestedOneWithoutUserInput
+  }
+
+  export type UserCreateOrConnectWithoutServicesInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutServicesInput, UserUncheckedCreateWithoutServicesInput>
+  }
+
+  export type UserUpsertWithoutServicesInput = {
+    update: XOR<UserUpdateWithoutServicesInput, UserUncheckedUpdateWithoutServicesInput>
+    create: XOR<UserCreateWithoutServicesInput, UserUncheckedCreateWithoutServicesInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutServicesInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutServicesInput, UserUncheckedUpdateWithoutServicesInput>
+  }
+
+  export type UserUpdateWithoutServicesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    emailVerified?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    image?: NullableStringFieldUpdateOperationsInput | string | null
+    password?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+    instagram?: NullableStringFieldUpdateOperationsInput | string | null
+    facebook?: NullableStringFieldUpdateOperationsInput | string | null
+    twitter?: NullableStringFieldUpdateOperationsInput | string | null
+    tiktok?: NullableStringFieldUpdateOperationsInput | string | null
+    website?: NullableStringFieldUpdateOperationsInput | string | null
+    bio?: NullableStringFieldUpdateOperationsInput | string | null
+    yearsOfExperience?: NullableIntFieldUpdateOperationsInput | number | null
+    defaultPrice?: NullableFloatFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    accounts?: AccountUpdateManyWithoutUserNestedInput
+    sessions?: SessionUpdateManyWithoutUserNestedInput
+    appointments?: AppointmentUpdateManyWithoutUserNestedInput
+    artistAppointments?: AppointmentUpdateManyWithoutArtistNestedInput
+    reviews?: ReviewUpdateManyWithoutUserNestedInput
+    artistReviews?: ReviewUpdateManyWithoutArtistNestedInput
+    metadata?: UserMetadataUpdateOneWithoutUserNestedInput
+    orders?: OrderUpdateManyWithoutUserNestedInput
+    Transaction?: TransactionUpdateManyWithoutUserNestedInput
+    ArtistAccount?: ArtistAccountUpdateOneWithoutUserNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutServicesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    emailVerified?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    image?: NullableStringFieldUpdateOperationsInput | string | null
+    password?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+    instagram?: NullableStringFieldUpdateOperationsInput | string | null
+    facebook?: NullableStringFieldUpdateOperationsInput | string | null
+    twitter?: NullableStringFieldUpdateOperationsInput | string | null
+    tiktok?: NullableStringFieldUpdateOperationsInput | string | null
+    website?: NullableStringFieldUpdateOperationsInput | string | null
+    bio?: NullableStringFieldUpdateOperationsInput | string | null
+    yearsOfExperience?: NullableIntFieldUpdateOperationsInput | number | null
+    defaultPrice?: NullableFloatFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
+    sessions?: SessionUncheckedUpdateManyWithoutUserNestedInput
+    appointments?: AppointmentUncheckedUpdateManyWithoutUserNestedInput
+    artistAppointments?: AppointmentUncheckedUpdateManyWithoutArtistNestedInput
+    reviews?: ReviewUncheckedUpdateManyWithoutUserNestedInput
+    artistReviews?: ReviewUncheckedUpdateManyWithoutArtistNestedInput
+    metadata?: UserMetadataUncheckedUpdateOneWithoutUserNestedInput
+    orders?: OrderUncheckedUpdateManyWithoutUserNestedInput
+    Transaction?: TransactionUncheckedUpdateManyWithoutUserNestedInput
+    ArtistAccount?: ArtistAccountUncheckedUpdateOneWithoutUserNestedInput
   }
 
   export type AccountCreateManyUserInput = {
@@ -28948,6 +30654,16 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     appointmentId?: string | null
+  }
+
+  export type ArtistServiceCreateManyArtistInput = {
+    id?: string
+    name: string
+    description?: string | null
+    price?: number
+    isActive?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
   }
 
   export type AccountUpdateWithoutUserInput = {
@@ -29252,6 +30968,36 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     appointmentId?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type ArtistServiceUpdateWithoutArtistInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    price?: FloatFieldUpdateOperationsInput | number
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ArtistServiceUncheckedUpdateWithoutArtistInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    price?: FloatFieldUpdateOperationsInput | number
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ArtistServiceUncheckedUpdateManyWithoutArtistInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    price?: FloatFieldUpdateOperationsInput | number
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type CartItemCreateManyProductInput = {

@@ -137,7 +137,6 @@ exports.Prisma.UserScalarFieldEnum = {
   bio: 'bio',
   yearsOfExperience: 'yearsOfExperience',
   defaultPrice: 'defaultPrice',
-  category: 'category',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -299,6 +298,17 @@ exports.Prisma.ArtistAccountScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.ArtistServiceScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  description: 'description',
+  price: 'price',
+  isActive: 'isActive',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  artistId: 'artistId'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -378,7 +388,8 @@ exports.Prisma.ModelName = {
   Review: 'Review',
   PaymentDetail: 'PaymentDetail',
   Transaction: 'Transaction',
-  ArtistAccount: 'ArtistAccount'
+  ArtistAccount: 'ArtistAccount',
+  ArtistService: 'ArtistService'
 };
 
 /**

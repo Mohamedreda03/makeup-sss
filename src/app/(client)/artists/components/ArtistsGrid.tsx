@@ -3,13 +3,11 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { getCategoryName } from "../utils";
 
 interface Artist {
   id: string;
   name: string | null;
   image: string | null;
-  category: string;
   completedAppointments: number;
   isAvailable: boolean;
 }
@@ -22,7 +20,7 @@ export function ArtistsGrid({ artists }: ArtistsGridProps) {
   if (artists.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-500">No artists found in this category.</p>
+        <p className="text-gray-500">No artists found.</p>
       </div>
     );
   }
@@ -56,9 +54,6 @@ export function ArtistsGrid({ artists }: ArtistsGridProps) {
                   {artist.isAvailable ? "Available" : "Not Available"}
                 </Badge>
                 <h3 className="text-lg font-semibold">{artist.name}</h3>
-                <p className="text-sm text-gray-500">
-                  {getCategoryName(artist.category)}
-                </p>
               </div>
             </CardContent>
           </Card>

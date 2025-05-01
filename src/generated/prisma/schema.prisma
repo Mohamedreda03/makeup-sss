@@ -9,35 +9,35 @@ datasource db {
 }
 
 model User {
-  id                 String         @id @default(cuid())
+  id                 String          @id @default(cuid())
   name               String?
-  email              String?        @unique
+  email              String?         @unique
   emailVerified      DateTime?
   image              String?
   password           String?
   phone              String?
-  role               UserRole       @default(CUSTOMER)
+  role               UserRole        @default(CUSTOMER)
   instagram          String?
   facebook           String?
   twitter            String?
   tiktok             String?
   website            String?
-  bio                String?        @db.Text
+  bio                String?         @db.Text
   yearsOfExperience  Int? // Years of experience for artists
   defaultPrice       Float? // Default price for artist services
-  category           String? // Artist category/specialty
-  createdAt          DateTime       @default(now())
-  updatedAt          DateTime       @updatedAt
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
   accounts           Account[]
   sessions           Session[]
-  appointments       Appointment[]  @relation()
-  artistAppointments Appointment[]  @relation("ArtistAppointments")
-  reviews            Review[]       @relation()
-  artistReviews      Review[]       @relation("ArtistReviews")
+  appointments       Appointment[]   @relation()
+  artistAppointments Appointment[]   @relation("ArtistAppointments")
+  reviews            Review[]        @relation()
+  artistReviews      Review[]        @relation("ArtistReviews")
   metadata           UserMetadata?
   orders             Order[]
   Transaction        Transaction[]
   ArtistAccount      ArtistAccount?
+  services           ArtistService[] // New relation to services
 }
 
 model UserMetadata {
@@ -273,4 +273,19 @@ model ArtistAccount {
   transactions     Transaction[]
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
+}
+
+// New model for artist services
+model ArtistService {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  price       Float    @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relation to artist
+  artistId String
+  artist   User   @relation(fields: [artistId], references: [id], onDelete: Cascade)
 }

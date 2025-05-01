@@ -94,13 +94,10 @@ export default function BookingForm({
   isUserLoggedIn,
   defaultPrice = 0, // Default price fallback
 }: BookingFormProps) {
-  const { data: session } = useSession();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [showLoginDialog, setShowLoginDialog] = useState(false);
-  const [availability, setAvailability] = useState<any[]>([]);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
-  const [availableTimeSlots, setAvailableTimeSlots] = useState<string[]>([]);
 
   // Set default selected service to the first one or use the artist's default price
   useEffect(() => {
@@ -225,7 +222,7 @@ export default function BookingForm({
               <div className="flex justify-between items-center mt-2">
                 <div className="text-sm text-green-700">
                   <span className="font-semibold">
-                    ${selectedService.price}
+                    EGP {selectedService.price}
                   </span>{" "}
                   · {selectedService.duration} min
                 </div>
@@ -299,7 +296,7 @@ export default function BookingForm({
                         <div className="flex justify-between w-full">
                           <span>{service.name}</span>
                           <span className="text-green-600 font-medium">
-                            ${service.price}
+                            EGP {service.price}
                           </span>
                         </div>
                       </SelectItem>
@@ -421,7 +418,7 @@ export default function BookingForm({
                 {selectedService.duration} minutes
               </p>
               <p>
-                <span className="font-medium">Price:</span> $
+                <span className="font-medium">Price:</span> EGP
                 {selectedService.price}
               </p>
             </div>

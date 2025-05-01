@@ -117,9 +117,9 @@ export default async function ProductDetailPage({
                 <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
                   Price
                 </h3>
-                <p className="text-lg font-semibold">
-                  ${product.price.toFixed(2)}
-                </p>
+                <div className="text-2xl font-bold text-gray-900">
+                  EGP {product.price.toFixed(2)}
+                </div>
               </div>
 
               <div>

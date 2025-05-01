@@ -39,7 +39,6 @@ export function ArtistProfileForm({
       tiktok: "",
       website: "",
       defaultPrice: undefined,
-      category: "",
       certificates: [],
       services: [],
       specialties: [],
@@ -101,20 +100,6 @@ export function ArtistProfileForm({
                       field.onChange(value);
                     }}
                   />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="category"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Category</FormLabel>
-                <FormControl>
-                  <Input placeholder="Your specialty category" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

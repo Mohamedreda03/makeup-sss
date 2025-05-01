@@ -219,7 +219,7 @@ export default async function AdminPage() {
                         {order.status}
                       </Badge>
                     </TableCell>
-                    <TableCell>${order.total.toFixed(2)}</TableCell>
+                    <TableCell>EGP {order.total.toFixed(2)}</TableCell>
                     <TableCell className="text-slate-500 text-sm">
                       {formatDistanceToNow(new Date(order.createdAt), {
                         addSuffix: true,
@@ -274,7 +274,7 @@ export default async function AdminPage() {
                         {product.name}
                       </Link>
                     </TableCell>
-                    <TableCell>${product.price.toFixed(2)}</TableCell>
+                    <TableCell>EGP {product.price.toFixed(2)}</TableCell>
 
                     <TableCell className="text-slate-500 text-sm">
                       {formatDistanceToNow(new Date(product.createdAt), {

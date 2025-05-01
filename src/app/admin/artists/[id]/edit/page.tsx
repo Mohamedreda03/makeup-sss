@@ -31,6 +31,8 @@ import { Loader2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { CategorySelector } from "@/components/admin/CategorySelector";
+import { AdminImageUpload } from "@/components/admin/AdminImageUpload";
+import ServiceManager from "@/components/services/ServiceManager";
 
 // Form validation schema
 const formSchema = z.object({
@@ -50,6 +52,7 @@ const formSchema = z.object({
   yearsOfExperience: z.coerce.number().min(0).optional(),
   category: z.string().optional(),
   defaultPrice: z.coerce.number().min(0).optional(),
+  image: z.string().optional(),
 });
 
 // Artist type definition
@@ -71,6 +74,16 @@ interface Artist {
   metadata?: {
     artistSettings?: string | null;
   };
+}
+
+// Service interface
+interface Service {
+  id: string;
+  name: string;
+  description?: string;
+  price: number;
+  duration?: number;
+  isActive?: boolean;
 }
 
 export default function EditArtistPage({ params }: { params: { id: string } }) {
@@ -102,6 +115,7 @@ export default function EditArtistPage({ params }: { params: { id: string } }) {
       yearsOfExperience: 0,
       category: "",
       defaultPrice: 0,
+      image: "",
     },
   });
 
@@ -143,6 +157,7 @@ export default function EditArtistPage({ params }: { params: { id: string } }) {
           yearsOfExperience: data.yearsOfExperience || 0,
           category: data.category || "",
           defaultPrice: data.defaultPrice || 0,
+          image: data.image || "",
         };
         console.log("Setting form values:", formValues);
         form.reset(formValues);
@@ -163,28 +178,106 @@ export default function EditArtistPage({ params }: { params: { id: string } }) {
     }
   }, [params.id, session, form]);
 
-  // Handle form submission
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    setIsSaving(true);
+  // Handle image update
+  const handleImageUploaded = (imageUrl: string) => {
+    console.log("Image uploaded successfully, setting value:", imageUrl);
+    form.setValue("image", imageUrl);
+
+    // Auto-save image update to make sure it's applied immediately
+    updateArtistImage(imageUrl);
+  };
+
+  // Update artist image directly
+  const updateArtistImage = async (imageUrl: string) => {
+    if (!artist?.id || !imageUrl) return;
 
     try {
-      // Update basic artist information
+      setIsSaving(true);
+      console.log("Updating artist image directly:", imageUrl);
+
+      // Send only the image update to prevent overwriting other fields
       const response = await fetch(`/api/admin/artists/${params.id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          ...values,
-          category: values.category,
+          image: imageUrl,
         }),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to update artist");
+        throw new Error("Failed to update artist image");
       }
 
-      // Update artist settings with category
+      // Refresh the artist data
+      const updatedArtist = await response.json();
+      console.log("Artist image updated successfully:", updatedArtist.image);
+
+      // Update local state
+      setArtist({
+        ...artist,
+        image: imageUrl,
+      });
+
+      toast({
+        title: "Success",
+        description: "Artist image updated successfully.",
+        variant: "success",
+      });
+    } catch (error) {
+      console.error("Error updating artist image:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update artist image. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Handle service changes
+  const handleServicesChange = (services: Service[]) => {
+    setArtistSettings({
+      ...artistSettings,
+      services,
+    });
+  };
+
+  // Handle form submission
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    setIsSaving(true);
+
+    try {
+      // Log values being sent to API
+      console.log("Updating artist with data:", values);
+
+      // Make sure image is included in the update
+      const updateData = {
+        ...values,
+        image: values.image || artist?.image || null, // Use existing image if no new one selected
+      };
+
+      // Update basic artist information
+      const response = await fetch(`/api/admin/artists/${params.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updateData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("API error response:", errorData);
+        throw new Error(errorData.message || "Failed to update artist");
+      }
+
+      const updatedArtist = await response.json();
+      console.log("Artist updated successfully:", updatedArtist);
+
+      // Update artist settings with category and services
       const settingsResponse = await fetch(
         `/api/artist/settings?artistId=${params.id}`,
         {
@@ -193,11 +286,10 @@ export default function EditArtistPage({ params }: { params: { id: string } }) {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            ...values,
+            ...updateData,
             specialties: artistSettings.specialties || [],
             certificates: artistSettings.certificates || [],
             services: artistSettings.services || [],
-            category: values.category,
           }),
         }
       );
@@ -271,16 +363,22 @@ export default function EditArtistPage({ params }: { params: { id: string } }) {
               <CardTitle>Artist Profile</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col items-center">
-              <Avatar className="h-24 w-24 mb-4">
-                <AvatarImage
-                  src={artist.image || undefined}
-                  alt={artist.name || "Artist"}
-                />
-                <AvatarFallback className="text-2xl">
-                  {artist.name?.[0] || "A"}
-                </AvatarFallback>
-              </Avatar>
-              <h2 className="text-xl font-semibold">{artist.name}</h2>
+              {/* Profile Image Upload */}
+              <FormField
+                control={form.control}
+                name="image"
+                render={({ field }) => (
+                  <div className="space-y-2">
+                    <AdminImageUpload
+                      currentImage={field.value || artist.image || undefined}
+                      name={artist.name || "Artist"}
+                      onImageUploaded={handleImageUploaded}
+                      folder="artist-profiles"
+                    />
+                  </div>
+                )}
+              />
+              <h2 className="text-xl font-semibold mt-4">{artist.name}</h2>
               <p className="text-gray-500">{artist.email}</p>
             </CardContent>
           </Card>
@@ -405,77 +503,7 @@ export default function EditArtistPage({ params }: { params: { id: string } }) {
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Professional Information</CardTitle>
-                  <CardDescription>
-                    Update the artist's professional details.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="category"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Artist Category</FormLabel>
-                        <FormControl>
-                          <CategorySelector
-                            value={field.value}
-                            onChange={field.onChange}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          Select the artist's primary category/specialty
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="yearsOfExperience"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Years of Experience</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            min={0}
-                            placeholder="Enter years of experience"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          How many years of experience does the artist have?
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="bio"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Bio</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            placeholder="Artist's professional bio"
-                            className="min-h-[120px]"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          Describe the artist's background, experience, and
-                          specialties.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </CardContent>
-              </Card>
+              <ServiceManager userId={artist.id} />
 
               <Card>
                 <CardHeader>

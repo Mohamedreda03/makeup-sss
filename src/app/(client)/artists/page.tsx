@@ -12,35 +12,25 @@ import {
   Facebook,
   Twitter,
   ArrowRight,
-  Filter,
 } from "lucide-react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { db } from "@/lib/db";
-import { CategoryFilter } from "./components/CategoryFilter";
 import { ArtistsGrid } from "./components/ArtistsGrid";
-import { MobileFilterToggle } from "./components/MobileFilterToggle";
-import { CATEGORIES } from "./utils";
 
 // تعريف واجهة الفنان
 interface Artist {
   id: string;
   name: string | null;
   image: string | null;
-  category: string;
   completedAppointments: number;
   isAvailable: boolean;
 }
 
-async function getArtists(category?: string) {
+async function getArtists() {
   // بناء شروط التصفية
   const where: any = {
     role: "ARTIST",
   };
-
-  // إضافة فلتر الفئة إذا تم تحديده
-  if (category && category !== "all") {
-    where.category = category;
-  }
 
   // الحصول على الفنانين مع البيانات الوصفية
   const artists = await db.user.findMany({
@@ -50,7 +40,6 @@ async function getArtists(category?: string) {
       name: true,
       email: true,
       image: true,
-      category: true,
       metadata: {
         select: {
           availabilitySettings: true,
@@ -92,20 +81,14 @@ async function getArtists(category?: string) {
       id: artist.id,
       name: artist.name,
       image: artist.image,
-      category: artist.category || "",
       completedAppointments: artist._count.artistAppointments,
       isAvailable,
     };
   });
 }
 
-interface ArtistsPageProps {
-  searchParams: { category?: string };
-}
-
-export default async function ArtistsPage({ searchParams }: ArtistsPageProps) {
-  const category = searchParams.category || "all";
-  const artists = await getArtists(category);
+export default async function ArtistsPage() {
+  const artists = await getArtists();
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -117,30 +100,6 @@ export default async function ArtistsPage({ searchParams }: ArtistsPageProps) {
       </div>
 
       <div className="flex flex-col md:flex-row gap-6">
-        {/* قائمة الفئات للتصفية - في الجانب */}
-        <div className="hidden md:block md:w-64 flex-shrink-0">
-          <div className="bg-white p-4 rounded-lg border border-gray-200 sticky top-4">
-            <h2 className="font-semibold text-lg mb-4">Categories</h2>
-            <CategoryFilter
-              selectedCategory={category}
-              categories={CATEGORIES}
-            />
-          </div>
-        </div>
-
-        {/* زر تبديل الفلاتر للشاشات الصغيرة */}
-        <div className="md:hidden w-full">
-          <MobileFilterToggle>
-            <div className="bg-white p-4 rounded-lg border border-gray-200 mb-6">
-              <h2 className="font-semibold text-lg mb-4">Categories</h2>
-              <CategoryFilter
-                selectedCategory={category}
-                categories={CATEGORIES}
-              />
-            </div>
-          </MobileFilterToggle>
-        </div>
-
         {/* عرض الفنانين */}
         <div className="flex-1">
           <Suspense

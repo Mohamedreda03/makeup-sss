@@ -42,8 +42,11 @@ const appointmentSchema = z.object({
   duration: z.number().min(15).max(240),
   totalPrice: z.number().nonnegative(),
   notes: z.string().optional(),
-  location: z.string().optional(),
-  status: z.enum(["PENDING", "CONFIRMED", "COMPLETED", "CANCELLED"]).optional(),
+  location: z.string().optional().nullable(),
+  status: z
+    .enum(["PENDING", "CONFIRMED", "COMPLETED", "CANCELLED"])
+    .optional()
+    .default("CONFIRMED"),
 });
 
 // GET /api/appointments
@@ -328,7 +331,7 @@ export async function POST(req: Request) {
         totalPrice: validatedData.totalPrice,
         notes: validatedData.notes || "",
         location: validatedData.location || null,
-        status: validatedData.status || "PENDING",
+        status: validatedData.status || "CONFIRMED",
       };
 
       console.log("Preparing to create appointment:", appointmentData);

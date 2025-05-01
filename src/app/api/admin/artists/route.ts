@@ -3,12 +3,22 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { hash } from "bcrypt";
 import { z } from "zod";
+import { prisma } from "@/lib/prisma";
 
 // Type extension for user in session
 interface ExtendedUser {
   id: string;
   role: string;
 }
+
+// Service schema for validation
+const serviceSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().min(2),
+  description: z.string().optional(),
+  price: z.coerce.number().min(0).optional(),
+  isActive: z.boolean().optional(),
+});
 
 // Schema for creating a new artist
 const createArtistSchema = z.object({
@@ -25,8 +35,8 @@ const createArtistSchema = z.object({
   website: z.string().optional(),
   bio: z.string().optional(),
   yearsOfExperience: z.coerce.number().min(0).optional(),
-  category: z.string().optional(),
   defaultPrice: z.coerce.number().min(0).optional(),
+  services: z.array(serviceSchema).optional(),
 });
 
 export async function GET(request: NextRequest) {
@@ -71,17 +81,18 @@ export async function GET(request: NextRequest) {
     }
 
     // Get artists with pagination
-    const artists = await db.user.findMany({
+    const artists = await prisma.user.findMany({
       where: whereCondition,
       select: {
         id: true,
         name: true,
         email: true,
         image: true,
+        role: true,
         phone: true,
         createdAt: true,
-        category: true,
         defaultPrice: true,
+        services: true,
       },
       skip,
       take: limit,
@@ -143,8 +154,8 @@ export async function POST(request: NextRequest) {
       website,
       bio,
       yearsOfExperience,
-      category,
       defaultPrice,
+      services,
     } = validation.data;
 
     // Check if user with email already exists
@@ -162,24 +173,44 @@ export async function POST(request: NextRequest) {
     // Hash password
     const hashedPassword = await hash(password, 10);
 
-    // Create new artist
-    const artist = await db.user.create({
-      data: {
-        name,
-        email,
-        password: hashedPassword,
-        phone,
-        image,
-        role,
-        instagram,
-        facebook,
-        twitter,
-        tiktok,
-        website,
-        bio,
-        yearsOfExperience: yearsOfExperience || 0,
-        category,
-        defaultPrice: defaultPrice || 0,
+    // Use a transaction to create the artist and their services
+    const createdArtist = await prisma.$transaction(async (tx) => {
+      // Create new artist
+      const newUser = await tx.user.create({
+        data: {
+          name,
+          email,
+          password: hashedPassword,
+          role: "ARTIST",
+          image,
+          phone,
+          defaultPrice,
+        },
+      });
+
+      // Create services if provided
+      if (services && services.length > 0) {
+        for (const service of services) {
+          await tx.artistService.create({
+            data: {
+              name: service.name,
+              description: service.description || "",
+              price: service.price || 0,
+              isActive: service.isActive ?? true,
+              artistId: newUser.id,
+            },
+          });
+        }
+      }
+
+      return newUser;
+    });
+
+    // Fetch the created artist with services
+    const artistWithServices = await prisma.user.findUnique({
+      where: { id: createdArtist.id },
+      include: {
+        services: true,
       },
     });
 
@@ -187,22 +218,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         message: "Artist created successfully",
-        artist: {
-          id: artist.id,
-          name: artist.name,
-          email: artist.email,
-          image: artist.image,
-          phone: artist.phone,
-          instagram: artist.instagram,
-          facebook: artist.facebook,
-          twitter: artist.twitter,
-          tiktok: artist.tiktok,
-          website: artist.website,
-          bio: artist.bio,
-          yearsOfExperience: artist.yearsOfExperience,
-          category: artist.category,
-          defaultPrice: artist.defaultPrice,
-        },
+        artist: artistWithServices,
       },
       { status: 201 }
     );

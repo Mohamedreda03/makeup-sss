@@ -552,9 +552,9 @@ export default function ArtistDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-medium mb-1">Available Balance</h3>
-                <p className="text-3xl font-bold">
-                  ${stats.availableBalance.toFixed(2)}
-                </p>
+                <div className="font-bold text-3xl text-green-600">
+                  EGP {stats.availableBalance.toFixed(2)}
+                </div>
                 <p className="text-xs text-amber-600 mt-2">
                   Ready for withdrawal
                 </p>
@@ -758,7 +758,9 @@ export default function ArtistDashboard() {
                 </div>
                 <div className="space-y-1">
                   <div className="text-sm font-medium">Price</div>
-                  <div>${selectedAppointment.totalPrice.toFixed(2)}</div>
+                  <div className="text-gray-900 font-medium">
+                    EGP {selectedAppointment.totalPrice.toFixed(2)}
+                  </div>
                 </div>
                 <div className="space-y-1">
                   <div className="text-sm font-medium">Date & Time</div>

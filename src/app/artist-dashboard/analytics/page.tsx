@@ -239,9 +239,9 @@ export default function ArtistAnalyticsPage() {
                 <h3 className="text-sm font-medium text-gray-500">
                   Monthly Revenue
                 </h3>
-                <p className="text-3xl font-bold">
-                  ${analyticsData.currentMonthRevenue.toFixed(2)}
-                </p>
+                <h3 className="text-xl font-medium mb-1 text-green-600">
+                  EGP {analyticsData.currentMonthRevenue.toFixed(2)}
+                </h3>
                 <div
                   className={`flex items-center mt-1 text-sm ${
                     revenueChange >= 0 ? "text-green-600" : "text-red-600"
@@ -317,9 +317,9 @@ export default function ArtistAnalyticsPage() {
                 <h3 className="text-sm font-medium text-gray-500">
                   Total Revenue
                 </h3>
-                <p className="text-3xl font-bold">
-                  ${analyticsData.totalRevenue.toFixed(2)}
-                </p>
+                <div className="font-bold text-2xl">
+                  EGP {analyticsData.totalRevenue.toFixed(2)}
+                </div>
                 <div className="flex items-center mt-1 text-sm text-gray-500">
                   <span>Lifetime earnings</span>
                 </div>
@@ -367,7 +367,9 @@ export default function ArtistAnalyticsPage() {
                           }}
                         >
                           <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                            ${month.revenue.toFixed(2)}
+                            <span className="font-medium">
+                              EGP {month.revenue.toFixed(2)}
+                            </span>
                           </div>
                         </div>
                         <div className="text-xs mt-2 text-gray-600 w-full text-center">
@@ -418,8 +420,8 @@ export default function ArtistAnalyticsPage() {
                         </p>
                       </div>
                     </div>
-                    <div className="text-green-600 font-medium">
-                      ${service.revenue.toFixed(2)}
+                    <div className="font-medium text-amber-600">
+                      EGP {service.revenue.toFixed(2)}
                     </div>
                   </div>
                 ))}
@@ -585,7 +587,7 @@ export default function ArtistAnalyticsPage() {
                     Average Spend
                   </p>
                   <p className="text-2xl font-bold text-green-600">
-                    $
+                    EGP
                     {analyticsData.totalClients
                       ? (
                           analyticsData.totalRevenue /
@@ -663,7 +665,7 @@ export default function ArtistAnalyticsPage() {
                     Total Revenue
                   </p>
                   <p className="text-2xl font-bold">
-                    ${analyticsData.totalRevenue.toFixed(2)}
+                    EGP {analyticsData.totalRevenue.toFixed(2)}
                   </p>
                   <p className="text-xs text-gray-500">Lifetime earnings</p>
                 </div>
@@ -672,7 +674,7 @@ export default function ArtistAnalyticsPage() {
                     Current Month
                   </p>
                   <p className="text-2xl font-bold text-green-600">
-                    ${analyticsData.currentMonthRevenue.toFixed(2)}
+                    EGP {analyticsData.currentMonthRevenue.toFixed(2)}
                   </p>
                   <p className="text-xs text-gray-500">This month so far</p>
                 </div>
@@ -681,7 +683,7 @@ export default function ArtistAnalyticsPage() {
                     Average Appointment
                   </p>
                   <p className="text-2xl font-bold text-purple-600">
-                    $
+                    EGP
                     {analyticsData.appointmentStats.completed
                       ? (
                           analyticsData.totalRevenue /
@@ -706,8 +708,8 @@ export default function ArtistAnalyticsPage() {
                         <span className="text-sm font-medium">
                           {service.name}
                         </span>
-                        <span className="text-sm font-medium">
-                          ${service.revenue.toFixed(2)}
+                        <span className="font-medium text-amber-600">
+                          EGP {service.revenue.toFixed(2)}
                         </span>
                       </div>
                       <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">

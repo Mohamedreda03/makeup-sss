@@ -116,7 +116,7 @@ export function PaymentButton({
       ) : (
         <>
           <CreditCard className="mr-2 h-4 w-4" />
-          Pay ${amount.toFixed(2)}
+          Pay EGP {amount.toFixed(2)}
         </>
       )}
     </Button>
