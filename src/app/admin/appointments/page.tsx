@@ -86,6 +86,7 @@ interface Appointment {
   notes: string | null;
   createdAt: string;
   updatedAt: string;
+  serviceType: string;
 }
 
 function AdminAppointmentsPage() {
@@ -541,6 +542,7 @@ function AdminAppointmentsPage() {
                     <TableHead>Customer</TableHead>
                     <TableHead>Artist</TableHead>
                     <TableHead>Date & Time</TableHead>
+                    <TableHead>Service</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Price</TableHead>
                     <TableHead>Actions</TableHead>
@@ -572,6 +574,11 @@ function AdminAppointmentsPage() {
                             {format(new Date(appointment.datetime), "h:mm a")} •{" "}
                             {appointment.duration} min
                           </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-medium">
+                          {appointment.serviceType}
                         </div>
                       </TableCell>
                       <TableCell>
@@ -830,8 +837,16 @@ function AdminAppointmentsPage() {
                   </p>
                 </div>
                 <div className="space-y-2">
-                  <h3 className="text-sm font-medium text-gray-500">Price</h3>
+                  <h3 className="text-sm font-medium text-gray-500">
+                    Service Details
+                  </h3>
                   <p className="font-medium">
+                    {
+                      appointments.find((a) => a.id === appointmentToUpdate)
+                        ?.serviceType
+                    }
+                  </p>
+                  <p className="text-sm text-gray-500">
                     EGP{" "}
                     {appointments
                       .find((a) => a.id === appointmentToUpdate)

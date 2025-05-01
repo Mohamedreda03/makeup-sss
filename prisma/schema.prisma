@@ -174,7 +174,7 @@ model Appointment {
   userId         String
   artistId       String?
   serviceType    String
-  duration       Int // Duration in minutes
+  duration       Int
   totalPrice     Float
   location       String?
   notes          String?
@@ -293,6 +293,7 @@ model ArtistService {
   name        String
   description String?
   price       Float    @default(0)
+  duration    Int      @default(60) // Default 60 minutes
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

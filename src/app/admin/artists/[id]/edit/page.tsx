@@ -250,14 +250,57 @@ export default function EditArtistPage({ params }: { params: { id: string } }) {
     setIsSaving(true);
 
     try {
+      // Format numeric values properly
+      const formattedValues = {
+        ...values,
+        yearsOfExperience:
+          values.yearsOfExperience !== undefined
+            ? Number(values.yearsOfExperience)
+            : undefined,
+        defaultPrice:
+          values.defaultPrice !== undefined
+            ? Number(values.defaultPrice)
+            : undefined,
+      };
+
+      // Validate website URL format if non-empty
+      let website = formattedValues.website;
+      if (website && website.trim() !== "") {
+        // Check if it starts with http:// or https://
+        if (!website.startsWith("http://") && !website.startsWith("https://")) {
+          website = "https://" + website;
+        }
+
+        // Basic URL validity check
+        try {
+          new URL(website);
+          formattedValues.website = website;
+        } catch (e) {
+          // If invalid URL format, store as empty string
+          console.warn("Invalid website URL format, storing as empty string");
+          formattedValues.website = "";
+        }
+      }
+
       // Log values being sent to API
-      console.log("Updating artist with data:", values);
+      console.log("Updating artist with data:", formattedValues);
 
       // Make sure image is included in the update
       const updateData = {
-        ...values,
-        image: values.image || artist?.image || null, // Use existing image if no new one selected
+        ...formattedValues,
+        image: formattedValues.image || artist?.image || null, // Use existing image if no new one selected
       };
+
+      // Validate that required fields are present
+      if (!updateData.name || !updateData.email) {
+        toast({
+          title: "Error",
+          description: "Name and email are required fields.",
+          variant: "destructive",
+        });
+        setIsSaving(false);
+        return;
+      }
 
       // Update basic artist information
       const response = await fetch(`/api/admin/artists/${params.id}`, {
@@ -277,6 +320,26 @@ export default function EditArtistPage({ params }: { params: { id: string } }) {
       const updatedArtist = await response.json();
       console.log("Artist updated successfully:", updatedArtist);
 
+      // Format services data to ensure price is a number
+      const formattedServices = artistSettings.services
+        ? artistSettings.services.map((service: any) => ({
+            ...service,
+            price:
+              typeof service.price === "string"
+                ? Number(service.price)
+                : service.price,
+          }))
+        : [];
+
+      // Use the same website value we validated above
+      const settingsUpdateData = {
+        ...updateData,
+        website, // Use the validated website
+        specialties: artistSettings.specialties || [],
+        certificates: artistSettings.certificates || [],
+        services: formattedServices,
+      };
+
       // Update artist settings with category and services
       const settingsResponse = await fetch(
         `/api/artist/settings?artistId=${params.id}`,
@@ -285,17 +348,16 @@ export default function EditArtistPage({ params }: { params: { id: string } }) {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            ...updateData,
-            specialties: artistSettings.specialties || [],
-            certificates: artistSettings.certificates || [],
-            services: artistSettings.services || [],
-          }),
+          body: JSON.stringify(settingsUpdateData),
         }
       );
 
       if (!settingsResponse.ok) {
-        throw new Error("Failed to update artist settings");
+        const settingsError = await settingsResponse.json();
+        console.error("Settings API error:", settingsError);
+        throw new Error(
+          settingsError.error || "Failed to update artist settings"
+        );
       }
 
       toast({
@@ -309,7 +371,10 @@ export default function EditArtistPage({ params }: { params: { id: string } }) {
       console.error("Error updating artist:", error);
       toast({
         title: "Error",
-        description: "Failed to update artist. Please try again.",
+        description:
+          typeof error === "object" && error !== null && "message" in error
+            ? (error as Error).message
+            : "Failed to update artist. Please try again.",
         variant: "destructive",
       });
     } finally {

@@ -242,8 +242,41 @@ async function getArtist(id: string) {
   return artist;
 }
 
-// Get artist services from metadata
+// Get artist services from metadata and database
 async function getArtistServices(id: string) {
+  console.log("Fetching services for artist:", id);
+
+  // Get services from the ArtistService database table
+  const databaseServices = await db.artistService.findMany({
+    where: {
+      artistId: id,
+      isActive: true,
+    },
+    orderBy: {
+      price: "asc",
+    },
+  });
+
+  console.log(
+    `Found ${databaseServices.length} database services for artist ${id}`
+  );
+
+  // Format database services with needed properties
+  const formattedDatabaseServices = databaseServices.map((service) => ({
+    id: service.id,
+    name: service.name,
+    description: service.description || "",
+    price: service.price,
+    duration: 60, // Default duration since it might not be in the database schema yet
+    isActive: service.isActive,
+  }));
+
+  // If we found database services, combine them with any metadata services
+  if (formattedDatabaseServices.length > 0) {
+    return formattedDatabaseServices;
+  }
+
+  // Otherwise, fall back to metadata services
   const metadata = await db.userMetadata.findUnique({
     where: {
       userId: id,
@@ -278,7 +311,12 @@ async function getArtistServices(id: string) {
   try {
     const settings = JSON.parse(metadata.artistSettings);
     // Return only active services
-    return settings.services?.filter((service: any) => service.isActive) || [];
+    const metadataServices =
+      settings.services?.filter((service: any) => service.isActive) || [];
+    console.log(
+      `Found ${metadataServices.length} metadata services for artist ${id}`
+    );
+    return metadataServices;
   } catch (error) {
     console.error("Error parsing artist services:", error);
     return [];

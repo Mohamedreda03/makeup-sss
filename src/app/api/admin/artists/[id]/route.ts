@@ -95,6 +95,9 @@ export async function PATCH(
 
     const artistId = params.id;
 
+    // Log the artist ID for debugging
+    console.log("[API] PATCH artist - Artist ID:", artistId);
+
     // Check if artist exists
     const existingArtist = await prisma.user.findUnique({
       where: {
@@ -114,11 +117,20 @@ export async function PATCH(
     }
 
     // Parse request body
-    const body = await request.json();
-    console.log("[API] PATCH artist - Request body:", {
-      ...body,
-      password: body.password ? "****" : undefined,
-    });
+    let body;
+    try {
+      body = await request.json();
+      console.log("[API] PATCH artist - Request body:", {
+        ...body,
+        password: body.password ? "****" : undefined,
+      });
+    } catch (error) {
+      console.error("[API] PATCH artist - Error parsing request body:", error);
+      return NextResponse.json(
+        { message: "Invalid JSON in request body" },
+        { status: 400 }
+      );
+    }
 
     const validation = updateArtistSchema.safeParse(body);
 
@@ -141,98 +153,141 @@ export async function PATCH(
       new: updateData.image,
     });
 
-    // Prepare update data
-    const updatePayload: any = { ...updateData };
+    // Prepare update data - excluding fields not in the User model
+    const { category, ...validUpdateData } = updateData;
+    const updatePayload: any = { ...validUpdateData };
 
     // If password is provided, hash it
     if (password) {
-      updatePayload.password = await hash(password, 10);
+      try {
+        updatePayload.password = await hash(password, 10);
+      } catch (hashError) {
+        console.error(
+          "[API] PATCH artist - Error hashing password:",
+          hashError
+        );
+        return NextResponse.json(
+          { message: "Error processing password" },
+          { status: 500 }
+        );
+      }
     }
 
-    // Use a transaction to update the artist and their services
-    await prisma.$transaction(async (tx) => {
-      // Update artist
-      await tx.user.update({
-        where: { id: artistId },
-        data: updatePayload,
-      });
+    try {
+      // Use a transaction to update the artist and their services
+      await prisma.$transaction(async (tx) => {
+        // Update artist
+        await tx.user.update({
+          where: { id: artistId },
+          data: updatePayload,
+        });
 
-      // Handle services if provided
-      if (services && services.length > 0) {
-        // Get existing service IDs
-        const existingServiceIds = existingArtist.services.map(
-          (service: any) => service.id
-        );
+        // Handle services if provided
+        if (services && services.length > 0) {
+          // Get existing service IDs
+          const existingServiceIds = existingArtist.services.map(
+            (service: any) => service.id
+          );
 
-        // Find services to delete (those in existingServiceIds but not in the incoming services)
-        const incomingServiceIds = services
-          .filter((service) => service.id)
-          .map((service) => service.id as string);
+          // Find services to delete (those in existingServiceIds but not in the incoming services)
+          const incomingServiceIds = services
+            .filter((service) => service.id)
+            .map((service) => service.id as string);
 
-        const serviceIdsToDelete = existingServiceIds.filter(
-          (id: string) => !incomingServiceIds.includes(id)
-        );
+          const serviceIdsToDelete = existingServiceIds.filter(
+            (id: string) => !incomingServiceIds.includes(id)
+          );
 
-        // Delete services that are no longer needed
-        if (serviceIdsToDelete.length > 0) {
-          await tx.artistService.deleteMany({
-            where: {
-              id: {
-                in: serviceIdsToDelete,
-              },
-            },
-          });
-        }
-
-        // Update or create services
-        for (const service of services) {
-          if (service.id) {
-            // Update existing service
-            await tx.artistService.update({
+          // Delete services that are no longer needed
+          if (serviceIdsToDelete.length > 0) {
+            await tx.artistService.deleteMany({
               where: {
-                id: service.id,
-              },
-              data: {
-                name: service.name,
-                description: service.description || "",
-                price: service.price || 0,
-                isActive: service.isActive ?? true,
-              },
-            });
-          } else {
-            // Create new service
-            await tx.artistService.create({
-              data: {
-                name: service.name,
-                description: service.description || "",
-                price: service.price || 0,
-                isActive: service.isActive ?? true,
-                artistId: artistId,
+                id: {
+                  in: serviceIdsToDelete,
+                },
               },
             });
           }
+
+          // Update or create services
+          for (const service of services) {
+            if (service.id) {
+              // Update existing service
+              await tx.artistService.update({
+                where: {
+                  id: service.id,
+                },
+                data: {
+                  name: service.name,
+                  description: service.description || "",
+                  price: service.price || 0,
+                  isActive: service.isActive ?? true,
+                },
+              });
+            } else {
+              // Create new service
+              await tx.artistService.create({
+                data: {
+                  name: service.name,
+                  description: service.description || "",
+                  price: service.price || 0,
+                  isActive: service.isActive ?? true,
+                  artistId: artistId,
+                },
+              });
+            }
+          }
         }
-      }
-    });
+      });
+    } catch (dbError: any) {
+      console.error("[API] PATCH artist - Database error:", dbError);
+      return NextResponse.json(
+        {
+          message: "Database error updating artist",
+          details: dbError.message || "Unknown database error",
+        },
+        { status: 500 }
+      );
+    }
 
-    // Fetch updated artist with services to return
-    const updatedArtist = await prisma.user.findUnique({
-      where: { id: artistId },
-      include: {
-        services: true,
-      },
-    });
+    try {
+      // Fetch updated artist with services to return
+      const updatedArtist = await prisma.user.findUnique({
+        where: { id: artistId },
+        include: {
+          services: true,
+        },
+      });
 
-    console.log(
-      "[API] PATCH artist - Update successful, image in DB:",
-      updatedArtist?.image
-    );
+      console.log(
+        "[API] PATCH artist - Update successful, image in DB:",
+        updatedArtist?.image
+      );
 
-    return NextResponse.json(updatedArtist);
+      return NextResponse.json(updatedArtist);
+    } catch (queryError) {
+      console.error(
+        "[API] PATCH artist - Error fetching updated artist:",
+        queryError
+      );
+      return NextResponse.json(
+        { message: "Artist updated but couldn't fetch updated data" },
+        { status: 200 }
+      );
+    }
   } catch (error) {
-    console.error("[ARTIST_PATCH]", error);
+    console.error("[ARTIST_PATCH] Unhandled error:", error);
+    // Return more detailed error information
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
+    const errorStack = error instanceof Error ? error.stack : undefined;
+
     return NextResponse.json(
-      { message: "Internal server error" },
+      {
+        message: "Internal server error",
+        details: errorMessage,
+        stack: process.env.NODE_ENV === "development" ? errorStack : undefined,
+      },
       { status: 500 }
     );
   }

@@ -311,6 +311,7 @@ exports.Prisma.ArtistServiceScalarFieldEnum = {
   name: 'name',
   description: 'description',
   price: 'price',
+  duration: 'duration',
   isActive: 'isActive',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',

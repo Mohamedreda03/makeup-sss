@@ -21399,10 +21399,12 @@ export namespace Prisma {
 
   export type ArtistServiceAvgAggregateOutputType = {
     price: number | null
+    duration: number | null
   }
 
   export type ArtistServiceSumAggregateOutputType = {
     price: number | null
+    duration: number | null
   }
 
   export type ArtistServiceMinAggregateOutputType = {
@@ -21410,6 +21412,7 @@ export namespace Prisma {
     name: string | null
     description: string | null
     price: number | null
+    duration: number | null
     isActive: boolean | null
     createdAt: Date | null
     updatedAt: Date | null
@@ -21421,6 +21424,7 @@ export namespace Prisma {
     name: string | null
     description: string | null
     price: number | null
+    duration: number | null
     isActive: boolean | null
     createdAt: Date | null
     updatedAt: Date | null
@@ -21432,6 +21436,7 @@ export namespace Prisma {
     name: number
     description: number
     price: number
+    duration: number
     isActive: number
     createdAt: number
     updatedAt: number
@@ -21442,10 +21447,12 @@ export namespace Prisma {
 
   export type ArtistServiceAvgAggregateInputType = {
     price?: true
+    duration?: true
   }
 
   export type ArtistServiceSumAggregateInputType = {
     price?: true
+    duration?: true
   }
 
   export type ArtistServiceMinAggregateInputType = {
@@ -21453,6 +21460,7 @@ export namespace Prisma {
     name?: true
     description?: true
     price?: true
+    duration?: true
     isActive?: true
     createdAt?: true
     updatedAt?: true
@@ -21464,6 +21472,7 @@ export namespace Prisma {
     name?: true
     description?: true
     price?: true
+    duration?: true
     isActive?: true
     createdAt?: true
     updatedAt?: true
@@ -21475,6 +21484,7 @@ export namespace Prisma {
     name?: true
     description?: true
     price?: true
+    duration?: true
     isActive?: true
     createdAt?: true
     updatedAt?: true
@@ -21573,6 +21583,7 @@ export namespace Prisma {
     name: string
     description: string | null
     price: number
+    duration: number
     isActive: boolean
     createdAt: Date
     updatedAt: Date
@@ -21603,6 +21614,7 @@ export namespace Prisma {
     name?: boolean
     description?: boolean
     price?: boolean
+    duration?: boolean
     isActive?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -21615,6 +21627,7 @@ export namespace Prisma {
     name?: boolean
     description?: boolean
     price?: boolean
+    duration?: boolean
     isActive?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -21627,6 +21640,7 @@ export namespace Prisma {
     name?: boolean
     description?: boolean
     price?: boolean
+    duration?: boolean
     isActive?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -21639,13 +21653,14 @@ export namespace Prisma {
     name?: boolean
     description?: boolean
     price?: boolean
+    duration?: boolean
     isActive?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     artistId?: boolean
   }
 
-  export type ArtistServiceOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "description" | "price" | "isActive" | "createdAt" | "updatedAt" | "artistId", ExtArgs["result"]["artistService"]>
+  export type ArtistServiceOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "description" | "price" | "duration" | "isActive" | "createdAt" | "updatedAt" | "artistId", ExtArgs["result"]["artistService"]>
   export type ArtistServiceInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     artist?: boolean | UserDefaultArgs<ExtArgs>
   }
@@ -21666,6 +21681,7 @@ export namespace Prisma {
       name: string
       description: string | null
       price: number
+      duration: number
       isActive: boolean
       createdAt: Date
       updatedAt: Date
@@ -22098,6 +22114,7 @@ export namespace Prisma {
     readonly name: FieldRef<"ArtistService", 'String'>
     readonly description: FieldRef<"ArtistService", 'String'>
     readonly price: FieldRef<"ArtistService", 'Float'>
+    readonly duration: FieldRef<"ArtistService", 'Int'>
     readonly isActive: FieldRef<"ArtistService", 'Boolean'>
     readonly createdAt: FieldRef<"ArtistService", 'DateTime'>
     readonly updatedAt: FieldRef<"ArtistService", 'DateTime'>
@@ -22769,6 +22786,7 @@ export namespace Prisma {
     name: 'name',
     description: 'description',
     price: 'price',
+    duration: 'duration',
     isActive: 'isActive',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt',
@@ -24265,6 +24283,7 @@ export namespace Prisma {
     name?: StringFilter<"ArtistService"> | string
     description?: StringNullableFilter<"ArtistService"> | string | null
     price?: FloatFilter<"ArtistService"> | number
+    duration?: IntFilter<"ArtistService"> | number
     isActive?: BoolFilter<"ArtistService"> | boolean
     createdAt?: DateTimeFilter<"ArtistService"> | Date | string
     updatedAt?: DateTimeFilter<"ArtistService"> | Date | string
@@ -24277,6 +24296,7 @@ export namespace Prisma {
     name?: SortOrder
     description?: SortOrderInput | SortOrder
     price?: SortOrder
+    duration?: SortOrder
     isActive?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -24292,6 +24312,7 @@ export namespace Prisma {
     name?: StringFilter<"ArtistService"> | string
     description?: StringNullableFilter<"ArtistService"> | string | null
     price?: FloatFilter<"ArtistService"> | number
+    duration?: IntFilter<"ArtistService"> | number
     isActive?: BoolFilter<"ArtistService"> | boolean
     createdAt?: DateTimeFilter<"ArtistService"> | Date | string
     updatedAt?: DateTimeFilter<"ArtistService"> | Date | string
@@ -24304,6 +24325,7 @@ export namespace Prisma {
     name?: SortOrder
     description?: SortOrderInput | SortOrder
     price?: SortOrder
+    duration?: SortOrder
     isActive?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -24323,6 +24345,7 @@ export namespace Prisma {
     name?: StringWithAggregatesFilter<"ArtistService"> | string
     description?: StringNullableWithAggregatesFilter<"ArtistService"> | string | null
     price?: FloatWithAggregatesFilter<"ArtistService"> | number
+    duration?: IntWithAggregatesFilter<"ArtistService"> | number
     isActive?: BoolWithAggregatesFilter<"ArtistService"> | boolean
     createdAt?: DateTimeWithAggregatesFilter<"ArtistService"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"ArtistService"> | Date | string
@@ -25700,6 +25723,7 @@ export namespace Prisma {
     name: string
     description?: string | null
     price?: number
+    duration?: number
     isActive?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -25711,6 +25735,7 @@ export namespace Prisma {
     name: string
     description?: string | null
     price?: number
+    duration?: number
     isActive?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -25722,6 +25747,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     price?: FloatFieldUpdateOperationsInput | number
+    duration?: IntFieldUpdateOperationsInput | number
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -25733,6 +25759,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     price?: FloatFieldUpdateOperationsInput | number
+    duration?: IntFieldUpdateOperationsInput | number
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -25744,6 +25771,7 @@ export namespace Prisma {
     name: string
     description?: string | null
     price?: number
+    duration?: number
     isActive?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -25755,6 +25783,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     price?: FloatFieldUpdateOperationsInput | number
+    duration?: IntFieldUpdateOperationsInput | number
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -25765,6 +25794,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     price?: FloatFieldUpdateOperationsInput | number
+    duration?: IntFieldUpdateOperationsInput | number
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -26996,6 +27026,7 @@ export namespace Prisma {
     name?: SortOrder
     description?: SortOrder
     price?: SortOrder
+    duration?: SortOrder
     isActive?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -27004,6 +27035,7 @@ export namespace Prisma {
 
   export type ArtistServiceAvgOrderByAggregateInput = {
     price?: SortOrder
+    duration?: SortOrder
   }
 
   export type ArtistServiceMaxOrderByAggregateInput = {
@@ -27011,6 +27043,7 @@ export namespace Prisma {
     name?: SortOrder
     description?: SortOrder
     price?: SortOrder
+    duration?: SortOrder
     isActive?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -27022,6 +27055,7 @@ export namespace Prisma {
     name?: SortOrder
     description?: SortOrder
     price?: SortOrder
+    duration?: SortOrder
     isActive?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -27030,6 +27064,7 @@ export namespace Prisma {
 
   export type ArtistServiceSumOrderByAggregateInput = {
     price?: SortOrder
+    duration?: SortOrder
   }
 
   export type AccountCreateNestedManyWithoutUserInput = {
@@ -28953,6 +28988,7 @@ export namespace Prisma {
     name: string
     description?: string | null
     price?: number
+    duration?: number
     isActive?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -28963,6 +28999,7 @@ export namespace Prisma {
     name: string
     description?: string | null
     price?: number
+    duration?: number
     isActive?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -29308,6 +29345,7 @@ export namespace Prisma {
     name?: StringFilter<"ArtistService"> | string
     description?: StringNullableFilter<"ArtistService"> | string | null
     price?: FloatFilter<"ArtistService"> | number
+    duration?: IntFilter<"ArtistService"> | number
     isActive?: BoolFilter<"ArtistService"> | boolean
     createdAt?: DateTimeFilter<"ArtistService"> | Date | string
     updatedAt?: DateTimeFilter<"ArtistService"> | Date | string
@@ -32304,6 +32342,7 @@ export namespace Prisma {
     name: string
     description?: string | null
     price?: number
+    duration?: number
     isActive?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -32625,6 +32664,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     price?: FloatFieldUpdateOperationsInput | number
+    duration?: IntFieldUpdateOperationsInput | number
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -32635,6 +32675,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     price?: FloatFieldUpdateOperationsInput | number
+    duration?: IntFieldUpdateOperationsInput | number
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -32645,6 +32686,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     price?: FloatFieldUpdateOperationsInput | number
+    duration?: IntFieldUpdateOperationsInput | number
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string

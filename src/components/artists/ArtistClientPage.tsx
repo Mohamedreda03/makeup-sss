@@ -202,13 +202,6 @@ export default function ArtistClientPage({
             </Badge>
           </div>
 
-          {artist.defaultPrice && (
-            <div className="flex items-center gap-2 text-2xl font-bold mb-4">
-              <span>EGP</span>
-              <span>{artist.defaultPrice}</span>
-            </div>
-          )}
-
           {/* Artist bio */}
           <div className="mb-6">
             <p className="text-gray-700 italic relative pl-6">{artist.bio}</p>

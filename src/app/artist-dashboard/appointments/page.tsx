@@ -13,6 +13,7 @@ import {
   AlertCircle,
   Check,
   X,
+  User,
 } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -65,7 +66,7 @@ interface Appointment {
   status: AppointmentStatus;
   userId: string;
   artistId: string | null;
-
+  serviceType: string;
   duration: number;
   totalPrice: number;
   location: string | null;
@@ -488,6 +489,7 @@ export default function AppointmentsPage() {
                     <TableRow>
                       <TableHead>Client</TableHead>
                       <TableHead>Date & Time</TableHead>
+                      <TableHead>Service</TableHead>
                       <TableHead>Price</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Actions</TableHead>
@@ -531,6 +533,11 @@ export default function AppointmentsPage() {
                               {format(new Date(appointment.datetime), "h:mm a")}{" "}
                               • {appointment.duration} min
                             </span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="font-medium">
+                            {appointment.serviceType}
                           </div>
                         </TableCell>
                         <TableCell>
@@ -667,121 +674,95 @@ export default function AppointmentsPage() {
           <DialogHeader>
             <DialogTitle>Appointment Details</DialogTitle>
             <DialogDescription>
-              View and update appointment information.
+              View and manage appointment details
             </DialogDescription>
           </DialogHeader>
-          {selectedAppointment && (
-            <div className="space-y-4 py-2">
-              <div className="flex flex-col space-y-1">
-                <span className="text-sm font-medium text-muted-foreground">
-                  Client
-                </span>
-                <div className="flex items-center space-x-2">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage
-                      src={selectedAppointment.user.image || ""}
-                      alt={selectedAppointment.user.name || ""}
-                    />
-                    <AvatarFallback>
-                      {selectedAppointment.user.name
-                        ?.substring(0, 2)
-                        .toUpperCase() || "U"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="font-medium">
-                    {selectedAppointment.user.name || "Unknown"}
-                  </span>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-x-6">
-                <div>
-                  <p className="text-sm text-gray-500">Price</p>
-                  <p className="font-medium">
-                    EGP {selectedAppointment.totalPrice.toFixed(2)}
-                  </p>
-                </div>
-                <div>
-                  <span className="text-sm font-medium text-muted-foreground">
-                    Date
-                  </span>
-                  <p>
-                    {format(
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <div className="flex items-center">
+                <Calendar className="h-4 w-4 mr-2 text-gray-500" />
+                <span className="font-semibold">Date:</span>
+                <span className="ml-2">
+                  {selectedAppointment &&
+                    format(
                       new Date(selectedAppointment.datetime),
-                      "MMM dd, yyyy"
+                      "MMMM d, yyyy"
                     )}
-                  </p>
-                </div>
-                <div>
-                  <span className="text-sm font-medium text-muted-foreground">
-                    Time
-                  </span>
-                  <p>
-                    {format(new Date(selectedAppointment.datetime), "h:mm a")}
-                  </p>
-                </div>
-                <div>
-                  <span className="text-sm font-medium text-muted-foreground">
-                    Duration
-                  </span>
-                  <p>{selectedAppointment.duration} minutes</p>
-                </div>
-                <div>
-                  <span className="text-sm font-medium text-muted-foreground">
-                    Status
-                  </span>
-                  <Badge
-                    variant="outline"
-                    className={getStatusColor(selectedAppointment.status)}
-                  >
-                    <span className="flex items-center space-x-1">
-                      {getStatusIcon(selectedAppointment.status)}
-                      <span>{getStatusText(selectedAppointment.status)}</span>
-                    </span>
-                  </Badge>
-                </div>
-              </div>
-              <div>
-                <span className="text-sm font-medium text-muted-foreground">
-                  Description
                 </span>
-                <p>
-                  {selectedAppointment.description || "No description provided"}
-                </p>
               </div>
-              <div className="space-y-2">
-                <span className="text-sm font-medium text-muted-foreground">
-                  Update Status
+              <div className="flex items-center">
+                <Clock className="h-4 w-4 mr-2 text-gray-500" />
+                <span className="font-semibold">Time:</span>
+                <span className="ml-2">
+                  {selectedAppointment &&
+                    format(
+                      new Date(selectedAppointment.datetime),
+                      "h:mm a"
+                    )}{" "}
+                  ({selectedAppointment?.duration} minutes)
                 </span>
-                <Select
-                  value={newStatus}
-                  onValueChange={(value: string) =>
-                    setNewStatus(value as AppointmentStatus)
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="PENDING">Pending</SelectItem>
-                    <SelectItem value="CONFIRMED">Confirmed</SelectItem>
-                    <SelectItem value="COMPLETED">Completed</SelectItem>
-                    <SelectItem value="CANCELLED">Cancelled</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
-              <div className="space-y-2">
-                <span className="text-sm font-medium text-muted-foreground">
-                  Notes
+              <div className="flex items-center">
+                <User className="h-4 w-4 mr-2 text-gray-500" />
+                <span className="font-semibold">Client:</span>
+                <span className="ml-2">
+                  {selectedAppointment?.user.name || "Unknown"}
                 </span>
-                <Textarea
-                  value={statusNotes}
-                  onChange={(e) => setStatusNotes(e.target.value)}
-                  placeholder="Add notes about this appointment"
-                  rows={3}
-                />
               </div>
+
+              <div className="flex items-start">
+                <span className="font-semibold mr-2">Service:</span>
+                <span>{selectedAppointment?.serviceType}</span>
+              </div>
+
+              {selectedAppointment?.location && (
+                <div className="flex items-start">
+                  <span className="font-semibold mr-2">Location:</span>
+                  <span>{selectedAppointment.location}</span>
+                </div>
+              )}
             </div>
-          )}
+            <div>
+              <span className="text-sm font-medium text-muted-foreground">
+                Description
+              </span>
+              <p>
+                {selectedAppointment?.description || "No description provided"}
+              </p>
+            </div>
+            <div className="space-y-2">
+              <span className="text-sm font-medium text-muted-foreground">
+                Update Status
+              </span>
+              <Select
+                value={newStatus}
+                onValueChange={(value: string) =>
+                  setNewStatus(value as AppointmentStatus)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="PENDING">Pending</SelectItem>
+                  <SelectItem value="CONFIRMED">Confirmed</SelectItem>
+                  <SelectItem value="COMPLETED">Completed</SelectItem>
+                  <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <span className="text-sm font-medium text-muted-foreground">
+                Notes
+              </span>
+              <Textarea
+                value={statusNotes}
+                onChange={(e) => setStatusNotes(e.target.value)}
+                placeholder="Add notes about this appointment"
+                rows={3}
+              />
+            </div>
+          </div>
           <DialogFooter>
             <Button
               variant="outline"

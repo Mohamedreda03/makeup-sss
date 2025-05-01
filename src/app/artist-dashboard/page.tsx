@@ -85,7 +85,7 @@ interface Appointment {
   status: AppointmentStatus;
   userId: string;
   artistId: string | null;
-
+  serviceType: string;
   duration: number;
   totalPrice: number;
   location: string | null;
@@ -598,6 +598,7 @@ export default function ArtistDashboard() {
                     <TableRow>
                       <TableHead>Client</TableHead>
                       <TableHead>Date & Time</TableHead>
+                      <TableHead>Service</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
@@ -636,6 +637,11 @@ export default function ArtistDashboard() {
                               {format(new Date(appointment.datetime), "h:mm a")}{" "}
                               • {appointment.duration} min
                             </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="font-medium">
+                            {appointment.serviceType}
                           </div>
                         </TableCell>
                         <TableCell>

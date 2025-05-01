@@ -181,8 +181,7 @@ export default function ArtistBooking({
           if (data && data.length > 0) {
             setAvailableServices(data);
 
-            // تعديل الاختيار التلقائي ليتم فقط إذا لم يكن هناك خدمة مختارة بالفعل
-            // وأن تكون الخدمة الأولى لها معرف صالح
+            // Only auto-select if no service is selected and we haven't loaded services before
             if (
               (!selectedService || !selectedService.id) &&
               data[0] &&
@@ -198,19 +197,6 @@ export default function ArtistBooking({
                   "We've selected the first service for you. You can choose a different one if you prefer.",
                 variant: "default",
               });
-
-              // Scroll to date selection after a brief delay
-              setTimeout(() => {
-                const dateSection = document.getElementById(
-                  "date-selection-section"
-                );
-                if (dateSection) {
-                  dateSection.scrollIntoView({
-                    behavior: "smooth",
-                    block: "start",
-                  });
-                }
-              }, 500);
             }
           }
         }
@@ -221,8 +207,11 @@ export default function ArtistBooking({
       }
     };
 
-    fetchServices();
-  }, [artistId, selectedService]);
+    // Only fetch services on initial load
+    if (!availableServices.length) {
+      fetchServices();
+    }
+  }, [artistId, availableServices.length]);
 
   // Generate time slots based on artist's actual settings from database
   const generateTimeSlots = (date: string) => {
@@ -392,28 +381,23 @@ export default function ArtistBooking({
     };
   }, []);
 
-  // Fetch artist availability
+  // Fetch availability data from the API with service ID
   useEffect(() => {
     const fetchAvailability = async () => {
+      if (!artistId) return;
+
       try {
         setIsLoading(true);
-        // Pass the date range params
-        const response = await fetch(
-          `/api/artists/${artistId}/availability?days=14`
-        );
+        // Construct URL with artist ID
+        const url = `/api/artists/${artistId}/availability?days=14`;
+        console.log("Fetching availability from:", url);
 
+        const response = await fetch(url);
         if (!response.ok) {
-          throw new Error("Failed to fetch availability");
+          throw new Error(`Failed to fetch availability: ${response.status}`);
         }
-
         const data = await response.json();
-
-        // Log availability data for debugging
-        console.log("Artist availability data:", data);
-        console.log(
-          "Regular days off from props:",
-          availabilitySettings.regularDaysOff
-        );
+        console.log("Received availability data:", data);
 
         // Use the availability settings to customize display
         if (!data.isAvailable && availabilitySettings) {
@@ -439,14 +423,12 @@ export default function ArtistBooking({
           // Update the availability to only include available days
           data.availability = availableDays;
 
-          if (availableDays.length > 0) {
+          if (availableDays.length > 0 && !selectedDate) {
             setSelectedDate(availableDays[0].date);
             console.log(
               "Auto-selected first available day:",
               availableDays[0].date
             );
-          } else {
-            console.log("No available days found with time slots.");
           }
         }
       } catch (error) {
@@ -469,9 +451,8 @@ export default function ArtistBooking({
   // Handle service selection
   const handleServiceSelect = (service: Service) => {
     setSelectedService(service);
-    // Reset date and time when changing service
-    setSelectedDate(null);
-    setSelectedTime(null);
+    // We no longer reset date and time when changing service
+    // This provides a better user experience
   };
 
   const handleDateSelect = (date: string) => {
@@ -650,86 +631,6 @@ export default function ArtistBooking({
 
       {/* Main booking process container */}
       <div className="border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm">
-        {/* Booking progress indicator */}
-        <div className="bg-gray-50 p-4 border-b border-gray-200">
-          <div className="flex items-center justify-between max-w-3xl mx-auto">
-            <div className="flex flex-col items-center">
-              <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center mb-1 ${
-                  selectedService && selectedService.id
-                    ? "bg-rose-500 text-white"
-                    : "bg-gray-200 text-gray-500"
-                }`}
-              >
-                <span className="font-bold">1</span>
-              </div>
-              <span className="text-xs font-medium">Service</span>
-            </div>
-
-            <div
-              className={`flex-1 h-1 mx-2 ${
-                selectedService && selectedService.id
-                  ? "bg-rose-300"
-                  : "bg-gray-200"
-              }`}
-            ></div>
-
-            <div className="flex flex-col items-center">
-              <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center mb-1 ${
-                  selectedDate
-                    ? "bg-rose-500 text-white"
-                    : "bg-gray-200 text-gray-500"
-                }`}
-              >
-                <span className="font-bold">2</span>
-              </div>
-              <span className="text-xs font-medium">Date</span>
-            </div>
-
-            <div
-              className={`flex-1 h-1 mx-2 ${
-                selectedDate ? "bg-rose-300" : "bg-gray-200"
-              }`}
-            ></div>
-
-            <div className="flex flex-col items-center">
-              <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center mb-1 ${
-                  selectedTime
-                    ? "bg-rose-500 text-white"
-                    : "bg-gray-200 text-gray-500"
-                }`}
-              >
-                <span className="font-bold">3</span>
-              </div>
-              <span className="text-xs font-medium">Time</span>
-            </div>
-
-            <div
-              className={`flex-1 h-1 mx-2 ${
-                selectedTime ? "bg-rose-300" : "bg-gray-200"
-              }`}
-            ></div>
-
-            <div className="flex flex-col items-center">
-              <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center mb-1 ${
-                  selectedService &&
-                  selectedService.id &&
-                  selectedDate &&
-                  selectedTime
-                    ? "bg-rose-500 text-white"
-                    : "bg-gray-200 text-gray-500"
-                }`}
-              >
-                <span className="font-bold">4</span>
-              </div>
-              <span className="text-xs font-medium">Confirm</span>
-            </div>
-          </div>
-        </div>
-
         {/* Booking content */}
         <div className="p-6">
           {/* Service Selection Step */}

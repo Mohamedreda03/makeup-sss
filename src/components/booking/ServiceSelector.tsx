@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
-import { Check, Clock, DollarSign, Info, Sparkles } from "lucide-react";
+import { Check, Info } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface Service {
@@ -116,20 +116,9 @@ export default function ServiceSelector({
                       variant="outline"
                       className="flex items-center bg-green-50 text-green-700 border-green-200 text-xs py-0.5"
                     >
-                      <DollarSign className="h-3 w-3 mr-0.5" />
                       EGP
                       {service.price.toFixed(2)}
                     </Badge>
-
-                    {service.duration && (
-                      <Badge
-                        variant="outline"
-                        className="flex items-center bg-blue-50 text-blue-700 border-blue-200 text-xs py-0.5"
-                      >
-                        <Clock className="h-3 w-3 mr-0.5" />
-                        {service.duration} min
-                      </Badge>
-                    )}
                   </div>
 
                   {isSelected && (

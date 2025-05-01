@@ -44,6 +44,7 @@ interface Appointment {
   artistId: string | null;
   artistName?: string | null;
   artistImage?: string | null;
+  serviceType: string;
   duration: number;
   totalPrice: number;
   location: string | null;
@@ -270,30 +271,33 @@ export default function AppointmentsPage() {
           <h2 className="text-2xl font-semibold mb-6">
             Confirmed Appointments
           </h2>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-6">
             {pendingAppointments.map((appointment) => (
-              <Card
-                key={appointment.id}
-                className="overflow-hidden border-rose-100 shadow-sm hover:shadow transition-all"
-              >
-                <CardContent className="p-4">
-                  <div className="flex justify-between mb-3">
-                    <div>
-                      <p className="text-gray-600 flex items-center text-lg">
-                        <User className="h-5 w-5 mr-1 inline" />
-                        {appointment.artistName || "Unknown Artist"}
-                      </p>
+              <Card key={appointment.id} className="overflow-hidden">
+                <CardContent className="p-6">
+                  <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-4">
+                    <div className="flex items-start gap-4">
+                      <div className="h-12 w-12 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
+                        <Image
+                          src={
+                            appointment.artistImage ||
+                            "/images/placeholder-user.png"
+                          }
+                          alt={appointment.artistName || "Artist"}
+                          width={48}
+                          height={48}
+                          className="object-cover w-full h-full"
+                        />
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-gray-900">
+                          {appointment.artistName || "Artist"}
+                        </h3>
+                        <p className="text-sm text-gray-500">
+                          Service: {appointment.serviceType}
+                        </p>
+                      </div>
                     </div>
-                    <Badge
-                      variant={
-                        appointment.status === "CONFIRMED"
-                          ? "success"
-                          : "default"
-                      }
-                      className="px-2 py-0.5 text-xs font-medium"
-                    >
-                      Confirmed
-                    </Badge>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 text-xs bg-gray-50 p-2 rounded-md mb-3">
@@ -427,6 +431,11 @@ export default function AppointmentsPage() {
                       <span>EGP {appointment.totalPrice}</span>
                     </div>
                   </div>
+
+                  <div className="mt-3 text-sm">
+                    <span className="font-medium">Service:</span>{" "}
+                    {appointment.serviceType}
+                  </div>
                 </div>
 
                 {/* Review section */}
@@ -486,6 +495,11 @@ export default function AppointmentsPage() {
                       <DollarSign className="h-4 w-4 mr-2 text-gray-500" />
                       <span>EGP {appointment.totalPrice}</span>
                     </div>
+                  </div>
+
+                  <div className="mt-3 text-sm">
+                    <span className="font-medium">Service:</span>{" "}
+                    {appointment.serviceType}
                   </div>
                 </CardContent>
               </Card>
