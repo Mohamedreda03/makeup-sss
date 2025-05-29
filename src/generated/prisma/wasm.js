@@ -124,31 +124,28 @@ exports.Prisma.UserScalarFieldEnum = {
   id: 'id',
   name: 'name',
   email: 'email',
-  emailVerified: 'emailVerified',
-  image: 'image',
   password: 'password',
-  phone: 'phone',
   role: 'role',
-  instagram: 'instagram',
-  facebook: 'facebook',
-  twitter: 'twitter',
-  tiktok: 'tiktok',
-  website: 'website',
-  bio: 'bio',
-  yearsOfExperience: 'yearsOfExperience',
-  defaultPrice: 'defaultPrice',
+  phone: 'phone',
+  address: 'address',
+  image: 'image',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
 
-exports.Prisma.UserMetadataScalarFieldEnum = {
+exports.Prisma.MakeUpArtistScalarFieldEnum = {
   id: 'id',
-  userId: 'userId',
-  availabilitySettings: 'availabilitySettings',
-  artistSettings: 'artistSettings',
-  preferences: 'preferences',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  user_id: 'user_id',
+  pricing: 'pricing',
+  experience_years: 'experience_years',
+  portfolio: 'portfolio',
+  gender: 'gender',
+  rating: 'rating',
+  address: 'address',
+  bio: 'bio',
+  availability: 'availability',
+  available_slots: 'available_slots',
+  earnings: 'earnings'
 };
 
 exports.Prisma.AccountScalarFieldEnum = {
@@ -179,131 +176,12 @@ exports.Prisma.VerificationTokenScalarFieldEnum = {
   expires: 'expires'
 };
 
-exports.Prisma.ProductScalarFieldEnum = {
-  id: 'id',
-  name: 'name',
-  description: 'description',
-  price: 'price',
-  imageUrl: 'imageUrl',
-  featured: 'featured',
-  inStock: 'inStock',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-  category: 'category'
-};
-
-exports.Prisma.CartScalarFieldEnum = {
-  id: 'id',
-  userId: 'userId',
-  sessionId: 'sessionId',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-};
-
-exports.Prisma.CartItemScalarFieldEnum = {
-  id: 'id',
-  cartId: 'cartId',
-  productId: 'productId',
-  quantity: 'quantity',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-};
-
-exports.Prisma.OrderScalarFieldEnum = {
-  id: 'id',
-  userId: 'userId',
-  sessionId: 'sessionId',
-  status: 'status',
-  total: 'total',
-  shippingInfo: 'shippingInfo',
-  paymentInfo: 'paymentInfo',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-};
-
-exports.Prisma.OrderItemScalarFieldEnum = {
-  id: 'id',
-  orderId: 'orderId',
-  productId: 'productId',
-  name: 'name',
-  price: 'price',
-  quantity: 'quantity',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-};
-
-exports.Prisma.AppointmentScalarFieldEnum = {
-  id: 'id',
-  datetime: 'datetime',
-  description: 'description',
-  status: 'status',
-  userId: 'userId',
-  artistId: 'artistId',
-  serviceType: 'serviceType',
-  duration: 'duration',
-  totalPrice: 'totalPrice',
-  location: 'location',
-  notes: 'notes',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-};
-
-exports.Prisma.ReviewScalarFieldEnum = {
-  id: 'id',
-  appointmentId: 'appointmentId',
-  userId: 'userId',
-  artistId: 'artistId',
-  rating: 'rating',
-  comment: 'comment',
-  status: 'status',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-};
-
-exports.Prisma.PaymentDetailScalarFieldEnum = {
-  id: 'id',
-  appointmentId: 'appointmentId',
-  amount: 'amount',
-  currency: 'currency',
-  status: 'status',
-  paymentMethod: 'paymentMethod',
-  paidAt: 'paidAt',
-  transactionId: 'transactionId',
-  paymentGateway: 'paymentGateway',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-};
-
 exports.Prisma.PasswordResetScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
   token: 'token',
   expiresAt: 'expiresAt',
   createdAt: 'createdAt'
-};
-
-exports.Prisma.TransactionScalarFieldEnum = {
-  id: 'id',
-  artistAccountId: 'artistAccountId',
-  orderId: 'orderId',
-  amount: 'amount',
-  type: 'type',
-  status: 'status',
-  description: 'description',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-  userId: 'userId',
-  appointmentId: 'appointmentId'
-};
-
-exports.Prisma.ArtistAccountScalarFieldEnum = {
-  id: 'id',
-  userId: 'userId',
-  totalEarnings: 'totalEarnings',
-  pendingPayouts: 'pendingPayouts',
-  availableBalance: 'availableBalance',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
 };
 
 exports.Prisma.ArtistServiceScalarFieldEnum = {
@@ -316,6 +194,92 @@ exports.Prisma.ArtistServiceScalarFieldEnum = {
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
   artistId: 'artistId'
+};
+
+exports.Prisma.BookingScalarFieldEnum = {
+  id: 'id',
+  user_id: 'user_id',
+  artist_id: 'artist_id',
+  service_type: 'service_type',
+  service_price: 'service_price',
+  date_time: 'date_time',
+  booking_status: 'booking_status',
+  total_price: 'total_price',
+  location: 'location',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ReviewScalarFieldEnum = {
+  id: 'id',
+  user_id: 'user_id',
+  artist_id: 'artist_id',
+  date: 'date',
+  rating: 'rating',
+  comment: 'comment',
+  status: 'status',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.OrderScalarFieldEnum = {
+  id: 'id',
+  user_id: 'user_id',
+  order_date: 'order_date',
+  status: 'status',
+  payment_status: 'payment_status',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.PaymentScalarFieldEnum = {
+  id: 'id',
+  order_id: 'order_id',
+  amount: 'amount',
+  method: 'method',
+  payment_status: 'payment_status',
+  date: 'date',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.CartScalarFieldEnum = {
+  id: 'id',
+  user_id: 'user_id',
+  total_price: 'total_price'
+};
+
+exports.Prisma.CartItemScalarFieldEnum = {
+  id: 'id',
+  product_id: 'product_id',
+  quantity: 'quantity',
+  cart_id: 'cart_id'
+};
+
+exports.Prisma.ProductScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  description: 'description',
+  price: 'price',
+  category: 'category',
+  stock_quantity: 'stock_quantity',
+  inStock: 'inStock',
+  featured: 'featured',
+  image: 'image',
+  imageUrl: 'imageUrl',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.OrderDetailsScalarFieldEnum = {
+  id: 'id',
+  product_id: 'product_id',
+  quantity: 'quantity',
+  price: 'price',
+  type: 'type',
+  order_id: 'order_id',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 };
 
 exports.Prisma.SortOrder = {
@@ -349,14 +313,7 @@ exports.UserRole = exports.$Enums.UserRole = {
   ARTIST: 'ARTIST'
 };
 
-exports.OrderStatus = exports.$Enums.OrderStatus = {
-  PENDING: 'PENDING',
-  PROCESSING: 'PROCESSING',
-  COMPLETED: 'COMPLETED',
-  CANCELLED: 'CANCELLED'
-};
-
-exports.AppointmentStatus = exports.$Enums.AppointmentStatus = {
+exports.BookingStatus = exports.$Enums.BookingStatus = {
   PENDING: 'PENDING',
   CONFIRMED: 'CONFIRMED',
   COMPLETED: 'COMPLETED',
@@ -369,37 +326,29 @@ exports.ReviewStatus = exports.$Enums.ReviewStatus = {
   REJECTED: 'REJECTED'
 };
 
-exports.TransactionType = exports.$Enums.TransactionType = {
-  PAYOUT: 'PAYOUT',
-  SALE: 'SALE',
-  REFUND: 'REFUND',
-  ADJUSTMENT: 'ADJUSTMENT'
-};
-
-exports.TransactionStatus = exports.$Enums.TransactionStatus = {
+exports.OrderStatus = exports.$Enums.OrderStatus = {
   PENDING: 'PENDING',
+  PROCESSING: 'PROCESSING',
   COMPLETED: 'COMPLETED',
-  FAILED: 'FAILED'
+  CANCELLED: 'CANCELLED'
 };
 
 exports.Prisma.ModelName = {
   User: 'User',
-  UserMetadata: 'UserMetadata',
+  MakeUpArtist: 'MakeUpArtist',
   Account: 'Account',
   Session: 'Session',
   VerificationToken: 'VerificationToken',
-  Product: 'Product',
+  PasswordReset: 'PasswordReset',
+  ArtistService: 'ArtistService',
+  Booking: 'Booking',
+  Review: 'Review',
+  Order: 'Order',
+  Payment: 'Payment',
   Cart: 'Cart',
   CartItem: 'CartItem',
-  Order: 'Order',
-  OrderItem: 'OrderItem',
-  Appointment: 'Appointment',
-  Review: 'Review',
-  PaymentDetail: 'PaymentDetail',
-  PasswordReset: 'PasswordReset',
-  Transaction: 'Transaction',
-  ArtistAccount: 'ArtistAccount',
-  ArtistService: 'ArtistService'
+  Product: 'Product',
+  OrderDetails: 'OrderDetails'
 };
 
 /**

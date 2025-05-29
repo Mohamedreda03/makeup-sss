@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Loader2, ShoppingCart } from "lucide-react";
+import { ShoppingCart, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
 import { Product } from "@/types/product";
+import { useCartStore } from "@/store/useCartStore";
 
 interface AddToCartButtonProps {
   product: Product;
@@ -18,11 +18,11 @@ export default function AddToCartButton({
   quantity = 1,
   className,
 }: AddToCartButtonProps) {
-  const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const { addItem } = useCartStore();
 
-  const addToCart = async () => {
-    if (!product.inStock) {
+  const addToCart = () => {
+    if (product.stock_quantity <= 0) {
       toast({
         title: "Product out of stock",
         description: "Sorry, this product is currently out of stock.",
@@ -32,33 +32,30 @@ export default function AddToCartButton({
     }
 
     try {
-      setIsLoading(true);
+      // Prepare product data for cart
+      const cartProduct = {
+        id: product.id,
+        name: product.name,
+        price: product.price,
+        imageUrl: product.image || product.imageUrl || null,
+        category: product.category,
+      };
 
-      const response = await fetch("/api/cart", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          productId: product.id,
-          quantity,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to add item to cart");
-      }
+      // Add to cart with immediate updates
+      addItem(cartProduct, quantity);
 
       toast({
         title: "Added to cart",
         description: `${product.name} has been added to your cart.`,
       });
 
-      // Dispatch custom event to notify navbar about cart update
-      window.dispatchEvent(new Event("cart-updated"));
+      // Show success animation
+      setShowSuccess(true);
 
-      // Refresh the page to update the cart count
-      router.refresh();
+      // Hide success animation after 2 seconds
+      setTimeout(() => {
+        setShowSuccess(false);
+      }, 2000);
     } catch (error) {
       console.error("Error adding to cart:", error);
       toast({
@@ -66,21 +63,24 @@ export default function AddToCartButton({
         description: "Failed to add item to cart. Please try again.",
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
   return (
     <Button
       onClick={addToCart}
-      disabled={isLoading || !product.inStock}
-      className={`w-full bg-rose-500 hover:bg-rose-600 ${className}`}
+      disabled={product.stock_quantity <= 0}
+      className={`w-full transition-all duration-300 ${
+        showSuccess
+          ? "bg-green-500 hover:bg-green-600 scale-105"
+          : "bg-rose-500 hover:bg-rose-600"
+      } ${className}`}
     >
-      {isLoading ? (
-        <>
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Adding...
-        </>
+      {showSuccess ? (
+        <div className="flex items-center animate-pulse">
+          <Check className="mr-2 h-4 w-4 animate-bounce" />
+          Added Successfully!
+        </div>
       ) : (
         <>
           <ShoppingCart className="mr-2 h-4 w-4" /> Add to Cart

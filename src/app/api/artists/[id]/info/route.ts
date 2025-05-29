@@ -7,9 +7,7 @@ export async function GET(
 ) {
   try {
     // Get artist ID from params
-    const artistId = params.id;
-
-    // Fetch artist data including default price
+    const artistId = params.id; // Fetch artist data including makeup artist profile
     const artist = await db.user.findUnique({
       where: {
         id: artistId,
@@ -21,14 +19,21 @@ export async function GET(
         email: true,
         image: true,
         phone: true,
-        instagram: true,
-        facebook: true,
-        twitter: true,
-        tiktok: true,
-        website: true,
-        bio: true,
-        yearsOfExperience: true,
-        defaultPrice: true,
+        address: true,
+        makeup_artist: {
+          select: {
+            id: true,
+            bio: true,
+            experience_years: true,
+            pricing: true,
+            rating: true,
+            availability: true,
+            portfolio: true,
+            gender: true,
+            available_slots: true,
+            earnings: true,
+          },
+        },
       },
     });
 

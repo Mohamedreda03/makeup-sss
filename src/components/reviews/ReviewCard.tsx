@@ -23,7 +23,7 @@ import { Button } from "@/components/ui/button";
 export interface ReviewData {
   id: string;
   rating: number;
-  comment: string;
+  comment: string | null;
   status: "PENDING" | "APPROVED" | "REJECTED";
   createdAt: string;
   user: {
@@ -31,9 +31,10 @@ export interface ReviewData {
     name: string | null;
     image: string | null;
   };
-  appointment: {
-    serviceType: string;
-    datetime: string;
+  artist?: {
+    id: string;
+    name: string | null;
+    image: string | null;
   };
 }
 
@@ -111,12 +112,11 @@ export function ReviewCard({
                       review.status.slice(1).toLowerCase()}
                   </Badge>
                 )}
-              </div>
-
+              </div>{" "}
               <div className="relative mt-4 bg-purple-50 p-4 rounded-lg">
                 <Quote className="absolute text-purple-200 h-8 w-8 -top-2 -left-2 -z-0" />
                 <p className="text-gray-700 relative z-10 text-md">
-                  {review.comment}
+                  {review.comment || "No comment provided"}
                 </p>
               </div>
             </div>
@@ -160,17 +160,8 @@ export function ReviewCard({
               </div>
             </div>
             <StarRating rating={review.rating} size="sm" color="amber" />
-          </div>
-
+          </div>{" "}
           <div className="mt-2 flex flex-wrap gap-2">
-            <Badge
-              variant="secondary"
-              className="bg-rose-100 text-rose-700 hover:bg-rose-200 border-0"
-            >
-              <Tag className="h-3 w-3 mr-1" />
-              {review.appointment.serviceType}
-            </Badge>
-
             {showStatus && (
               <Badge className={statusColors[review.status]}>
                 {review.status.charAt(0) + review.status.slice(1).toLowerCase()}
@@ -178,12 +169,12 @@ export function ReviewCard({
             )}
           </div>
         </div>
-      </CardHeader>
-
+      </CardHeader>{" "}
       <CardContent className="p-4 bg-white">
-        <p className="text-gray-700 whitespace-pre-line">{review.comment}</p>
+        <p className="text-gray-700 whitespace-pre-line">
+          {review.comment || "No comment provided"}
+        </p>
       </CardContent>
-
       {shouldShowActions && (
         <CardFooter className="p-3 bg-gray-50 border-t flex justify-end gap-2">
           {review.status === "PENDING" && (

@@ -37,23 +37,23 @@ export async function PUT(
       );
     }
 
-    // Get appointment ID from URL params
-    const appointmentId = params.id;
+    // Get booking ID from URL params
+    const bookingId = params.id;
 
-    // Check if appointment exists
-    const appointment = await db.appointment.findUnique({
-      where: { id: appointmentId },
+    // Check if booking exists
+    const booking = await db.booking.findUnique({
+      where: { id: bookingId },
     });
 
-    if (!appointment) {
+    if (!booking) {
       return NextResponse.json(
-        { message: "Appointment not found" },
+        { message: "Booking not found" },
         { status: 404 }
       );
     }
 
-    // Get status and notes from request body
-    const { status, notes } = await req.json();
+    // Get status from request body
+    const { status } = await req.json();
 
     // Validate status
     const validStatuses = ["PENDING", "CONFIRMED", "COMPLETED", "CANCELLED"];
@@ -64,21 +64,20 @@ export async function PUT(
       );
     }
 
-    // Update appointment status
-    const updatedAppointment = await db.appointment.update({
-      where: { id: appointmentId },
+    // Update booking status
+    const updatedBooking = await db.booking.update({
+      where: { id: bookingId },
       data: {
-        status,
-        notes: notes || appointment.notes,
+        booking_status: status,
       },
     });
 
     return NextResponse.json({
-      message: "Appointment status updated successfully",
-      appointment: updatedAppointment,
+      message: "Booking status updated successfully",
+      booking: updatedBooking,
     });
   } catch (error) {
-    console.error("Error updating appointment status:", error);
+    console.error("Error updating booking status:", error);
     return NextResponse.json(
       { message: "Server error", error: String(error) },
       { status: 500 }

@@ -14,8 +14,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { AlertCircle, Camera, Check, Loader2, Upload } from "lucide-react";
+
+import { AlertCircle, Camera, Check, Loader2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useForm } from "react-hook-form";
 import { toast } from "@/hooks/use-toast";
@@ -23,7 +23,6 @@ import axios from "axios";
 import { ProgressIndicator } from "@/components/ui/progress-indicator";
 import { uploadImageToCloudinary } from "@/lib/utils/cloudinary-upload";
 import { UserAvatar } from "@/components/user-avatar";
-import { Textarea } from "@/components/ui/textarea";
 
 // Definir la interfaz para los datos del usuario
 interface UserData {
@@ -31,15 +30,10 @@ interface UserData {
   name: string | null;
   email: string | null;
   phone: string | null;
+  address: string | null;
   image: string | null;
   role: string;
   createdAt: string;
-  instagram?: string;
-  facebook?: string;
-  twitter?: string;
-  tiktok?: string;
-  website?: string;
-  bio?: string;
 }
 
 // Definir el componente de la página de perfil
@@ -51,15 +45,6 @@ function ProfilePage() {
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
-  const [socialMediaData, setSocialMediaData] = useState({
-    instagram: "",
-    facebook: "",
-    twitter: "",
-    tiktok: "",
-    website: "",
-    bio: "",
-  });
-
   // Fetch user data on component mount
   useEffect(() => {
     const fetchUserData = async () => {
@@ -67,25 +52,6 @@ function ProfilePage() {
         const response = await axios.get("/api/user/profile");
         console.log("Received user data:", response.data);
         setUserData(response.data);
-
-        // Initialize social media data from API response
-        setSocialMediaData({
-          instagram: response.data.instagram || "",
-          facebook: response.data.facebook || "",
-          twitter: response.data.twitter || "",
-          tiktok: response.data.tiktok || "",
-          website: response.data.website || "",
-          bio: response.data.bio || "",
-        });
-
-        console.log("Social media state initialized", {
-          instagram: response.data.instagram || "",
-          facebook: response.data.facebook || "",
-          twitter: response.data.twitter || "",
-          tiktok: response.data.tiktok || "",
-          website: response.data.website || "",
-          bio: response.data.bio || "",
-        });
       } catch (error) {
         console.error("Failed to fetch user data:", error);
         toast({
@@ -104,33 +70,20 @@ function ProfilePage() {
       setIsPageLoading(false);
     }
   }, [session]);
-
   const handleUpdateProfile = async (formData: any) => {
     setIsLoading(true);
     setSuccessMessage("");
 
     try {
-      // Log current state for debugging
       console.log("Form data being submitted:", formData);
-      console.log("Current social media data:", socialMediaData);
 
       // Create request data with proper typing
-      const requestData: any = {
+      const requestData = {
         name: formData.name,
         email: formData.email,
         phone: formData.phone || "",
+        address: formData.address || "",
       };
-
-      // Add social media fields if user is an artist
-      if (userData?.role === "ARTIST") {
-        // Make sure we're explicitly adding each field to avoid undefined values
-        requestData.instagram = socialMediaData.instagram;
-        requestData.facebook = socialMediaData.facebook;
-        requestData.twitter = socialMediaData.twitter;
-        requestData.tiktok = socialMediaData.tiktok;
-        requestData.website = socialMediaData.website;
-        requestData.bio = socialMediaData.bio;
-      }
 
       console.log("Sending profile update with data:", requestData);
       const response = await axios.put("/api/user/profile", requestData);
@@ -138,16 +91,6 @@ function ProfilePage() {
       // Update local user data with response
       setUserData(response.data);
       console.log("API Response with updated user data:", response.data);
-
-      // Update social media data state with response data
-      setSocialMediaData({
-        instagram: response.data.instagram || "",
-        facebook: response.data.facebook || "",
-        twitter: response.data.twitter || "",
-        tiktok: response.data.tiktok || "",
-        website: response.data.website || "",
-        bio: response.data.bio || "",
-      });
 
       // Update session to reflect changes
       if (session) {
@@ -165,7 +108,6 @@ function ProfilePage() {
       toast({
         title: "Profile Updated",
         description: "Your profile information has been updated successfully.",
-        variant: "success",
       });
     } catch (error: any) {
       console.error("Failed to update profile:", error);
@@ -329,7 +271,6 @@ function ProfilePage() {
             title: "Image Updated",
             description:
               "Your profile image has been updated successfully. Refreshing page...",
-            variant: "success",
           });
 
           // Simplest solution: reload the current page after a short delay
@@ -470,11 +411,11 @@ function ProfilePage() {
                   <span className="text-gray-800 truncate max-w-[150px]">
                     {userData.phone || "Not provided"}
                   </span>
-                </div>
+                </div>{" "}
                 <div className="flex justify-between items-center">
-                  <span className="font-medium">Role:</span>
-                  <span className="text-gray-800 capitalize truncate max-w-[150px]">
-                    {userData.role.toLowerCase()}
+                  <span className="font-medium">Address:</span>
+                  <span className="text-gray-800 truncate max-w-[150px]">
+                    {userData.address || "Not provided"}
                   </span>
                 </div>
               </div>
@@ -498,16 +439,13 @@ function ProfilePage() {
               >
                 Change Password
               </TabsTrigger>
-            </TabsList>
-
+            </TabsList>{" "}
             {/* Personal Information Tab */}
             <TabsContent value="personal" className="mt-0">
               <PersonalInfoForm
                 onSubmit={handleUpdateProfile}
                 userData={userData}
                 isLoading={isLoading}
-                socialMediaData={socialMediaData}
-                setSocialMediaData={setSocialMediaData}
               />
 
               {successMessage && (
@@ -522,7 +460,6 @@ function ProfilePage() {
                 </Alert>
               )}
             </TabsContent>
-
             {/* Password Tab */}
             <TabsContent value="password" className="mt-0">
               <PasswordForm
@@ -552,14 +489,10 @@ function PersonalInfoForm({
   onSubmit,
   userData,
   isLoading,
-  socialMediaData,
-  setSocialMediaData,
 }: {
   onSubmit: any;
   userData: UserData;
   isLoading: boolean;
-  socialMediaData: any;
-  setSocialMediaData: any;
 }) {
   const {
     register,
@@ -570,27 +503,26 @@ function PersonalInfoForm({
       name: userData.name || "",
       email: userData.email || "",
       phone: userData.phone || "",
+      address: userData.address || "",
     },
   });
 
-  // Create a wrapped submit handler to include social media data
+  // Create a wrapped submit handler
   const handleFormSubmit = (formData: any) => {
     console.log("Form submitted with data:", formData);
-    console.log("Current social media state:", socialMediaData);
-
-    // Pass the form data to the parent component's onSubmit
     onSubmit(formData);
   };
 
   return (
     <Card className="overflow-hidden">
       <form onSubmit={handleSubmit(handleFormSubmit)}>
+        {" "}
         <CardHeader>
           <CardTitle className="text-xl font-bold">
             Profile Information
           </CardTitle>
           <CardDescription className="text-gray-600">
-            Update your personal details and social media links
+            Update your personal details and contact information
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -610,7 +542,6 @@ function PersonalInfoForm({
               </p>
             )}
           </div>
-
           <div className="space-y-3">
             <Label htmlFor="email" className="text-base font-medium">
               Email
@@ -633,8 +564,7 @@ function PersonalInfoForm({
                 {errors.email.message?.toString()}
               </p>
             )}
-          </div>
-
+          </div>{" "}
           <div className="space-y-3">
             <Label htmlFor="phone" className="text-base font-medium">
               Phone Number
@@ -657,100 +587,17 @@ function PersonalInfoForm({
               </p>
             )}
           </div>
-
-          {userData.role === "ARTIST" && (
-            <div className="pt-6 border-t mt-6">
-              <h3 className="text-lg font-medium mb-4">Social Media</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="instagram">Instagram</Label>
-                  <Input
-                    id="instagram"
-                    placeholder="Username or full URL"
-                    value={socialMediaData.instagram}
-                    onChange={(e) =>
-                      setSocialMediaData({
-                        ...socialMediaData,
-                        instagram: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="facebook">Facebook</Label>
-                  <Input
-                    id="facebook"
-                    placeholder="Username or full URL"
-                    value={socialMediaData.facebook}
-                    onChange={(e) =>
-                      setSocialMediaData({
-                        ...socialMediaData,
-                        facebook: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="twitter">Twitter</Label>
-                  <Input
-                    id="twitter"
-                    placeholder="Username or full URL"
-                    value={socialMediaData.twitter}
-                    onChange={(e) =>
-                      setSocialMediaData({
-                        ...socialMediaData,
-                        twitter: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="tiktok">TikTok</Label>
-                  <Input
-                    id="tiktok"
-                    placeholder="Username or full URL"
-                    value={socialMediaData.tiktok}
-                    onChange={(e) =>
-                      setSocialMediaData({
-                        ...socialMediaData,
-                        tiktok: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="website">Website</Label>
-                  <Input
-                    id="website"
-                    placeholder="Website URL"
-                    value={socialMediaData.website}
-                    onChange={(e) =>
-                      setSocialMediaData({
-                        ...socialMediaData,
-                        website: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="bio">Biography</Label>
-                  <Textarea
-                    id="bio"
-                    placeholder="About your experience and skills as a makeup artist"
-                    className="min-h-[120px]"
-                    value={socialMediaData.bio}
-                    onChange={(e) =>
-                      setSocialMediaData({
-                        ...socialMediaData,
-                        bio: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
+          <div className="space-y-3">
+            <Label htmlFor="address" className="text-base font-medium">
+              Address
+            </Label>
+            <Input
+              id="address"
+              className="h-12 text-base px-4"
+              {...register("address")}
+              placeholder="Your address"
+            />
+          </div>
           <Alert
             variant="destructive"
             className="bg-amber-50 text-amber-800 border-amber-200"

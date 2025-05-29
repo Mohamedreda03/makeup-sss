@@ -37,43 +37,43 @@ export async function PUT(
       );
     }
 
-    // Get appointment ID from URL params
-    const appointmentId = params.id;
+    // Get booking ID from URL params
+    const bookingId = params.id;
 
-    // Check if appointment exists
-    const appointment = await db.appointment.findUnique({
-      where: { id: appointmentId },
+    // Check if booking exists
+    const booking = await db.booking.findUnique({
+      where: { id: bookingId },
     });
 
-    if (!appointment) {
+    if (!booking) {
       return NextResponse.json(
-        { message: "Appointment not found" },
+        { message: "Booking not found" },
         { status: 404 }
       );
     }
 
-    // Check if appointment is already cancelled
-    if (appointment.status === "CANCELLED") {
+    // Check if booking is already cancelled
+    if (booking.booking_status === "CANCELLED") {
       return NextResponse.json(
-        { message: "Appointment is already cancelled" },
+        { message: "Booking is already cancelled" },
         { status: 400 }
       );
     }
 
-    // Update appointment status to CANCELLED
-    const updatedAppointment = await db.appointment.update({
-      where: { id: appointmentId },
+    // Update booking status to CANCELLED
+    const updatedBooking = await db.booking.update({
+      where: { id: bookingId },
       data: {
-        status: "CANCELLED",
+        booking_status: "CANCELLED",
       },
     });
 
     return NextResponse.json({
-      message: "Appointment cancelled successfully",
-      appointment: updatedAppointment,
+      message: "Booking cancelled successfully",
+      booking: updatedBooking,
     });
   } catch (error) {
-    console.error("Error cancelling appointment:", error);
+    console.error("Error cancelling booking:", error);
     return NextResponse.json(
       { message: "Server error", error: String(error) },
       { status: 500 }

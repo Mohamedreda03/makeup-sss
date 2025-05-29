@@ -91,7 +91,7 @@ export function ProfileImageUpload({
           title: "Success",
           description:
             "Profile image updated successfully. The new image will appear shortly.",
-          variant: "success",
+          
         });
       }
     } catch (error) {

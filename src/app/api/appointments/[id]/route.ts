@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { BookingStatus } from "@/generated/prisma";
 
 // Extended user interface
 interface ExtendedUser {
@@ -11,7 +12,7 @@ interface ExtendedUser {
   role?: string;
 }
 
-// GET appointment details
+// GET booking details
 export async function GET(
   req: Request,
   { params }: { params: { id: string } }
@@ -27,77 +28,73 @@ export async function GET(
       );
     }
 
-    const userId = session.user.id;
-    const appointmentId = params.id;
+    const user = session.user as ExtendedUser;
+    const bookingId = params.id;
 
-    // Fetch appointment
-    const appointment = await db.appointment.findUnique({
+    // Fetch booking
+    const booking = await db.booking.findUnique({
       where: {
-        id: appointmentId,
-        userId,
+        id: bookingId,
       },
       include: {
-        artist: {
+        user: {
           select: {
             id: true,
             name: true,
+            email: true,
             image: true,
+            phone: true,
           },
         },
-        paymentDetails: true,
+        artist: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                image: true,
+              },
+            },
+          },
+        },
       },
     });
 
-    if (!appointment) {
+    if (!booking) {
       return NextResponse.json(
-        { message: "Appointment not found" },
+        { message: "Booking not found" },
         { status: 404 }
       );
     }
 
-    // Check if appointment is paid
-    let isPaid = false;
-    if (appointment.paymentDetails) {
-      isPaid = appointment.paymentDetails.status === "COMPLETED";
+    // Check if user has access to this booking
+    const isOwner = booking.user_id === user.id;
+    const isArtist =
+      user.role === "ARTIST" && booking.artist.user_id === user.id;
+    const isAdmin = user.role === "ADMIN";
+
+    if (!isOwner && !isArtist && !isAdmin) {
+      return NextResponse.json(
+        { message: "Forbidden - Access denied" },
+        { status: 403 }
+      );
     }
 
-    // Format response
-    return NextResponse.json({
-      id: appointment.id,
-      datetime: appointment.datetime,
-      description: appointment.description,
-      status: appointment.status,
-      serviceType: appointment.serviceType,
-      duration: appointment.duration,
-      totalPrice: appointment.totalPrice,
-      location: appointment.location,
-      notes: appointment.notes,
-      artistId: appointment.artistId,
-      artistName: appointment.artist?.name || null,
-      artistImage: appointment.artist?.image || null,
-      createdAt: appointment.createdAt,
-      updatedAt: appointment.updatedAt,
-      isPaid,
-      paymentDetails: appointment.paymentDetails,
-    });
+    return NextResponse.json(booking);
   } catch (error) {
-    console.error("Error fetching appointment:", error);
-    return NextResponse.json(
-      { message: "Failed to fetch appointment" },
-      { status: 500 }
-    );
+    console.error("Error fetching booking:", error);
+    return NextResponse.json({ message: "Server error" }, { status: 500 });
   }
-}
-
-// Update appointment details
+} // Update booking details
 export async function PUT(
   req: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    const appointmentId = params.id;
+    const bookingId = params.id;
     const requestData = await req.json();
-    const { status, notes, location, description } = requestData;
+    const { status } = requestData;
 
     // Verify session and permissions
     const session = await auth();
@@ -112,38 +109,46 @@ export async function PUT(
     const user = session.user as ExtendedUser;
     const userRole = user.role || "CUSTOMER";
 
-    // Only admins and artists can update appointments
+    // Only admins and artists can update bookings
     if (userRole !== "ADMIN" && userRole !== "ARTIST") {
       return NextResponse.json(
         {
-          message:
-            "Forbidden - You don't have permission to update appointments",
+          message: "Forbidden - You are not allowed to modify bookings",
         },
         { status: 403 }
       );
     }
 
-    // Check if appointment exists
-    const appointment = await db.appointment.findUnique({
-      where: { id: appointmentId },
+    // Check if booking exists
+    const booking = await db.booking.findUnique({
+      where: { id: bookingId },
+      include: {
+        artist: true,
+      },
     });
 
-    if (!appointment) {
+    if (!booking) {
       return NextResponse.json(
-        { message: "Appointment not found" },
+        { message: "Booking not found" },
         { status: 404 }
       );
     }
 
-    // If user is an artist, ensure they are assigned to this appointment
-    if (userRole === "ARTIST" && appointment.artistId !== user.id) {
-      return NextResponse.json(
-        { message: "Forbidden - This appointment is not assigned to you" },
-        { status: 403 }
-      );
-    }
+    // For artists, verify they own this booking
+    if (userRole === "ARTIST") {
+      const makeupArtist = await db.makeUpArtist.findUnique({
+        where: { user_id: user.id },
+      });
 
-    // Validate appointment status if it's being updated
+      if (!makeupArtist || booking.artist_id !== makeupArtist.id) {
+        return NextResponse.json(
+          { message: "Forbidden - You can only update your own bookings" },
+          { status: 403 }
+        );
+      }
+    } // Prepare update data
+    const updateData: { booking_status?: BookingStatus } = {};
+
     if (status) {
       const validStatuses = ["PENDING", "CONFIRMED", "COMPLETED", "CANCELLED"];
       if (!validStatuses.includes(status)) {
@@ -152,34 +157,12 @@ export async function PUT(
           { status: 400 }
         );
       }
-
-      // Cannot change status if appointment is cancelled or completed (unless admin)
-      if (
-        (appointment.status === "CANCELLED" ||
-          appointment.status === "COMPLETED") &&
-        userRole !== "ADMIN"
-      ) {
-        return NextResponse.json(
-          {
-            message: "Cannot update cancelled or completed appointment",
-          },
-          { status: 400 }
-        );
-      }
+      updateData.booking_status = status as BookingStatus;
     }
 
-    // Build update data object
-    const updateData: any = {};
-
-    // Only update fields that were provided in the request
-    if (status) updateData.status = status;
-    if (notes !== undefined) updateData.notes = notes;
-    if (location !== undefined) updateData.location = location;
-    if (description !== undefined) updateData.description = description;
-
-    // Update appointment
-    const updatedAppointment = await db.appointment.update({
-      where: { id: appointmentId },
+    // Update the booking
+    const updatedBooking = await db.booking.update({
+      where: { id: bookingId },
       data: updateData,
       include: {
         user: {
@@ -191,100 +174,24 @@ export async function PUT(
             phone: true,
           },
         },
+        artist: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                image: true,
+              },
+            },
+          },
+        },
       },
     });
 
-    console.log("Appointment updated:", updatedAppointment);
-    return NextResponse.json(updatedAppointment);
+    return NextResponse.json(updatedBooking);
   } catch (error) {
-    console.error("Error updating appointment:", error);
+    console.error("Error updating booking:", error);
     return NextResponse.json({ message: "Server error" }, { status: 500 });
-  }
-}
-
-// Update an appointment
-export async function PATCH(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
-  try {
-    // Verify user is authenticated
-    const session = await auth();
-
-    if (!session?.user) {
-      return NextResponse.json(
-        { message: "Unauthorized - Please log in" },
-        { status: 401 }
-      );
-    }
-
-    const userId = session.user.id;
-    const appointmentId = params.id;
-
-    // Get appointment to ensure it belongs to user
-    const appointment = await db.appointment.findUnique({
-      where: {
-        id: appointmentId,
-        userId,
-      },
-    });
-
-    if (!appointment) {
-      return NextResponse.json(
-        { message: "Appointment not found" },
-        { status: 404 }
-      );
-    }
-
-    // Parse request body
-    const data = await req.json();
-    const { status } = data;
-
-    if (!status) {
-      return NextResponse.json(
-        { message: "Status is required" },
-        { status: 400 }
-      );
-    }
-
-    // Validate status
-    if (!["PENDING", "CONFIRMED", "COMPLETED", "CANCELLED"].includes(status)) {
-      return NextResponse.json(
-        { message: "Invalid status value" },
-        { status: 400 }
-      );
-    }
-
-    // Users can only cancel appointments, not change to other statuses
-    if (status !== "CANCELLED") {
-      return NextResponse.json(
-        { message: "Users can only cancel appointments" },
-        { status: 403 }
-      );
-    }
-
-    // Update appointment
-    const updatedAppointment = await db.appointment.update({
-      where: {
-        id: appointmentId,
-      },
-      data: {
-        status,
-      },
-    });
-
-    return NextResponse.json({
-      message: "Appointment updated successfully",
-      appointment: {
-        id: updatedAppointment.id,
-        status: updatedAppointment.status,
-      },
-    });
-  } catch (error) {
-    console.error("Error updating appointment:", error);
-    return NextResponse.json(
-      { message: "Failed to update appointment" },
-      { status: 500 }
-    );
   }
 }

@@ -229,11 +229,9 @@ export default function PaymentPage() {
       if (!response.ok) {
         throw new Error("Payment processing failed");
       }
-
       toast({
         title: "Payment Successful",
         description: "Your appointment has been paid for",
-        variant: "success",
       });
 
       // Redirect back to appointments page

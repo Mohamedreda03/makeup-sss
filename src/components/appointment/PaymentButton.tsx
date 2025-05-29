@@ -65,7 +65,7 @@ export function PaymentButton({
         title: "Payment Successful",
         description:
           "Your payment was processed. The artist has been paid and your appointment is completed.",
-        variant: "success",
+        
       });
 
       // Trigger any additional success callbacks

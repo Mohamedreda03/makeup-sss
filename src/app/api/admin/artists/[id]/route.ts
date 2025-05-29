@@ -5,38 +5,21 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { hash } from "bcrypt";
 
-// Type extension for user in session
-interface ExtendedUser {
-  id: string;
-  role: string;
-}
-
-// Service schema for validation
-const serviceSchema = z.object({
-  id: z.string().optional(),
-  name: z.string().min(2),
-  description: z.string().optional(),
-  price: z.coerce.number().min(0).optional(),
-  isActive: z.boolean().optional(),
-});
-
 // Schema for updating an artist
 const updateArtistSchema = z.object({
   name: z.string().min(2).optional(),
   email: z.string().email().optional(),
   phone: z.string().optional().nullable(),
-  instagram: z.string().optional().nullable(),
-  facebook: z.string().optional().nullable(),
-  twitter: z.string().optional().nullable(),
-  tiktok: z.string().optional().nullable(),
-  website: z.string().optional().nullable(),
+  address: z.string().optional().nullable(),
   bio: z.string().optional().nullable(),
-  password: z.string().min(8).optional(),
-  yearsOfExperience: z.coerce.number().min(0).optional(),
-  category: z.string().optional().nullable(),
-  defaultPrice: z.coerce.number().min(0).optional(),
   image: z.string().optional().nullable(),
-  services: z.array(serviceSchema).optional(),
+  password: z.string().min(8).optional(),
+  // Makeup artist specific fields
+  pricing: z.coerce.number().min(0).optional(),
+  experience_years: z.string().optional(),
+  portfolio: z.string().optional().nullable(),
+  gender: z.string().optional(),
+  availability: z.boolean().optional(),
 });
 
 export async function GET(
@@ -47,7 +30,7 @@ export async function GET(
     const session = await auth();
 
     // Check if user is admin
-    if (!session?.user || (session.user as any).role !== "ADMIN") {
+    if (!session?.user || (session.user as { role: string }).role !== "ADMIN") {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
@@ -60,7 +43,12 @@ export async function GET(
         role: "ARTIST",
       },
       include: {
-        services: true,
+        makeup_artist: true,
+        services: {
+          orderBy: {
+            createdAt: "desc",
+          },
+        },
       },
     });
 
@@ -89,7 +77,7 @@ export async function PATCH(
     const session = await auth();
 
     // Check if user is admin
-    if (!session?.user || (session.user as any).role !== "ADMIN") {
+    if (!session?.user || (session.user as { role: string }).role !== "ADMIN") {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
@@ -105,7 +93,7 @@ export async function PATCH(
         role: "ARTIST",
       },
       include: {
-        services: true,
+        makeup_artist: true,
       },
     });
 
@@ -145,7 +133,16 @@ export async function PATCH(
       );
     }
 
-    const { password, services, ...updateData } = validation.data;
+    const {
+      password,
+      pricing,
+      experience_years,
+      portfolio,
+      gender,
+      availability,
+      bio,
+      ...updateData
+    } = validation.data;
 
     // Log the image URL for debugging
     console.log("[API] PATCH artist - Image being updated:", {
@@ -153,9 +150,15 @@ export async function PATCH(
       new: updateData.image,
     });
 
-    // Prepare update data - excluding fields not in the User model
-    const { category, ...validUpdateData } = updateData;
-    const updatePayload: any = { ...validUpdateData };
+    // Prepare update data for User model (exclude bio as it belongs to MakeUpArtist model)
+    const updatePayload: Partial<{
+      name: string;
+      email: string;
+      phone: string | null;
+      address: string | null;
+      image: string | null;
+      password: string;
+    }> = { ...updateData };
 
     // If password is provided, hash it
     if (password) {
@@ -174,88 +177,85 @@ export async function PATCH(
     }
 
     try {
-      // Use a transaction to update the artist and their services
+      // Use a transaction to update the artist and their makeup artist profile
       await prisma.$transaction(async (tx) => {
-        // Update artist
+        // Update user data
         await tx.user.update({
           where: { id: artistId },
           data: updatePayload,
         });
 
-        // Handle services if provided
-        if (services && services.length > 0) {
-          // Get existing service IDs
-          const existingServiceIds = existingArtist.services.map(
-            (service: any) => service.id
-          );
+        // Update or create makeup artist profile if makeup artist fields are provided
+        if (
+          pricing !== undefined ||
+          experience_years !== undefined ||
+          portfolio !== undefined ||
+          gender !== undefined ||
+          availability !== undefined ||
+          bio !== undefined
+        ) {
+          const makeupArtistData: {
+            pricing?: number;
+            experience_years?: string;
+            portfolio?: string | null;
+            gender?: string;
+            availability?: boolean;
+            bio?: string | null;
+            address?: string;
+          } = {};
 
-          // Find services to delete (those in existingServiceIds but not in the incoming services)
-          const incomingServiceIds = services
-            .filter((service) => service.id)
-            .map((service) => service.id as string);
+          if (pricing !== undefined) makeupArtistData.pricing = pricing;
+          if (experience_years !== undefined)
+            makeupArtistData.experience_years = experience_years;
+          if (portfolio !== undefined) makeupArtistData.portfolio = portfolio;
+          if (gender !== undefined) makeupArtistData.gender = gender;
+          if (availability !== undefined)
+            makeupArtistData.availability = availability;
+          if (bio !== undefined) makeupArtistData.bio = bio;
+          if (updateData.address !== undefined)
+            makeupArtistData.address = updateData.address || "";
 
-          const serviceIdsToDelete = existingServiceIds.filter(
-            (id: string) => !incomingServiceIds.includes(id)
-          );
-
-          // Delete services that are no longer needed
-          if (serviceIdsToDelete.length > 0) {
-            await tx.artistService.deleteMany({
-              where: {
-                id: {
-                  in: serviceIdsToDelete,
-                },
-              },
-            });
-          }
-
-          // Update or create services
-          for (const service of services) {
-            if (service.id) {
-              // Update existing service
-              await tx.artistService.update({
-                where: {
-                  id: service.id,
-                },
-                data: {
-                  name: service.name,
-                  description: service.description || "",
-                  price: service.price || 0,
-                  isActive: service.isActive ?? true,
-                },
-              });
-            } else {
-              // Create new service
-              await tx.artistService.create({
-                data: {
-                  name: service.name,
-                  description: service.description || "",
-                  price: service.price || 0,
-                  isActive: service.isActive ?? true,
-                  artistId: artistId,
-                },
-              });
-            }
-          }
+          await tx.makeUpArtist.upsert({
+            where: { user_id: artistId },
+            update: makeupArtistData,
+            create: {
+              user_id: artistId,
+              pricing: pricing || 0,
+              experience_years: experience_years || "0 years",
+              portfolio: portfolio || null,
+              gender: gender || "Not specified",
+              rating: 0,
+              address: updateData.address || "",
+              bio: bio || null,
+              availability: availability ?? false,
+            },
+          });
         }
       });
-    } catch (dbError: any) {
+    } catch (dbError: unknown) {
       console.error("[API] PATCH artist - Database error:", dbError);
+      const errorMessage =
+        dbError instanceof Error ? dbError.message : "Unknown database error";
       return NextResponse.json(
         {
           message: "Database error updating artist",
-          details: dbError.message || "Unknown database error",
+          details: errorMessage,
         },
         { status: 500 }
       );
     }
 
     try {
-      // Fetch updated artist with services to return
+      // Fetch updated artist with makeup artist profile to return
       const updatedArtist = await prisma.user.findUnique({
         where: { id: artistId },
         include: {
-          services: true,
+          makeup_artist: true,
+          services: {
+            orderBy: {
+              createdAt: "desc",
+            },
+          },
         },
       });
 
@@ -301,7 +301,7 @@ export async function DELETE(
     const session = await auth();
 
     // Check if user is admin
-    if (!session?.user || (session.user as any).role !== "ADMIN") {
+    if (!session?.user || (session.user as { role: string }).role !== "ADMIN") {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { BookingStatus } from "@/generated/prisma";
 
 // Extended user interface
 interface ExtendedUser {
@@ -33,31 +34,35 @@ export async function GET(req: Request) {
     const pageSize = parseInt(url.searchParams.get("pageSize") || "10");
 
     // Calculate pagination skip
-    const skip = (page - 1) * pageSize;
-
-    // Prepare search filter
-    const filter: any = { userId };
+    const skip = (page - 1) * pageSize; // Prepare search filter
+    const filter: { user_id: string; booking_status?: BookingStatus } = {
+      user_id: userId,
+    };
 
     // Add status filter if specified
     if (status && status !== "ALL") {
-      filter.status = status;
+      filter.booking_status = status as BookingStatus;
     }
 
     // Get total appointment count for user
-    const totalAppointments = await db.appointment.count({
+    const totalAppointments = await db.booking.count({
       where: filter,
     });
 
     // Get appointments with user and artist info
-    const appointments = await db.appointment.findMany({
+    const appointments = await db.booking.findMany({
       where: filter,
       include: {
         artist: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            image: true,
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                image: true,
+              },
+            },
           },
         },
       },

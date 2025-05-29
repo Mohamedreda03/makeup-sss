@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   Table,
   TableBody,
@@ -27,10 +27,8 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
-  ChevronDown,
-  Check,
-  X,
   Eye,
+  Loader2,
 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import {
@@ -48,9 +46,9 @@ interface Product {
   name: string;
   description: string | null;
   price: number;
-  imageUrl: string | null;
+  image: string | null;
   category: string;
-  inStock: boolean;
+  stock_quantity: number;
   featured: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -72,7 +70,6 @@ export default function ProductsTable({
   initialProducts = [],
 }: ProductsTableProps) {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState(query);
   const [loading, setLoading] = useState(false);
@@ -80,15 +77,11 @@ export default function ProductsTable({
   const [totalProducts, setTotalProducts] = useState(100); // This would be fetched from API
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-
-  // Fetch products when component mounts or when search parameters change
-  useEffect(() => {
-    fetchData();
-  }, [currentPage, pageSize, sort, query]);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // In a real app, we would fetch data from an API
   // For this example, let's use some static data
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       // Fetch actual products from the API
@@ -114,7 +107,12 @@ export default function ProductsTable({
     } finally {
       setLoading(false);
     }
-  };
+  }, [searchQuery, currentPage, pageSize, sort, toast]);
+
+  // Fetch products when component mounts or when search parameters change
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   // Handle search
   const handleSearch = () => {
@@ -133,11 +131,19 @@ export default function ProductsTable({
   // Handle delete
   const handleDelete = async (id: string) => {
     try {
-      // In a real app:
-      // await fetch(`/api/admin/products/${id}`, { method: 'DELETE' });
+      setIsDeleting(true);
 
-      // Update UI optimistically
-      setProducts(products.filter((product) => product.id !== id));
+      // Call the delete API
+      const response = await fetch(`/api/admin/products/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete product");
+      }
+
+      // Refresh the data from server to ensure consistency
+      await fetchData();
 
       toast({
         title: "Product deleted",
@@ -152,6 +158,7 @@ export default function ProductsTable({
           "There was an error deleting the product. Please try again.",
       });
     } finally {
+      setIsDeleting(false);
       setShowDeleteDialog(false);
       setDeleteId(null);
     }
@@ -208,6 +215,12 @@ export default function ProductsTable({
               <SelectItem value="name:desc">Name: Z-A</SelectItem>
               <SelectItem value="price:asc">Price: Low to High</SelectItem>
               <SelectItem value="price:desc">Price: High to Low</SelectItem>
+              <SelectItem value="stock_quantity:desc">
+                Stock: High to Low
+              </SelectItem>
+              <SelectItem value="stock_quantity:asc">
+                Stock: Low to High
+              </SelectItem>
               <SelectItem value="createdAt:desc">Newest First</SelectItem>
               <SelectItem value="createdAt:asc">Oldest First</SelectItem>
             </SelectContent>
@@ -216,15 +229,25 @@ export default function ProductsTable({
       </div>
 
       {/* Products Table */}
-      <div className="rounded-md border">
+      <div className="rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm bg-white dark:bg-gray-900">
         <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Product</TableHead>
-              <TableHead className="text-right">Price</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Featured</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+          <TableHeader className="bg-gray-50 dark:bg-gray-800">
+            <TableRow className="border-b border-gray-200 dark:border-gray-700">
+              <TableHead className="py-4 px-6 font-semibold text-gray-900 dark:text-gray-100">
+                Product
+              </TableHead>
+              <TableHead className="py-4 px-6 font-semibold text-gray-900 dark:text-gray-100">
+                Price
+              </TableHead>
+              <TableHead className="py-4 px-6 font-semibold text-gray-900 dark:text-gray-100">
+                Stock
+              </TableHead>
+              <TableHead className="py-4 px-6 font-semibold text-gray-900 dark:text-gray-100">
+                Status
+              </TableHead>
+              <TableHead className="py-4 px-6 text-center font-semibold text-gray-900 dark:text-gray-100">
+                Actions
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -232,84 +255,107 @@ export default function ProductsTable({
               <TableRow>
                 <TableCell
                   colSpan={5}
-                  className="text-center py-10 text-gray-500"
+                  className="text-center py-12 text-gray-500 dark:text-gray-400"
                 >
-                  {loading
-                    ? "Loading products..."
-                    : "No products found. Try changing your search criteria."}
+                  <div className="flex flex-col items-center justify-center">
+                    <div className="text-4xl mb-2">📦</div>
+                    <div className="text-lg font-medium mb-1">
+                      {loading ? "Loading products..." : "No products found"}
+                    </div>
+                    {!loading && (
+                      <div className="text-sm">
+                        Try changing your search criteria or add a new product.
+                      </div>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             ) : (
               products.map((product) => (
-                <TableRow key={product.id}>
-                  <TableCell className="flex items-center gap-3">
-                    <div className="relative w-10 h-10 rounded-md overflow-hidden border">
-                      {product.imageUrl ? (
-                        <Image
-                          src={product.imageUrl}
-                          alt={product.name}
-                          fill
-                          className="object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400">
-                          No img
+                <TableRow
+                  key={product.id}
+                  className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                >
+                  <TableCell className="py-4 px-6">
+                    <div className="flex items-center gap-4">
+                      <div className="relative w-12 h-12 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm">
+                        {product.image ? (
+                          <Image
+                            src={product.image}
+                            alt={product.name}
+                            fill
+                            className="object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center text-gray-400 dark:text-gray-500">
+                            <span className="text-xs font-medium">IMG</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-semibold text-gray-900 dark:text-gray-100 text-sm leading-tight">
+                          {product.name}
                         </div>
-                      )}
-                    </div>
-                    <div>
-                      <div className="font-medium">{product.name}</div>
-                      <div className="text-sm text-gray-500 truncate max-w-[200px]">
-                        {product.description}
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate max-w-[200px]">
+                          {product.description || "No description"}
+                        </div>
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell className="text-right font-medium">
-                    <div className="font-medium text-gray-900">
+
+                  <TableCell className="py-4 px-6">
+                    <div className="font-semibold text-gray-900 dark:text-gray-100">
                       EGP {product.price.toFixed(2)}
                     </div>
                   </TableCell>
-                  <TableCell>
-                    {product.inStock ? (
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        <Check className="mr-1 h-3 w-3" /> In Stock
+                  <TableCell className="py-4 px-6">
+                    {product.stock_quantity > 0 ? (
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">
+                        <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                        {product.stock_quantity} in stock
                       </span>
                     ) : (
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                        <X className="mr-1 h-3 w-3" /> Out of Stock
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400">
+                        <div className="w-2 h-2 bg-red-500 rounded-full mr-2"></div>
+                        Out of Stock
                       </span>
                     )}
                   </TableCell>
-                  <TableCell>
-                    {product.featured ? (
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-                        <Check className="mr-1 h-3 w-3" /> Featured
-                      </span>
-                    ) : (
-                      <span className="text-gray-400 text-sm">-</span>
-                    )}
+                  <TableCell className="py-4 px-6">
+                    <div className="flex items-center gap-2">
+                      {product.featured && (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400">
+                          ⭐ Featured
+                        </span>
+                      )}
+                      {!product.featured && (
+                        <span className="text-gray-400 dark:text-gray-500 text-xs">
+                          Regular
+                        </span>
+                      )}
+                    </div>
                   </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
+                  <TableCell className="py-4 px-6 text-right">
+                    <div className="flex justify-end gap-1">
                       <Button
-                        variant="outline"
+                        variant="ghost"
                         size="sm"
-                        className="h-8 w-8 p-0"
+                        className="h-8 w-8 p-0 hover:bg-blue-50 dark:hover:bg-blue-900/20"
                         asChild
                       >
                         <Link href={`/admin/products/${product.id}`}>
-                          <Eye className="h-4 w-4" />
+                          <Eye className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                           <span className="sr-only">View</span>
                         </Link>
                       </Button>
                       <Button
-                        variant="outline"
+                        variant="ghost"
                         size="sm"
-                        className="h-8 w-8 p-0"
+                        className="h-8 w-8 p-0 hover:bg-green-50 dark:hover:bg-green-900/20"
                         asChild
                       >
                         <Link href={`/admin/products/${product.id}/edit`}>
-                          <Pencil className="h-4 w-4" />
+                          <Pencil className="h-4 w-4 text-green-600 dark:text-green-400" />
                           <span className="sr-only">Edit</span>
                         </Link>
                       </Button>
@@ -319,12 +365,12 @@ export default function ProductsTable({
                       >
                         <DialogTrigger asChild>
                           <Button
-                            variant="outline"
+                            variant="ghost"
                             size="sm"
-                            className="h-8 w-8 p-0 text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600"
+                            className="h-8 w-8 p-0 hover:bg-red-50 dark:hover:bg-red-900/20"
                             onClick={() => setDeleteId(product.id)}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />
                             <span className="sr-only">Delete</span>
                           </Button>
                         </DialogTrigger>
@@ -340,14 +386,24 @@ export default function ProductsTable({
                             <Button
                               variant="outline"
                               onClick={() => setShowDeleteDialog(false)}
+                              disabled={isDeleting}
                             >
                               Cancel
                             </Button>
                             <Button
                               variant="destructive"
                               onClick={() => handleDelete(product.id)}
+                              disabled={isDeleting}
+                              className="min-w-[80px]"
                             >
-                              Delete
+                              {isDeleting ? (
+                                <>
+                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                  Deleting...
+                                </>
+                              ) : (
+                                "Delete"
+                              )}
                             </Button>
                           </DialogFooter>
                         </DialogContent>

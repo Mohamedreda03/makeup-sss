@@ -66,47 +66,54 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-// Data type definitions
-type AppointmentStatus = "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED";
+// Data type definitions matching new Prisma schema
+type BookingStatus = "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED";
 
-interface Appointment {
+interface Booking {
   id: string;
-  datetime: string;
-  description: string | null;
-  status: AppointmentStatus;
-  userId: string;
-  userName?: string | null;
-  userEmail?: string | null;
-  userPhone?: string | null;
-  artistId: string | null;
-  artistName?: string | null;
-  duration: number;
-  totalPrice: number;
-  location: string | null;
-  notes: string | null;
-  createdAt: string;
-  updatedAt: string;
-  serviceType: string;
+  user_id: string;
+  artist_id: string;
+  service_type: string;
+  service_price: number | null;
+  date_time: Date;
+  booking_status: BookingStatus;
+  createdAt: Date;
+  updatedAt: Date;
+  // Relations
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    phone: string | null;
+    image: string | null;
+  };
+  artist: {
+    id: string;
+    user_id: string;
+    pricing: number | null;
+    experience_years: string | null;
+    user: {
+      id: string;
+      name: string;
+      email: string;
+      phone: string | null;
+      image: string | null;
+    };
+  };
 }
 
 function AdminAppointmentsPage() {
   const { data: session } = useSession();
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [filteredAppointments, setFilteredAppointments] = useState<
-    Appointment[]
-  >([]);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [filteredBookings, setFilteredBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [appointmentToDelete, setAppointmentToDelete] = useState<string | null>(
-    null
-  );
+  const [bookingToDelete, setBookingToDelete] = useState<string | null>(null);
   const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
-  const [appointmentToUpdate, setAppointmentToUpdate] = useState<string | null>(
-    null
-  );
-  const [newStatus, setNewStatus] = useState<AppointmentStatus>("CONFIRMED");
+  const [bookingToUpdate, setBookingToUpdate] = useState<string | null>(null);
+  const [newStatus, setNewStatus] = useState<BookingStatus>("CONFIRMED");
   const [statusNotes, setStatusNotes] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [searchInput, setSearchInput] = useState("");
@@ -128,75 +135,61 @@ function AdminAppointmentsPage() {
 
     return () => clearTimeout(timer);
   }, [searchInput]);
-
-  // Fetch appointments
+  // Fetch bookings
   useEffect(() => {
-    const fetchAppointments = async () => {
+    const fetchBookings = async () => {
       if (!session?.user) {
         setIsLoading(false);
         return;
       }
 
       try {
-        // Use the admin-specific endpoint for appointments
         const response = await fetch("/api/admin/appointments");
         const data = await response.json();
 
         if (response.ok) {
-          // Handle the response data
-          let appointmentsArray: Appointment[] = [];
+          let bookingsArray: Booking[] = [];
 
           if (Array.isArray(data)) {
-            appointmentsArray = data;
-          } else if (data && Array.isArray(data.appointments)) {
-            appointmentsArray = data.appointments;
-          } else if (data && typeof data === "object" && !Array.isArray(data)) {
-            // If we have a non-array object but no appointments array,
-            // try to convert it to an array if possible
-            const possibleAppointments = Object.values(data).filter(
-              (item) => item && typeof item === "object" && "id" in item
-            );
-            if (possibleAppointments.length > 0) {
-              appointmentsArray = possibleAppointments as Appointment[];
-            }
+            bookingsArray = data;
+          } else if (data && Array.isArray(data.bookings)) {
+            bookingsArray = data.bookings;
           }
 
-          setAppointments(appointmentsArray);
-          setFilteredAppointments(appointmentsArray);
+          setBookings(bookingsArray);
+          setFilteredBookings(bookingsArray);
         } else {
-          throw new Error(data.message || "Failed to fetch appointments");
+          throw new Error(data.message || "Failed to fetch bookings");
         }
       } catch (error) {
-        console.error("Error fetching appointments:", error);
+        console.error("Error fetching bookings:", error);
         toast({
           title: "Error",
-          description: "Could not load appointments. Please try again later.",
+          description: "Could not load bookings. Please try again later.",
           variant: "destructive",
         });
-        // Set empty arrays on error
-        setAppointments([]);
-        setFilteredAppointments([]);
+        setBookings([]);
+        setFilteredBookings([]);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchAppointments();
+    fetchBookings();
   }, [session]);
-
-  // Filter appointments
+  // Filter bookings
   useEffect(() => {
-    if (!Array.isArray(appointments)) {
-      setFilteredAppointments([]);
+    if (!Array.isArray(bookings)) {
+      setFilteredBookings([]);
       return;
     }
 
-    let filtered = [...appointments];
+    let filtered = [...bookings];
 
     // Filter by status
     if (statusFilter !== "all") {
       filtered = filtered.filter(
-        (appointment) => appointment.status === statusFilter
+        (booking) => booking.booking_status === statusFilter
       );
     }
 
@@ -204,21 +197,19 @@ function AdminAppointmentsPage() {
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
-        (appointment) =>
-          appointment.description?.toLowerCase().includes(query) ||
-          appointment.location?.toLowerCase().includes(query) ||
-          appointment.artistName?.toLowerCase().includes(query) ||
-          appointment.userName?.toLowerCase().includes(query) ||
-          appointment.userEmail?.toLowerCase().includes(query) ||
-          appointment.userPhone?.toLowerCase().includes(query)
+        (booking) =>
+          booking.service_type?.toLowerCase().includes(query) ||
+          booking.artist.user.name?.toLowerCase().includes(query) ||
+          booking.user.name?.toLowerCase().includes(query) ||
+          booking.user.email?.toLowerCase().includes(query) ||
+          booking.user.phone?.toLowerCase().includes(query)
       );
     }
 
-    setFilteredAppointments(filtered);
-  }, [appointments, searchQuery, statusFilter]);
-
-  // Quick update appointment status
-  const quickUpdateStatus = async (id: string, status: AppointmentStatus) => {
+    setFilteredBookings(filtered);
+  }, [bookings, searchQuery, statusFilter]);
+  // Quick update booking status
+  const quickUpdateStatus = async (id: string, status: BookingStatus) => {
     setIsProcessing(true);
 
     try {
@@ -233,24 +224,24 @@ function AdminAppointmentsPage() {
       const data = await response.json();
 
       if (response.ok) {
-        // Update local appointments
-        setAppointments((prevAppointments) => {
-          if (!Array.isArray(prevAppointments)) return [];
-          return prevAppointments.map((appointment) =>
-            appointment.id === id ? { ...appointment, status } : appointment
+        // Update local bookings
+        setBookings((prevBookings) => {
+          if (!Array.isArray(prevBookings)) return [];
+          return prevBookings.map((booking) =>
+            booking.id === id ? { ...booking, booking_status: status } : booking
           );
         });
 
         toast({
-          title: "Appointment Status Updated",
-          description: `The appointment has been ${status.toLowerCase()} successfully`,
-          variant: "success",
+          title: "Booking Status Updated",
+          description: `The booking has been ${status.toLowerCase()} successfully`,
+          variant: "default",
         });
       } else {
-        throw new Error(data.message || "Failed to update appointment status");
+        throw new Error(data.message || "Failed to update booking status");
       }
     } catch (error) {
-      console.error("Error updating appointment status:", error);
+      console.error("Error updating booking status:", error);
       toast({
         title: "Error",
         description: "An error occurred while updating. Please try again.",
@@ -260,9 +251,8 @@ function AdminAppointmentsPage() {
       setIsProcessing(false);
     }
   };
-
-  // Cancel appointment
-  const cancelAppointment = async (id: string) => {
+  // Cancel booking
+  const cancelBooking = async (id: string) => {
     setIsProcessing(true);
 
     try {
@@ -273,26 +263,26 @@ function AdminAppointmentsPage() {
       const data = await response.json();
 
       if (response.ok) {
-        // Update local appointments
-        setAppointments((prevAppointments) => {
-          if (!Array.isArray(prevAppointments)) return [];
-          return prevAppointments.map((appointment) =>
-            appointment.id === id
-              ? { ...appointment, status: "CANCELLED" }
-              : appointment
+        // Update local bookings
+        setBookings((prevBookings) => {
+          if (!Array.isArray(prevBookings)) return [];
+          return prevBookings.map((booking) =>
+            booking.id === id
+              ? { ...booking, booking_status: "CANCELLED" }
+              : booking
           );
         });
 
         toast({
-          title: "Appointment Cancelled",
-          description: "The appointment has been cancelled successfully",
-          variant: "success",
+          title: "Booking Cancelled",
+          description: "The booking has been cancelled successfully",
+          variant: "default",
         });
       } else {
-        throw new Error(data.message || "Failed to cancel appointment");
+        throw new Error(data.message || "Failed to cancel booking");
       }
     } catch (error) {
-      console.error("Error cancelling appointment:", error);
+      console.error("Error cancelling booking:", error);
       toast({
         title: "Error",
         description: "An error occurred while cancelling. Please try again.",
@@ -301,14 +291,13 @@ function AdminAppointmentsPage() {
     } finally {
       setIsProcessing(false);
       setIsDeleteDialogOpen(false);
-      setAppointmentToDelete(null);
+      setBookingToDelete(null);
     }
   };
-
-  // Update appointment status
-  const updateAppointmentStatus = async (
+  // Update booking status
+  const updateBookingStatus = async (
     id: string,
-    status: AppointmentStatus,
+    status: BookingStatus,
     notes?: string
   ) => {
     setIsProcessing(true);
@@ -325,26 +314,24 @@ function AdminAppointmentsPage() {
       const data = await response.json();
 
       if (response.ok) {
-        // Update local appointments
-        setAppointments((prevAppointments) => {
-          if (!Array.isArray(prevAppointments)) return [];
-          return prevAppointments.map((appointment) =>
-            appointment.id === id
-              ? { ...appointment, status, notes: notes || appointment.notes }
-              : appointment
+        // Update local bookings
+        setBookings((prevBookings) => {
+          if (!Array.isArray(prevBookings)) return [];
+          return prevBookings.map((booking) =>
+            booking.id === id ? { ...booking, booking_status: status } : booking
           );
         });
 
         toast({
-          title: "Appointment Updated",
-          description: "The appointment status has been updated successfully",
-          variant: "success",
+          title: "Booking Updated",
+          description: "The booking status has been updated successfully",
+          variant: "default",
         });
       } else {
-        throw new Error(data.message || "Failed to update appointment");
+        throw new Error(data.message || "Failed to update booking");
       }
     } catch (error) {
-      console.error("Error updating appointment:", error);
+      console.error("Error updating booking:", error);
       toast({
         title: "Error",
         description: "An error occurred while updating. Please try again.",
@@ -353,24 +340,23 @@ function AdminAppointmentsPage() {
     } finally {
       setIsProcessing(false);
       setIsUpdateDialogOpen(false);
-      setAppointmentToUpdate(null);
+      setBookingToUpdate(null);
       setStatusNotes("");
     }
   };
-
-  // Handle appointment cancellation
-  const handleCancelAppointment = (id: string) => {
-    setAppointmentToDelete(id);
+  // Handle booking cancellation
+  const handleCancelBooking = (id: string) => {
+    setBookingToDelete(id);
     setIsDeleteDialogOpen(true);
   };
 
   // Handle status update
-  const handleUpdateStatus = (id: string, currentStatus: AppointmentStatus) => {
-    setAppointmentToUpdate(id);
+  const handleUpdateStatus = (id: string, currentStatus: BookingStatus) => {
+    setBookingToUpdate(id);
 
     // Determine next logical status based on current status
     // PENDING -> CONFIRMED -> COMPLETED
-    let nextStatus: AppointmentStatus = "PENDING";
+    let nextStatus: BookingStatus = "PENDING";
 
     switch (currentStatus) {
       case "PENDING":
@@ -399,9 +385,8 @@ function AdminAppointmentsPage() {
     // Never allow empty string values for the status filter
     setStatusFilter(value ? value : "all");
   };
-
   // Determine status color
-  const getStatusColor = (status: AppointmentStatus) => {
+  const getStatusColor = (status: BookingStatus) => {
     switch (status) {
       case "PENDING":
         return "bg-amber-100 text-amber-800 hover:bg-amber-200";
@@ -415,9 +400,8 @@ function AdminAppointmentsPage() {
         return "bg-gray-100 text-gray-800 hover:bg-gray-200";
     }
   };
-
   // Determine status icon
-  const getStatusIcon = (status: AppointmentStatus) => {
+  const getStatusIcon = (status: BookingStatus) => {
     switch (status) {
       case "PENDING":
         return <Clock className="h-4 w-4 mr-1" />;
@@ -433,7 +417,7 @@ function AdminAppointmentsPage() {
   };
 
   // Convert status to text
-  const getStatusText = (status: AppointmentStatus) => {
+  const getStatusText = (status: BookingStatus) => {
     switch (status) {
       case "PENDING":
         return "Pending";
@@ -486,30 +470,27 @@ function AdminAppointmentsPage() {
       </div>
     );
   }
-
   // Get paginated items
   const startIndex = (page - 1) * pageSize;
   const endIndex = startIndex + pageSize;
-  const displayedAppointments = filteredAppointments.slice(
-    startIndex,
-    endIndex
-  );
-  const totalPages = Math.ceil(filteredAppointments.length / pageSize);
+  const displayedBookings = filteredBookings.slice(startIndex, endIndex);
+  const totalPages = Math.ceil(filteredBookings.length / pageSize);
 
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
+        {" "}
         <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Appointment Management
+          Booking Management
         </h1>
-        <p className="text-gray-600">View and manage all system appointments</p>
+        <p className="text-gray-600">View and manage all system bookings</p>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4 mb-6">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
           <Input
-            placeholder="Search appointments..."
+            placeholder="Search bookings..."
             className="pl-10"
             value={searchInput}
             onChange={handleSearch}
@@ -529,7 +510,7 @@ function AdminAppointmentsPage() {
         </Select>
       </div>
 
-      {filteredAppointments.length > 0 ? (
+      {filteredBookings.length > 0 ? (
         <Card>
           <CardHeader>
             <CardTitle>Appointments</CardTitle>
@@ -547,54 +528,53 @@ function AdminAppointmentsPage() {
                     <TableHead>Price</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
-                </TableHeader>
+                </TableHeader>{" "}
                 <TableBody>
-                  {displayedAppointments.map((appointment) => (
-                    <TableRow key={appointment.id}>
+                  {displayedBookings.map((booking) => (
+                    <TableRow key={booking.id}>
                       <TableCell>
                         <div className="font-medium">
-                          {appointment.userName || "Guest"}
+                          {booking.user.name || "Guest"}
                         </div>
                         <div className="text-sm text-muted-foreground">
-                          {appointment.userEmail}
+                          {booking.user.email}
                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="font-medium">
-                          {appointment.artistName || "Unassigned"}
+                          {booking.artist.user.name || "Unassigned"}
                         </div>
                       </TableCell>
                       <TableCell>
                         <div>
-                          {format(
-                            new Date(appointment.datetime),
-                            "MMM dd, yyyy"
-                          )}
+                          {format(new Date(booking.date_time), "MMM dd, yyyy")}
                           <div className="text-sm text-muted-foreground">
-                            {format(new Date(appointment.datetime), "h:mm a")} •{" "}
-                            {appointment.duration} min
+                            {format(new Date(booking.date_time), "h:mm a")}
                           </div>
                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="font-medium">
-                          {appointment.serviceType}
+                          {booking.service_type}
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge className={getStatusColor(appointment.status)}>
+                        <Badge
+                          className={getStatusColor(booking.booking_status)}
+                        >
                           <span className="flex items-center">
-                            {getStatusIcon(appointment.status)}
-                            {getStatusText(appointment.status)}
+                            {getStatusIcon(booking.booking_status)}
+                            {getStatusText(booking.booking_status)}
                           </span>
                         </Badge>
                       </TableCell>
                       <TableCell>
                         <p className="mt-1">
+                          {" "}
                           <span className="text-gray-500">Total:</span> EGP{" "}
-                          {appointment.totalPrice.toFixed(2)}
+                          {booking.service_price?.toFixed(2) || "0.00"}
                         </p>
-                      </TableCell>
+                      </TableCell>{" "}
                       <TableCell>
                         <div className="flex space-x-2">
                           <Button
@@ -602,36 +582,34 @@ function AdminAppointmentsPage() {
                             size="sm"
                             onClick={() =>
                               handleUpdateStatus(
-                                appointment.id,
-                                appointment.status
+                                booking.id,
+                                booking.booking_status
                               )
                             }
                             className="h-8"
                           >
                             Details
                           </Button>
-                          {appointment.status === "PENDING" && (
+                          {booking.booking_status === "PENDING" && (
                             <Button
                               variant="outline"
                               size="sm"
                               className="text-green-600 h-8"
                               onClick={() =>
-                                quickUpdateStatus(appointment.id, "CONFIRMED")
+                                quickUpdateStatus(booking.id, "CONFIRMED")
                               }
                             >
                               <Check className="mr-1 h-4 w-4" />
                               Approve
                             </Button>
                           )}
-                          {(appointment.status === "PENDING" ||
-                            appointment.status === "CONFIRMED") && (
+                          {(booking.booking_status === "PENDING" ||
+                            booking.booking_status === "CONFIRMED") && (
                             <Button
                               variant="outline"
                               size="sm"
                               className="text-red-600 h-8"
-                              onClick={() =>
-                                handleCancelAppointment(appointment.id)
-                              }
+                              onClick={() => handleCancelBooking(booking.id)}
                             >
                               <X className="mr-1 h-4 w-4" />
                               Reject
@@ -644,13 +622,12 @@ function AdminAppointmentsPage() {
                 </TableBody>
               </Table>
             </div>
-
-            {/* Pagination */}
+            {/* Pagination */}{" "}
             <div className="mt-4 flex items-center justify-between">
               <div className="text-sm text-muted-foreground">
                 Showing {startIndex + 1} to{" "}
-                {Math.min(endIndex, filteredAppointments.length)} of{" "}
-                {filteredAppointments.length} appointments
+                {Math.min(endIndex, filteredBookings.length)} of{" "}
+                {filteredBookings.length} bookings
               </div>
               <div className="flex space-x-2">
                 <Button
@@ -678,14 +655,14 @@ function AdminAppointmentsPage() {
           <CardContent className="pt-6 pb-6 flex flex-col items-center justify-center">
             <div className="rounded-full bg-gray-100 p-3 mb-4">
               <Calendar className="h-6 w-6 text-gray-400" />
-            </div>
+            </div>{" "}
             <h3 className="text-lg font-medium text-gray-900 mb-1">
-              No Appointments
+              No Bookings
             </h3>
             <p className="text-gray-500 text-center max-w-sm mb-4">
               {searchInput || statusFilter !== "all"
-                ? "No appointments match your search criteria"
-                : "There are no appointments in the system yet"}
+                ? "No bookings match your search criteria"
+                : "There are no bookings in the system yet"}
             </p>
             {searchQuery || statusFilter !== "all" ? (
               <Button
@@ -722,11 +699,11 @@ function AdminAppointmentsPage() {
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isProcessing}>
               Cancel
-            </AlertDialogCancel>
+            </AlertDialogCancel>{" "}
             <AlertDialogAction
               onClick={() => {
-                if (appointmentToDelete) {
-                  cancelAppointment(appointmentToDelete);
+                if (bookingToDelete) {
+                  cancelBooking(bookingToDelete);
                 }
               }}
               disabled={isProcessing}
@@ -762,14 +739,16 @@ function AdminAppointmentsPage() {
       >
         <AlertDialogContent className="max-w-lg">
           <AlertDialogHeader>
-            <AlertDialogTitle>Appointment Details</AlertDialogTitle>
+            {" "}
+            <AlertDialogTitle>Booking Details</AlertDialogTitle>
             <AlertDialogDescription>
-              View and manage appointment information
+              View and manage booking information
             </AlertDialogDescription>
           </AlertDialogHeader>
 
-          {appointmentToUpdate && (
+          {bookingToUpdate && (
             <div className="py-4">
+              {" "}
               {/* Customer & Artist Information */}
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div className="space-y-2">
@@ -777,19 +756,19 @@ function AdminAppointmentsPage() {
                     Customer
                   </h3>
                   <p className="font-medium">
-                    {appointments.find((a) => a.id === appointmentToUpdate)
-                      ?.userName || "Guest"}
+                    {bookings.find((b) => b.id === bookingToUpdate)?.user
+                      .name || "Guest"}
                   </p>
                   <p className="text-sm text-gray-500">
-                    {appointments.find((a) => a.id === appointmentToUpdate)
-                      ?.userEmail || "No email"}
+                    {bookings.find((b) => b.id === bookingToUpdate)?.user
+                      .email || "No email"}
                   </p>
-                  {appointments.find((a) => a.id === appointmentToUpdate)
-                    ?.userPhone && (
+                  {bookings.find((b) => b.id === bookingToUpdate)?.user
+                    .phone && (
                     <p className="text-sm text-gray-500">
                       {
-                        appointments.find((a) => a.id === appointmentToUpdate)
-                          ?.userPhone
+                        bookings.find((b) => b.id === bookingToUpdate)?.user
+                          .phone
                       }
                     </p>
                   )}
@@ -797,13 +776,12 @@ function AdminAppointmentsPage() {
                 <div className="space-y-2">
                   <h3 className="text-sm font-medium text-gray-500">Artist</h3>
                   <p className="font-medium">
-                    {appointments.find((a) => a.id === appointmentToUpdate)
-                      ?.artistName || "Unassigned"}
+                    {bookings.find((b) => b.id === bookingToUpdate)?.artist.user
+                      .name || "Unassigned"}
                   </p>
                 </div>
               </div>
-
-              {/* Service & Appointment Time */}
+              {/* Service & Booking Time */}
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div className="space-y-2">
                   <h3 className="text-sm font-medium text-gray-500">
@@ -812,8 +790,8 @@ function AdminAppointmentsPage() {
                   <p className="font-medium">
                     {format(
                       new Date(
-                        appointments.find((a) => a.id === appointmentToUpdate)
-                          ?.datetime || new Date()
+                        bookings.find((b) => b.id === bookingToUpdate)
+                          ?.date_time || new Date()
                       ),
                       "MMMM d, yyyy"
                     )}
@@ -821,19 +799,11 @@ function AdminAppointmentsPage() {
                   <p className="text-sm text-gray-500">
                     {format(
                       new Date(
-                        appointments.find((a) => a.id === appointmentToUpdate)
-                          ?.datetime || new Date()
+                        bookings.find((b) => b.id === bookingToUpdate)
+                          ?.date_time || new Date()
                       ),
                       "h:mm a"
                     )}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    Duration:{" "}
-                    {
-                      appointments.find((a) => a.id === appointmentToUpdate)
-                        ?.duration
-                    }{" "}
-                    minutes
                   </p>
                 </div>
                 <div className="space-y-2">
@@ -842,35 +812,19 @@ function AdminAppointmentsPage() {
                   </h3>
                   <p className="font-medium">
                     {
-                      appointments.find((a) => a.id === appointmentToUpdate)
-                        ?.serviceType
+                      bookings.find((b) => b.id === bookingToUpdate)
+                        ?.service_type
                     }
                   </p>
                   <p className="text-sm text-gray-500">
+                    {" "}
                     EGP{" "}
-                    {appointments
-                      .find((a) => a.id === appointmentToUpdate)
-                      ?.totalPrice.toFixed(2)}
+                    {bookings
+                      .find((b) => b.id === bookingToUpdate)
+                      ?.service_price?.toFixed(2) || "0.00"}
                   </p>
                 </div>
               </div>
-
-              {/* Appointment Location */}
-              {appointments.find((a) => a.id === appointmentToUpdate)
-                ?.location && (
-                <div className="mb-4">
-                  <h3 className="text-sm font-medium text-gray-500">
-                    Location
-                  </h3>
-                  <p className="text-sm">
-                    {
-                      appointments.find((a) => a.id === appointmentToUpdate)
-                        ?.location
-                    }
-                  </p>
-                </div>
-              )}
-
               {/* Status Update */}
               <div className="space-y-4 mb-4">
                 <h3 className="text-sm font-medium text-gray-500">
@@ -882,7 +836,7 @@ function AdminAppointmentsPage() {
                   onValueChange={(value) => {
                     // Prevent empty string values
                     if (value && value.trim().length > 0) {
-                      setNewStatus(value as AppointmentStatus);
+                      setNewStatus(value as BookingStatus);
                     } else {
                       setNewStatus("PENDING");
                     }
@@ -901,10 +855,10 @@ function AdminAppointmentsPage() {
                 <div className="space-y-2">
                   <label htmlFor="status-notes" className="text-sm font-medium">
                     Additional Notes
-                  </label>
+                  </label>{" "}
                   <Textarea
                     id="status-notes"
-                    placeholder="Add notes about the appointment or status change..."
+                    placeholder="Add notes about the booking or status change..."
                     value={statusNotes}
                     onChange={(e) => setStatusNotes(e.target.value)}
                   />
@@ -919,9 +873,9 @@ function AdminAppointmentsPage() {
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
-                if (appointmentToUpdate) {
-                  updateAppointmentStatus(
-                    appointmentToUpdate,
+                if (bookingToUpdate) {
+                  updateBookingStatus(
+                    bookingToUpdate,
                     newStatus,
                     statusNotes || undefined
                   );

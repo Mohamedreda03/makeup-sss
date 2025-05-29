@@ -3,9 +3,11 @@ export interface Product {
   name: string;
   description: string | null;
   price: number;
+  image: string | null;
   imageUrl: string | null;
-  featured: boolean;
   inStock: boolean;
+  featured: boolean;
+  stock_quantity: number;
   createdAt: Date;
   updatedAt: Date;
   category: string;

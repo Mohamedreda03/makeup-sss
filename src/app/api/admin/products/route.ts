@@ -20,17 +20,15 @@ export async function POST(request: NextRequest) {
         { error: "Missing required fields" },
         { status: 400 }
       );
-    }
-
-    // Create product
+    } // Create product
     const newProduct = await db.product.create({
       data: {
         name: body.name,
         description: body.description || "",
         price: body.price,
         category: body.category || "",
-        imageUrl: body.imageUrl || null,
-        inStock: body.inStock ?? true,
+        image: body.image || null,
+        stock_quantity: body.stock_quantity ?? 0,
         featured: body.featured ?? false,
       },
     });

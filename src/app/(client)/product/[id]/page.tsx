@@ -58,7 +58,7 @@ async function getRelatedProducts(
       where: {
         category: categoryName,
         id: { not: productId },
-        inStock: true,
+        stock_quantity: { gt: 0 },
       },
       take: limit,
     });
@@ -113,7 +113,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
                 <Image
                   src={
-                    product.imageUrl ||
+                    product.image ||
                     "https://placehold.co/800x800/rose/white?text=No+Image"
                   }
                   alt={product.name}
@@ -135,7 +135,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                   </div>
                 )}
 
-                {!product.inStock && (
+                {product.stock_quantity <= 0 && (
                   <div className="absolute top-2 right-2 bg-gray-700/90 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm z-30">
                     Out of Stock
                   </div>
@@ -153,13 +153,13 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 <div className="text-2xl md:text-3xl font-bold text-rose-600">
                   {formatPrice(product.price)}
                 </div>
-                {product.inStock ? (
+                {product.stock_quantity > 0 && product.inStock ? (
                   <span className="ml-4 inline-flex items-center px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
                     <Check className="h-3 w-3 mr-1" />
-                    In Stock
+                    {product.stock_quantity} In Stock
                   </span>
                 ) : (
-                  <span className="ml-4 inline-flex items-center px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-medium">
+                  <span className="ml-4 inline-flex items-center px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-medium">
                     Out of Stock
                   </span>
                 )}

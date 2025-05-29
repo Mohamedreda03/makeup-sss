@@ -18,13 +18,6 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Upload, ImagePlus } from "lucide-react";
@@ -48,9 +41,17 @@ const productFormSchema = z.object({
     .refine((value) => parseFloat(value) >= 0, {
       message: "Price must be a positive number",
     }),
-  imageUrl: z.string().optional(),
+  image: z.string().optional(),
   category: z.string().optional().default(""),
-  inStock: z.boolean().default(true),
+  stock_quantity: z
+    .string()
+    .refine((value) => !isNaN(parseInt(value)), {
+      message: "Stock quantity must be a valid number",
+    })
+    .refine((value) => parseInt(value) >= 0, {
+      message: "Stock quantity must be a positive number",
+    })
+    .default("0"),
   featured: z.boolean().default(false),
 });
 
@@ -61,19 +62,11 @@ const defaultValues: Partial<ProductFormValues> = {
   name: "",
   description: "",
   price: "",
-  imageUrl: "",
+  image: "",
   category: "",
-  inStock: true,
+  stock_quantity: "0",
   featured: false,
 };
-
-// Categories for select input
-const categories = [
-  { value: "Makeup", label: "Makeup" },
-  { value: "Skincare", label: "Skincare" },
-  { value: "Haircare", label: "Haircare" },
-  { value: "Fragrance", label: "Fragrance" },
-];
 
 interface ProductFormProps {
   initialData?: ProductFormValues;
@@ -88,7 +81,7 @@ export default function ProductForm({
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(
-    initialData?.imageUrl || null
+    initialData?.image || null
   );
 
   const isEditMode = !!productId;
@@ -106,6 +99,7 @@ export default function ProductForm({
       const formattedData = {
         ...data,
         price: parseFloat(data.price),
+        stock_quantity: parseInt(data.stock_quantity),
       };
 
       // Send data to the API
@@ -168,7 +162,7 @@ export default function ProductForm({
       if (event.target?.result) {
         const dataUrl = event.target.result as string;
         setImagePreview(dataUrl);
-        form.setValue("imageUrl", dataUrl);
+        form.setValue("image", dataUrl);
       }
     };
     reader.readAsDataURL(file);
@@ -237,30 +231,29 @@ export default function ProductForm({
                 <FormMessage />
               </FormItem>
             )}
-          />
-
-          {/* In Stock Checkbox */}
+          />{" "}
+          {/* Stock Quantity Input */}
           <FormField
             control={form.control}
-            name="inStock"
+            name="stock_quantity"
             render={({ field }) => (
-              <FormItem className="flex flex-row items-end space-x-3 space-y-0 rounded-md border p-4">
+              <FormItem>
+                <FormLabel>Stock Quantity</FormLabel>
                 <FormControl>
-                  <Checkbox
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
+                  <Input
+                    type="number"
+                    min="0"
+                    placeholder="Enter stock quantity"
+                    {...field}
                   />
                 </FormControl>
-                <div className="space-y-1 leading-none">
-                  <FormLabel>In Stock</FormLabel>
-                  <FormDescription>
-                    Is this product available for purchase?
-                  </FormDescription>
-                </div>
+                <FormDescription>
+                  Number of items available in stock
+                </FormDescription>
+                <FormMessage />
               </FormItem>
             )}
           />
-
           {/* Featured Checkbox */}
           <FormField
             control={form.control}

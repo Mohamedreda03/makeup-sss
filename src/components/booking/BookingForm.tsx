@@ -175,13 +175,10 @@ export default function BookingForm({
 
       if (!response.ok) {
         throw new Error("Failed to book appointment");
-      }
-
-      // Show success toast
+      } // Show success toast
       toast({
         title: "تم الحجز بنجاح!",
         description: "تم جدولة موعدك بنجاح.",
-        variant: "success",
       });
 
       // Redirect to appointments page

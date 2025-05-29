@@ -1,3 +1,6 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
 generator client {
   provider = "prisma-client-js"
   output   = "../src/generated/prisma"
@@ -8,52 +11,87 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserRole {
+  CUSTOMER
+  ADMIN
+  ARTIST
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  CANCELLED
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
 model User {
-  id                 String          @id @default(cuid())
-  name               String?
-  email              String?         @unique
-  emailVerified      DateTime?
-  image              String?
-  password           String?
-  phone              String?
-  role               UserRole        @default(CUSTOMER)
-  instagram          String?
-  facebook           String?
-  twitter            String?
-  tiktok             String?
-  website            String?
-  bio                String?         @db.Text
-  yearsOfExperience  Int? // Years of experience for artists
-  defaultPrice       Float? // Default price for artist services
-  createdAt          DateTime        @default(now())
-  updatedAt          DateTime        @updatedAt
-  accounts           Account[]
-  sessions           Session[]
-  appointments       Appointment[]   @relation()
-  artistAppointments Appointment[]   @relation("ArtistAppointments")
-  reviews            Review[]        @relation()
-  artistReviews      Review[]        @relation("ArtistReviews")
-  metadata           UserMetadata?
-  orders             Order[]
-  Transaction        Transaction[]
-  ArtistAccount      ArtistAccount?
-  services           ArtistService[] // New relation to services
-  passwordResets     PasswordReset[] // Relation to password reset tokens
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String?
+  role      UserRole @default(CUSTOMER)
+  phone     String?
+  address   String?
+  image     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Auth relationships
+  accounts       Account[]
+  sessions       Session[]
+  passwordResets PasswordReset[]
+
+  // User-specific relationships
+  orders        Order[]
+  bookings      Booking[]
+  reviews       Review[]
+  cart          Cart?
+  makeup_artist MakeUpArtist?
+  services      ArtistService[]
+
+  @@map("users")
 }
 
-model UserMetadata {
-  id                   String   @id @default(cuid())
-  userId               String   @unique
-  availabilitySettings String?  @db.Text // JSON string of availability settings
-  artistSettings       String?  @db.Text // JSON string of artist settings (specialties, certificates, services)
-  preferences          String?  @db.Text // JSON string of user preferences
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
-  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+model MakeUpArtist {
+  id               String  @id @default(uuid())
+  user_id          String  @unique
+  pricing          Float?
+  experience_years String?
+  portfolio        String?
+  gender           String?
+  rating           Float?  @default(0.0)
+  address          String?
+  bio              String?
+  availability     Boolean @default(false)
+  available_slots  Json? // JSON field to store available time slots
+  earnings         Float   @default(0.0)
+
+  // Relationship to parent User
+  user User @relation(fields: [user_id], references: [id])
+
+  // Artist-specific relationships
+  bookings         Booking[]
+  reviews_received Review[]  @relation("ArtistReviews")
+
+  @@map("makeup_artists")
 }
 
+// Auth Models
 model Account {
-  id                String  @id @default(cuid())
+  id                String  @id @default(uuid())
   userId            String
   type              String
   provider          String
@@ -71,7 +109,7 @@ model Account {
 }
 
 model Session {
-  id           String   @id @default(cuid())
+  id           String   @id @default(uuid())
   sessionToken String   @unique
   userId       String
   expires      DateTime
@@ -86,156 +124,8 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-model Product {
-  id          String      @id @default(cuid())
-  name        String
-  description String?
-  price       Float
-  imageUrl    String?
-  featured    Boolean     @default(false)
-  inStock     Boolean     @default(true)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  category    String
-  cartItems   CartItem[]
-  orderItems  OrderItem[]
-}
-
-model Cart {
-  id        String     @id @default(cuid())
-  userId    String?
-  sessionId String?    @unique
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  items     CartItem[]
-}
-
-model CartItem {
-  id        String   @id @default(cuid())
-  cartId    String
-  productId String
-  quantity  Int
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  cart    Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-}
-
-enum OrderStatus {
-  PENDING
-  PROCESSING
-  COMPLETED
-  CANCELLED
-}
-
-model Order {
-  id           String      @id @default(cuid())
-  userId       String?
-  sessionId    String?
-  status       OrderStatus @default(PENDING)
-  total        Float
-  shippingInfo Json?
-  paymentInfo  Json?
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
-  items        OrderItem[]
-
-  user        User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
-  Transaction Transaction[]
-}
-
-model OrderItem {
-  id        String   @id @default(cuid())
-  orderId   String
-  productId String
-  name      String
-  price     Float
-  quantity  Int
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-}
-
-enum AppointmentStatus {
-  PENDING
-  CONFIRMED
-  COMPLETED
-  CANCELLED
-}
-
-model Appointment {
-  id             String            @id @default(cuid())
-  datetime       DateTime
-  description    String?
-  status         AppointmentStatus @default(PENDING)
-  userId         String
-  artistId       String?
-  serviceType    String
-  duration       Int
-  totalPrice     Float
-  location       String?
-  notes          String?
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
-  review         Review?
-  paymentDetails PaymentDetail?
-  transactions   Transaction[]
-
-  user   User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  artist User? @relation("ArtistAppointments", fields: [artistId], references: [id], onDelete: SetNull)
-}
-
-enum UserRole {
-  CUSTOMER
-  ADMIN
-  ARTIST
-}
-
-enum ReviewStatus {
-  PENDING
-  APPROVED
-  REJECTED
-}
-
-model Review {
-  id            String       @id @default(cuid())
-  appointmentId String       @unique
-  userId        String
-  artistId      String
-  rating        Int // Rating from 1 to 5
-  comment       String       @db.Text
-  status        ReviewStatus @default(PENDING)
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-
-  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
-  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  artist      User        @relation("ArtistReviews", fields: [artistId], references: [id], onDelete: Cascade)
-}
-
-// Payment related models
-model PaymentDetail {
-  id             String   @id @default(cuid())
-  appointmentId  String   @unique
-  amount         Float
-  currency       String   @default("USD")
-  status         String // PENDING, COMPLETED, FAILED
-  paymentMethod  String // card, paypal, etc.
-  paidAt         DateTime @default(now())
-  transactionId  String? // External payment gateway transaction ID
-  paymentGateway String // stripe, paypal, etc
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
-}
-
-// Password Reset Token model
 model PasswordReset {
-  id        String   @id @default(cuid())
+  id        String   @id @default(uuid())
   userId    String
   token     String   @unique
   expiresAt DateTime
@@ -244,52 +134,8 @@ model PasswordReset {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-enum TransactionType {
-  PAYOUT
-  SALE
-  REFUND
-  ADJUSTMENT
-}
-
-enum TransactionStatus {
-  PENDING
-  COMPLETED
-  FAILED
-}
-
-model Transaction {
-  id              String            @id @default(cuid())
-  artistAccountId String
-  artistAccount   ArtistAccount     @relation(fields: [artistAccountId], references: [id], onDelete: Cascade)
-  orderId         String?
-  order           Order?            @relation(fields: [orderId], references: [id], onDelete: SetNull)
-  amount          Float
-  type            TransactionType
-  status          TransactionStatus @default(PENDING)
-  description     String?
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
-  User            User?             @relation(fields: [userId], references: [id])
-  userId          String?
-  Appointment     Appointment?      @relation(fields: [appointmentId], references: [id])
-  appointmentId   String?
-}
-
-model ArtistAccount {
-  id               String        @id @default(cuid())
-  userId           String        @unique
-  user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  totalEarnings    Float         @default(0)
-  pendingPayouts   Float         @default(0)
-  availableBalance Float         @default(0)
-  transactions     Transaction[]
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
-}
-
-// New model for artist services
 model ArtistService {
-  id          String   @id @default(cuid())
+  id          String   @id @default(uuid())
   name        String
   description String?
   price       Float    @default(0)
@@ -301,4 +147,145 @@ model ArtistService {
   // Relation to artist
   artistId String
   artist   User   @relation(fields: [artistId], references: [id], onDelete: Cascade)
+}
+
+model Booking {
+  id             String        @id @default(uuid())
+  user_id        String
+  artist_id      String
+  service_type   String
+  service_price  Float?
+  date_time      DateTime
+  booking_status BookingStatus @default(PENDING)
+
+  total_price Float? // Total price for the service
+  location    String? // Service location
+
+  // Relationships
+  user   User         @relation(fields: [user_id], references: [id])
+  artist MakeUpArtist @relation(fields: [artist_id], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("bookings")
+}
+
+model Review {
+  id        String       @id @default(uuid())
+  user_id   String
+  artist_id String
+  date      DateTime     @default(now())
+  rating    Int
+  comment   String?
+  status    ReviewStatus @default(PENDING)
+
+  // Relationships
+  user   User         @relation(fields: [user_id], references: [id])
+  artist MakeUpArtist @relation("ArtistReviews", fields: [artist_id], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("reviews")
+}
+
+model Order {
+  id             String      @id @default(uuid())
+  user_id        String
+  order_date     DateTime    @default(now())
+  status         OrderStatus @default(PENDING)
+  payment_status String
+
+  // Relationships
+  user          User           @relation(fields: [user_id], references: [id])
+  order_details OrderDetails[]
+  payment       Payment?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("orders")
+}
+
+model Payment {
+  id             String   @id @default(uuid())
+  order_id       String   @unique
+  amount         Float
+  method         String
+  payment_status String
+  date           DateTime @default(now())
+
+  // Relationships
+  order Order @relation(fields: [order_id], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("payments")
+}
+
+model Cart {
+  id          String @id @default(uuid())
+  user_id     String @unique
+  total_price Float  @default(0.0)
+
+  // Relationships
+  user       User       @relation(fields: [user_id], references: [id])
+  cart_items CartItem[]
+
+  @@map("carts")
+}
+
+model CartItem {
+  id         String @id @default(uuid())
+  product_id String
+  quantity   Int
+  cart_id    String
+
+  product Product @relation(fields: [product_id], references: [id])
+  cart    Cart    @relation(fields: [cart_id], references: [id])
+
+  @@map("cart_items")
+}
+
+model Product {
+  id             String  @id @default(uuid())
+  name           String
+  description    String?
+  price          Float
+  category       String
+  stock_quantity Int
+  inStock        Boolean @default(true)
+  featured       Boolean @default(false)
+  image          String?
+  imageUrl       String? // For backward compatibility
+
+  // Relationships
+  cart_items    CartItem[]
+  order_details OrderDetails[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("products")
+}
+
+model OrderDetails {
+  id         String
+  product_id String
+  quantity   Int
+  price      Float
+  type       String
+  order_id   String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  order   Order   @relation(fields: [order_id], references: [id])
+  product Product @relation(fields: [product_id], references: [id])
+
+  @@id([order_id, product_id])
+  @@map("order_details")
 }

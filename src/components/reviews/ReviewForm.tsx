@@ -82,7 +82,7 @@ export function ReviewForm({
         title: "Review Submitted",
         description:
           "Your review has been submitted and is pending approval by an admin.",
-        variant: "success",
+        
       });
 
       form.reset();

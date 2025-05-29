@@ -21,6 +21,13 @@ interface AvailabilitySettings {
     interval: number;
   };
   regularDaysOff: number[];
+  bookedSlots?: {
+    date: string;
+    time: string;
+    booking_id: string;
+    service_type: string;
+    status: string;
+  }[];
 }
 
 interface ArtistBookingWrapperProps {

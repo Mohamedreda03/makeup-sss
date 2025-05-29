@@ -52,17 +52,15 @@ export async function GET(req: Request) {
 
     if (user.role === "ADMIN" && url.searchParams.get("artistId")) {
       artistId = url.searchParams.get("artistId") as string;
-    }
-
-    // Find artist metadata with availability settings
-    const artistMetadata = await db.userMetadata.findUnique({
+    } // Find artist metadata with availability settings
+    const makeupArtist = await db.makeUpArtist.findUnique({
       where: {
-        userId: artistId,
+        user_id: artistId,
       },
     });
 
     // If no settings exist yet, return default values
-    if (!artistMetadata || !artistMetadata.availabilitySettings) {
+    if (!makeupArtist || !makeupArtist.available_slots) {
       return NextResponse.json({
         isAvailable: true, // Default to available
         workingHours: {
@@ -72,10 +70,8 @@ export async function GET(req: Request) {
         },
         regularDaysOff: [0, 6], // Sunday and Saturday off by default
       });
-    }
-
-    // Return the stored settings
-    return NextResponse.json(JSON.parse(artistMetadata.availabilitySettings));
+    } // Return the stored settings
+    return NextResponse.json(makeupArtist.available_slots);
   } catch (error) {
     console.error("Error fetching artist availability settings:", error);
     return NextResponse.json({ message: "Server error" }, { status: 500 });
@@ -115,27 +111,22 @@ export async function POST(req: Request) {
 
     // Parse and validate the request body
     const requestBody = await req.json();
-    const validatedData = availabilitySettingsSchema.parse(requestBody);
-
-    // Update or create the artist's metadata with availability settings
-    const updatedMetadata = await db.userMetadata.upsert({
+    const validatedData = availabilitySettingsSchema.parse(requestBody); // Update or create the artist's metadata with availability settings
+    const updatedMakeupArtist = await db.makeUpArtist.upsert({
       where: {
-        userId: artistId,
+        user_id: artistId,
       },
       update: {
-        availabilitySettings: JSON.stringify(validatedData),
+        available_slots: validatedData,
       },
       create: {
-        userId: artistId,
-        availabilitySettings: JSON.stringify(validatedData),
+        user_id: artistId,
+        available_slots: validatedData,
       },
     });
-
     return NextResponse.json({
       message: "Availability settings updated successfully",
-      data: updatedMetadata.availabilitySettings
-        ? JSON.parse(updatedMetadata.availabilitySettings)
-        : null,
+      data: updatedMakeupArtist.available_slots,
     });
   } catch (error) {
     console.error("Error updating artist availability settings:", error);

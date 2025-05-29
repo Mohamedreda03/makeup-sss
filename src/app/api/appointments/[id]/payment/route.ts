@@ -1,11 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import {
-  AppointmentStatus,
-  TransactionStatus,
-  TransactionType,
-} from "@/generated/prisma";
 
 export async function POST(
   req: Request,
@@ -30,102 +25,30 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // 1. Find the appointment
-    const appointment = await db.appointment.findUnique({
+    // 1. Find the booking
+    const booking = await db.booking.findUnique({
       where: { id },
       include: { artist: true },
     });
 
-    if (!appointment) {
-      return NextResponse.json(
-        { error: "Appointment not found" },
-        { status: 404 }
-      );
-    }
-
-    if (!appointment.artistId) {
-      return NextResponse.json(
-        { error: "No artist assigned to this appointment" },
-        { status: 400 }
-      );
-    }
-
-    // 2. Update appointment status to CONFIRMED
-    const updatedAppointment = await db.appointment.update({
-      where: { id: appointment.id },
-      data: { status: AppointmentStatus.CONFIRMED },
-    });
-
-    console.log("Updated appointment status to CONFIRMED");
-
-    // 3. Create payment record
-    const paymentDetail = await db.paymentDetail.create({
+    if (!booking) {
+      return NextResponse.json({ error: "Booking not found" }, { status: 404 });
+    } // 2. Update booking status to CONFIRMED (indicating payment was processed)
+    const updatedBooking = await db.booking.update({
+      where: { id },
       data: {
-        appointmentId: appointment.id,
-        amount: appointment.totalPrice,
-        status: "COMPLETED",
-        paymentMethod: paymentDetails.paymentMethod,
-        transactionId: paymentDetails.transactionId,
-        paymentGateway: "stripe",
-        currency: "USD",
+        booking_status: "CONFIRMED",
       },
     });
 
-    console.log("Created payment record");
-
-    // 4. Find or create artist account
-    let artistAccount = await db.artistAccount.findUnique({
-      where: { userId: appointment.artistId },
-    });
-
-    if (!artistAccount) {
-      artistAccount = await db.artistAccount.create({
-        data: {
-          userId: appointment.artistId,
-          totalEarnings: 0,
-          pendingPayouts: 0,
-          availableBalance: 0,
-        },
-      });
-      console.log("Created new artist account");
-    }
-
-    // 5. Update artist account balances
-    const updatedArtistAccount = await db.artistAccount.update({
-      where: { id: artistAccount.id },
-      data: {
-        totalEarnings: artistAccount.totalEarnings + appointment.totalPrice,
-        availableBalance:
-          artistAccount.availableBalance + appointment.totalPrice,
-      },
-    });
-
-    console.log("Updated artist account balance");
-
-    // 6. Create transaction record
-    const transaction = await db.transaction.create({
-      data: {
-        artistAccountId: artistAccount.id,
-        amount: appointment.totalPrice,
-        type: TransactionType.SALE,
-        status: TransactionStatus.COMPLETED,
-        description: `Payment for appointment on ${new Date(
-          appointment.datetime
-        ).toLocaleDateString()}`,
-        appointmentId: appointment.id,
-      },
-    });
-
-    console.log("Created transaction record");
+    console.log("Updated booking status to CONFIRMED");
 
     return NextResponse.json({
       success: true,
       message: "Payment processed successfully",
       data: {
-        appointment: updatedAppointment,
-        payment: paymentDetail,
-        artistAccount: updatedArtistAccount,
-        transaction,
+        booking: updatedBooking,
+        paymentDetails: paymentDetails,
       },
     });
   } catch (error) {
@@ -155,31 +78,30 @@ export async function GET(
       );
     }
 
-    const appointmentId = params.id;
+    const bookingId = params.id;
     const userId = session.user.id;
 
-    // Check if appointment exists and belongs to user
-    const appointment = await db.appointment.findUnique({
+    // Check if booking exists and belongs to user
+    const booking = await db.booking.findUnique({
       where: {
-        id: appointmentId,
-        userId,
+        id: bookingId,
+        user_id: userId,
       },
     });
 
-    if (!appointment) {
+    if (!booking) {
       return NextResponse.json(
-        { message: "Appointment not found" },
+        { message: "Booking not found" },
         { status: 404 }
       );
     }
 
-    // Check if appointment is paid - consider CONFIRMED or COMPLETED status as paid
-    const isPaid =
-      appointment.status === "CONFIRMED" || appointment.status === "COMPLETED";
+    // Check if booking is paid - consider COMPLETED status as paid
+    const isPaid = booking.booking_status === "COMPLETED";
 
     return NextResponse.json({
-      id: appointment.id,
-      status: appointment.status,
+      id: booking.id,
+      status: booking.booking_status,
       isPaid,
     });
   } catch (error) {

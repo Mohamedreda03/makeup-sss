@@ -14,9 +14,7 @@ export async function GET(req: Request) {
         { message: "Artist ID is required" },
         { status: 400 }
       );
-    }
-
-    // Find artist data
+    } // Find artist data
     const artist = await db.user.findUnique({
       where: {
         id: artistId,
@@ -26,16 +24,24 @@ export async function GET(req: Request) {
         id: true,
         name: true,
         image: true,
-        yearsOfExperience: true,
-        bio: true,
-        instagram: true,
-        facebook: true,
-        twitter: true,
-        tiktok: true,
-        website: true,
+        phone: true,
+        address: true,
+        makeup_artist: {
+          select: {
+            id: true,
+            bio: true,
+            experience_years: true,
+            pricing: true,
+            rating: true,
+            availability: true,
+            portfolio: true,
+            gender: true,
+            available_slots: true,
+            earnings: true,
+          },
+        },
       },
     });
-
     if (!artist) {
       return NextResponse.json(
         { message: "Artist not found" },
@@ -43,14 +49,18 @@ export async function GET(req: Request) {
       );
     }
 
-    // Find artist metadata (for specialties, certificates, and services)
-    const artistMetadata = await db.userMetadata.findUnique({
+    // Get artist services from database
+    const artistServices = await db.artistService.findMany({
       where: {
-        userId: artistId,
+        artistId,
+        isActive: true,
+      },
+      orderBy: {
+        price: "asc",
       },
     });
 
-    // Parse metadata or use defaults
+    // Default specialties (these are standard for makeup artists)
     const specialties: string[] = [
       "Bridal Makeup",
       "Party Makeup",
@@ -60,44 +70,51 @@ export async function GET(req: Request) {
       "Photoshoot Makeup",
       "Runway & Fashion Show",
     ];
-    let certificates: string[] = [];
-    let services: any[] = [];
 
-    if (artistMetadata?.artistSettings) {
-      try {
-        const settings = JSON.parse(artistMetadata.artistSettings);
-        // Always use the fixed specialties
-        certificates = settings.certificates || [];
-        services = settings.services || [];
-
-        // Filter out inactive services for public view
-        services = services.filter((service) => service.isActive);
-      } catch (error) {
-        console.error("Error parsing artist settings:", error);
-      }
-    }
-
-    // Get completed appointments count (for showing experience)
-    const completedAppointments = await db.appointment.count({
-      where: {
-        artistId,
-        status: "COMPLETED",
-      },
+    // Format services for response
+    const services = artistServices.map((service) => ({
+      id: service.id,
+      name: service.name,
+      description: service.description || "",
+      price: service.price,
+      duration: service.duration || 60,
+      isActive: service.isActive,
+    })); // Get completed bookings count (for showing experience)
+    // First get the makeup artist record
+    const makeupArtist = await db.makeUpArtist.findUnique({
+      where: { user_id: artistId },
     });
 
-    // Get availability settings
+    const completedBookings = makeupArtist
+      ? await db.booking.count({
+          where: {
+            artist_id: makeupArtist.id,
+            booking_status: "COMPLETED",
+          },
+        })
+      : 0;
+
+    // Get availability settings from makeup_artist profile
     let workingHours = {
       start: 10,
       end: 24,
       interval: 30,
     };
 
-    if (artistMetadata?.availabilitySettings) {
+    if (artist.makeup_artist?.available_slots) {
       try {
-        const availabilitySettings = JSON.parse(
-          artistMetadata.availabilitySettings
-        );
-        workingHours = availabilitySettings.workingHours || workingHours;
+        const availabilitySettings =
+          typeof artist.makeup_artist.available_slots === "string"
+            ? JSON.parse(artist.makeup_artist.available_slots)
+            : artist.makeup_artist.available_slots;
+
+        if (availabilitySettings.startTime && availabilitySettings.endTime) {
+          workingHours = {
+            start: parseInt(availabilitySettings.startTime.split(":")[0]),
+            end: parseInt(availabilitySettings.endTime.split(":")[0]),
+            interval: availabilitySettings.sessionDuration || 30,
+          };
+        }
       } catch (error) {
         console.error("Error parsing availability settings:", error);
       }
@@ -105,12 +122,18 @@ export async function GET(req: Request) {
 
     // Return public artist data
     return NextResponse.json({
-      ...artist,
+      id: artist.id,
+      name: artist.name,
+      image: artist.image,
+      phone: artist.phone,
+      address: artist.address,
+      bio: artist.makeup_artist?.bio || "",
+      yearsOfExperience: artist.makeup_artist?.experience_years || 0,
       specialties,
-      certificates,
+      certificates: [], // Could be added to schema later if needed
       services,
       stats: {
-        completedAppointments,
+        completedAppointments: completedBookings,
       },
       workingHours,
     });

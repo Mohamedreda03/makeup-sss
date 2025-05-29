@@ -9,10 +9,9 @@ export function cn(...inputs: ClassValue[]) {
  * Format a price in Egyptian Pounds
  */
 export function formatPrice(price: number): string {
-  return price.toLocaleString("en-EG", {
+  return new Intl.NumberFormat("en-EG", {
     style: "currency",
     currency: "EGP",
     minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+  }).format(price);
 }

@@ -17,7 +17,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Card,
   CardContent,
@@ -42,34 +41,13 @@ const formSchema = z.object({
   password: z.string().min(8, {
     message: "Password must be at least 8 characters.",
   }),
-  phone: z.string().optional(),
-  instagram: z.string().optional(),
-  facebook: z.string().optional(),
-  twitter: z.string().optional(),
-  tiktok: z.string().optional(),
-  website: z.string().optional(),
-  bio: z.string().optional(),
-  yearsOfExperience: z.coerce.number().min(0).optional(),
-  category: z.string().optional(),
-  defaultPrice: z.coerce.number().min(0).optional(),
   image: z.string().optional(),
 });
-
-// Service interface
-interface Service {
-  id: string;
-  name: string;
-  description?: string;
-  price: number;
-  duration?: number;
-  isActive?: boolean;
-}
 
 export default function NewArtistPage() {
   const { data: session } = useSession();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  const [services, setServices] = useState<Service[]>([]);
 
   // Initialize the form
   const form = useForm<z.infer<typeof formSchema>>({
@@ -78,16 +56,6 @@ export default function NewArtistPage() {
       name: "",
       email: "",
       password: "",
-      phone: "",
-      instagram: "",
-      facebook: "",
-      twitter: "",
-      tiktok: "",
-      website: "",
-      bio: "",
-      yearsOfExperience: 0,
-      category: "",
-      defaultPrice: 0,
       image: "",
     },
   });
@@ -97,28 +65,17 @@ export default function NewArtistPage() {
     form.setValue("image", imageUrl);
   };
 
-  // Handle services change
-  const handleServicesChange = (updatedServices: Service[]) => {
-    setServices(updatedServices);
-  };
-
   // Handle form submission
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
+    // Show loading toast for creation
+    const loadingToast = toast({
+      title: "Creating artist...",
+      description: "Please wait",
+    });
 
     try {
-      console.log("Creating artist with data:", {
-        ...values,
-        role: "ARTIST",
-        image: values.image,
-      });
-
-      // Make sure all fields are properly included
-      const createData = {
-        ...values,
-        role: "ARTIST",
-        image: values.image || null,
-      };
+      console.log("Creating artist with data:", values);
 
       // Create the artist account
       const response = await fetch("/api/admin/artists", {
@@ -126,7 +83,7 @@ export default function NewArtistPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(createData),
+        body: JSON.stringify(values),
       });
 
       if (!response.ok) {
@@ -138,40 +95,19 @@ export default function NewArtistPage() {
       const artistData = await response.json();
       console.log("Artist created successfully:", artistData);
 
-      // Initialize artist settings with category and services
-      console.log("Setting artist category and services");
-      const settingsResponse = await fetch(
-        `/api/artist/settings?artistId=${artistData.id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            category: values.category || "",
-            specialties: [],
-            certificates: [],
-            services: services,
-          }),
-        }
-      );
-
-      if (!settingsResponse.ok) {
-        console.error("Warning: Failed to set artist settings");
-      } else {
-        console.log("Artist settings set successfully");
-      }
-
-      toast({
-        title: "Success",
+      // Update loading toast to success and redirect
+      loadingToast.update({
+        id: loadingToast.id,
+        title: "Artist Created",
         description: "Artist created successfully.",
-        variant: "success",
+        
       });
-
       router.push("/admin/artists");
     } catch (error) {
       console.error("Error creating artist:", error);
-      toast({
+      // Update loading toast to error state
+      loadingToast.update({
+        id: loadingToast.id,
         title: "Error",
         description:
           error instanceof Error
@@ -284,125 +220,6 @@ export default function NewArtistPage() {
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="phone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Phone</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Phone number" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="defaultPrice"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Default Price (EGP)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          placeholder="Default service price"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        The default price for the artist's services in Egyptian
-                        Pound
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="space-y-4 pt-4 border-t">
-                <h3 className="text-lg font-medium">Social Media</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="instagram"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Instagram</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="Instagram username or full URL"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="facebook"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Facebook</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="Facebook username or full URL"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="twitter"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Twitter</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="Twitter username or full URL"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="tiktok"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>TikTok</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="TikTok username or full URL"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="website"
-                    render={({ field }) => (
-                      <FormItem className="md:col-span-2">
-                        <FormLabel>Website</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Website URL" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
               </div>
             </CardContent>
             <CardFooter className="flex justify-end gap-4">

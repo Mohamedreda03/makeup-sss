@@ -2,17 +2,8 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { z } from "zod";
-import {
-  getDay,
-  parseISO,
-  format,
-  addMinutes,
-  isWithinInterval,
-} from "date-fns";
-import { Appointment } from "@/generated/prisma";
-
-// Define status type
-type AppointmentStatus = "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED";
+import { getDay, format } from "date-fns";
+import { BookingStatus } from "@/generated/prisma";
 
 // Extended user interface
 interface ExtendedUser {
@@ -33,15 +24,12 @@ const DEFAULT_BUSINESS_HOURS = {
 // Default regular days off
 const DEFAULT_REGULAR_DAYS_OFF = [0, 6]; // Sunday and Saturday
 
-// Appointment schema for validation
-const appointmentSchema = z.object({
+// Booking schema for validation
+const bookingSchema = z.object({
   artistId: z.string(),
-  serviceId: z.string().optional(),
   serviceType: z.string(),
   datetime: z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(.\d{3}Z)?$/),
-  duration: z.number().min(15).max(240),
   totalPrice: z.number().nonnegative(),
-  notes: z.string().optional(),
   location: z.string().optional().nullable(),
   status: z
     .enum(["PENDING", "CONFIRMED", "COMPLETED", "CANCELLED"])
@@ -69,67 +57,63 @@ export async function GET(req: Request) {
     const url = new URL(req.url);
     const status = url.searchParams.get("status");
     const page = parseInt(url.searchParams.get("page") || "1");
-    const pageSize = parseInt(url.searchParams.get("pageSize") || "10");
-
-    // Build filter
-    const filter: any = {
-      userId,
+    const pageSize = parseInt(url.searchParams.get("pageSize") || "10"); // Build filter
+    const filter: {
+      user_id: string;
+      booking_status?: BookingStatus;
+    } = {
+      user_id: userId,
     };
 
     // Add status filter if specified
     if (status && status !== "all") {
-      filter.status = status.toUpperCase();
-    }
-
-    // Get total count for pagination
-    const totalAppointments = await db.appointment.count({
+      filter.booking_status = status.toUpperCase() as BookingStatus;
+    } // Get total count for pagination
+    const totalAppointments = await db.booking.count({
       where: filter,
     });
 
-    // Get appointments
-    const appointments = await db.appointment.findMany({
+    // Get bookings
+    const appointments = await db.booking.findMany({
       where: filter,
       include: {
         artist: {
-          select: {
-            id: true,
-            name: true,
-            image: true,
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                image: true,
+              },
+            },
           },
         },
-        paymentDetails: true,
+        // Note: payment details are tracked differently in booking schema
       },
       orderBy: {
-        datetime: "desc",
+        date_time: "desc",
       },
       skip: (page - 1) * pageSize,
       take: pageSize,
-    });
-
-    // Format response
-    const formattedAppointments = appointments.map((appointment: any) => {
-      // Check if appointment is paid
-      let isPaid = false;
-      if (appointment.paymentDetails) {
-        isPaid = appointment.paymentDetails.status === "COMPLETED";
-      }
+    }); // Format response
+    const formattedAppointments = appointments.map((booking) => {
+      // Check if booking is paid - payment status is tracked in booking_status
+      const isPaid = booking.booking_status === "COMPLETED";
 
       return {
-        id: appointment.id,
-        datetime: appointment.datetime,
-        description: appointment.description,
-        status: appointment.status,
-        serviceType: appointment.serviceType,
-        duration: appointment.duration,
-        totalPrice: appointment.totalPrice,
-        location: appointment.location,
-        notes: appointment.notes,
-        createdAt: appointment.createdAt,
-        artistId: appointment.artistId,
-        artistName: appointment.artist?.name || null,
-        artistImage: appointment.artist?.image || null,
+        id: booking.id,
+        datetime: booking.date_time,
+        description: booking.service_type, // Use service_type as description
+        status: booking.booking_status,
+        serviceType: booking.service_type,
+        totalPrice: booking.total_price,
+        location: booking.location,
+        createdAt: booking.createdAt,
+        artistId: booking.artist_id,
+        artistName: booking.artist?.user?.name || null,
+        artistImage: booking.artist?.user?.image || null,
         isPaid,
-        paymentDetails: appointment.paymentDetails,
+        paymentDetails: null, // Payment details handled differently in booking schema
       };
     });
 
@@ -171,63 +155,66 @@ export async function POST(req: Request) {
     // Parse and validate request body
     const requestBody = await req.json();
     console.log("Request body received:", requestBody);
-
     try {
-      const validatedData = appointmentSchema.parse(requestBody);
-      console.log("Data validation successful:", validatedData);
-
-      // Verify the artist exists
+      const validatedData = bookingSchema.parse(requestBody);
+      console.log("Data validation successful:", validatedData); // Verify the artist exists and get makeup artist data
       const artist = await db.user.findUnique({
         where: {
           id: validatedData.artistId,
           role: "ARTIST",
         },
+        include: {
+          makeup_artist: true,
+        },
       });
 
-      if (!artist) {
+      if (!artist || !artist.makeup_artist) {
         console.log(`Artist not found: ${validatedData.artistId}`);
         return NextResponse.json(
           { message: "Artist not found" },
           { status: 404 }
         );
       }
-      console.log(`Artist verified: ${artist.name || artist.id}`);
-
-      // Parse the datetime
+      console.log(`Artist verified: ${artist.name || artist.id}`); // Parse the datetime
       const appointmentDateTime = new Date(validatedData.datetime);
-      const appointmentEndTime = addMinutes(
-        appointmentDateTime,
-        validatedData.duration
-      );
       console.log(
-        `Appointment time: ${format(
-          appointmentDateTime,
-          "yyyy-MM-dd HH:mm"
-        )} to ${format(appointmentEndTime, "HH:mm")}`
-      );
-
-      // Get the day of week (0 = Sunday, 6 = Saturday)
+        `Appointment time: ${format(appointmentDateTime, "yyyy-MM-dd HH:mm")}`
+      ); // Get the day of week (0 = Sunday, 6 = Saturday)
       const dayOfWeek = getDay(appointmentDateTime);
-      const dateString = format(appointmentDateTime, "yyyy-MM-dd");
       const timeHour = appointmentDateTime.getHours();
-      const timeMinute = appointmentDateTime.getMinutes();
-
-      // Fetch artist's availability settings
-      const artistMetadata = await db.userMetadata.findUnique({
-        where: {
-          userId: validatedData.artistId,
-        },
-      });
-
-      // Parse availability settings or use defaults
+      const timeMinute = appointmentDateTime.getMinutes(); // Parse availability settings or use defaults
       let workingHours = DEFAULT_BUSINESS_HOURS;
       let regularDaysOff = DEFAULT_REGULAR_DAYS_OFF;
       let isAvailable = true; // Default to available if no settings found
 
-      if (artistMetadata?.availabilitySettings) {
-        const settings = JSON.parse(artistMetadata.availabilitySettings);
-        workingHours = settings.workingHours || DEFAULT_BUSINESS_HOURS;
-        regularDaysOff = settings.regularDaysOff || DEFAULT_REGULAR_DAYS_OFF;
+      if (artist.makeup_artist.available_slots) {
+        const settings = artist.makeup_artist.available_slots as {
+          workingDays?: number[];
+          startTime?: string;
+          endTime?: string;
+          sessionDuration?: number;
+          breakBetweenSessions?: number;
+          isAvailable?: boolean;
+        };
+
+        // Convert the new format to the old format for compatibility
+        if (settings.startTime && settings.endTime) {
+          const startHour = parseInt(settings.startTime.split(":")[0]);
+          const endHour = parseInt(settings.endTime.split(":")[0]);
+          workingHours = {
+            start: startHour,
+            end: endHour,
+            interval: settings.sessionDuration || 30,
+          };
+        }
+
+        // Convert workingDays to regularDaysOff
+        if (settings.workingDays) {
+          const allDays = [0, 1, 2, 3, 4, 5, 6]; // Sunday to Saturday
+          regularDaysOff = allDays.filter(
+            (day) => !settings.workingDays!.includes(day)
+          );
+        }
 
         // Get the artist's overall availability status
         if (settings.isAvailable !== undefined) {
@@ -243,15 +230,8 @@ export async function POST(req: Request) {
           { message: "This artist is not currently accepting bookings" },
           { status: 400 }
         );
-      }
-
-      // Check if appointment is during working hours
-      if (
-        timeHour < workingHours.start ||
-        timeHour >= workingHours.end ||
-        (timeHour === workingHours.end - 1 &&
-          timeMinute + validatedData.duration > 60)
-      ) {
+      } // Check if appointment is during working hours
+      if (timeHour < workingHours.start || timeHour >= workingHours.end) {
         console.log("Selected time is outside working hours");
         return NextResponse.json(
           { message: "Selected time is outside the artist's working hours" },
@@ -278,81 +258,54 @@ export async function POST(req: Request) {
           },
           { status: 400 }
         );
-      }
-
-      // Check for conflicts with existing appointments
-      const existingAppointments = await db.appointment.findMany({
+      } // Check for conflicts with existing bookings (simplified - check for same time slot)
+      const existingBookings = await db.booking.findMany({
         where: {
-          artistId: validatedData.artistId,
-          status: {
+          artist_id: artist.makeup_artist.id, // Use makeup_artist.id
+          booking_status: {
             in: ["PENDING", "CONFIRMED"],
           },
-          datetime: {
-            gte: new Date(new Date(dateString).setHours(0, 0, 0, 0)),
-            lt: new Date(new Date(dateString).setHours(24, 0, 0, 0)),
-          },
+          date_time: appointmentDateTime,
         },
       });
 
       console.log(
-        `Found ${existingAppointments.length} existing appointments for the day`
+        `Found ${existingBookings.length} existing bookings for the same time slot`
       );
 
-      // Check for overlapping appointments
-      const isOverlapping = existingAppointments.some((appointment: any) => {
-        const existingStart = new Date(appointment.datetime);
-        const existingEnd = addMinutes(existingStart, appointment.duration);
-
-        return (
-          (appointmentDateTime >= existingStart &&
-            appointmentDateTime < existingEnd) ||
-          (appointmentEndTime > existingStart &&
-            appointmentEndTime <= existingEnd) ||
-          (appointmentDateTime <= existingStart &&
-            appointmentEndTime >= existingEnd)
-        );
-      });
-
-      if (isOverlapping) {
+      if (existingBookings.length > 0) {
         console.log("Time slot is already booked");
         return NextResponse.json(
           { message: "This time slot is already booked" },
           { status: 400 }
         );
-      }
-
-      // Create the appointment
-      const appointmentData = {
-        userId,
-        artistId: validatedData.artistId,
-        datetime: appointmentDateTime,
-        serviceType: validatedData.serviceType,
-        duration: validatedData.duration,
-        totalPrice: validatedData.totalPrice,
-        notes: validatedData.notes || "",
+      } // Create the booking
+      const bookingData = {
+        user_id: userId,
+        artist_id: artist.makeup_artist.id, // Use makeup_artist.id instead of user.id
+        date_time: appointmentDateTime,
+        service_type: validatedData.serviceType,
+        total_price: validatedData.totalPrice,
         location: validatedData.location || null,
-        status: validatedData.status || "CONFIRMED",
+        booking_status: validatedData.status || "CONFIRMED",
       };
 
-      console.log("Preparing to create appointment:", appointmentData);
+      console.log("Preparing to create booking:", bookingData);
 
       // Save to database
-      const appointment = await db.appointment.create({
-        data: appointmentData,
+      const booking = await db.booking.create({
+        data: bookingData,
       });
 
-      console.log(`Appointment created with ID: ${appointment.id}`);
-
-      // Return the created appointment
+      console.log(`Booking created with ID: ${booking.id}`); // Return the created booking
       return NextResponse.json({
         message: "Appointment created successfully",
         appointment: {
-          id: appointment.id,
-          datetime: appointment.datetime,
-          serviceType: appointment.serviceType,
-          status: appointment.status,
-          duration: appointment.duration,
-          totalPrice: appointment.totalPrice,
+          id: booking.id,
+          datetime: booking.date_time,
+          serviceType: booking.service_type,
+          status: booking.booking_status,
+          totalPrice: booking.total_price,
         },
       });
     } catch (validationError) {

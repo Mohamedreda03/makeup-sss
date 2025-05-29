@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/lib/db";
 import { artistSettingsSchema } from "@/lib/validations/artist-settings";
 
 // Extended user interface for typing session.user
@@ -31,17 +31,13 @@ export async function GET() {
       );
     }
 
-    // Fetch the artist data (user with ARTIST role) from the database
-    const artistUser = await prisma.user.findUnique({
+    // Fetch the artist data from the database
+    const artistUser = await db.user.findUnique({
       where: {
         id: user.id,
       },
       include: {
-        // Include artist account for services information
-        ArtistAccount: true,
-        // Include metadata for additional artist data
-        metadata: true,
-        // Include services
+        makeup_artist: true,
         services: true,
       },
     });
@@ -50,36 +46,22 @@ export async function GET() {
       return NextResponse.json({ error: "Artist not found" }, { status: 404 });
     }
 
-    // Parse additional artist settings from metadata if available
-    let certificates: string[] = [];
-    let specialties: string[] = [];
-
-    if (artistUser.metadata?.artistSettings) {
-      try {
-        const artistSettings = JSON.parse(artistUser.metadata.artistSettings);
-        certificates = artistSettings.certificates || [];
-        specialties = artistSettings.specialties || [];
-      } catch (e) {
-        console.error("Error parsing artist settings from metadata:", e);
-      }
-    }
-
     // Transform the artist data to match our schema
     const artistSettings = {
       name: artistUser.name,
       email: artistUser.email,
       image: artistUser.image,
-      yearsOfExperience: artistUser.yearsOfExperience,
-      bio: artistUser.bio,
-      instagram: artistUser.instagram,
-      facebook: artistUser.facebook,
-      twitter: artistUser.twitter,
-      tiktok: artistUser.tiktok,
-      website: artistUser.website,
-      defaultPrice: artistUser.defaultPrice,
-      certificates,
+      phone: artistUser.phone,
+      address: artistUser.address,
+      bio: artistUser.makeup_artist?.bio,
+      experience_years: artistUser.makeup_artist?.experience_years,
+      portfolio: artistUser.makeup_artist?.portfolio,
+      gender: artistUser.makeup_artist?.gender,
+      pricing: artistUser.makeup_artist?.pricing,
+      availability: artistUser.makeup_artist?.availability,
+      earnings: artistUser.makeup_artist?.earnings || 0,
+      rating: artistUser.makeup_artist?.rating,
       services: artistUser.services,
-      specialties,
     };
 
     return NextResponse.json(artistSettings);
@@ -169,11 +151,12 @@ export async function PUT(request: Request) {
     const data = validationResult.data;
 
     // Find the user by id
-    const artistUser = await prisma.user.findUnique({
+    const artistUser = await db.user.findUnique({
       where: {
         id: targetUserId,
       },
       include: {
+        makeup_artist: true,
         services: true,
       },
     });
@@ -184,49 +167,48 @@ export async function PUT(request: Request) {
 
     try {
       // Start a transaction to update everything
-      await prisma.$transaction(async (tx) => {
-        // Prepare update data, ensuring no undefined values
-        const userUpdateData = {
-          name: data.name,
-          email: data.email,
-          yearsOfExperience:
-            data.yearsOfExperience ?? artistUser.yearsOfExperience,
-          bio: data.bio ?? artistUser.bio,
-          instagram: data.instagram ?? artistUser.instagram,
-          facebook: data.facebook ?? artistUser.facebook,
-          twitter: data.twitter ?? artistUser.twitter,
-          tiktok: data.tiktok ?? artistUser.tiktok,
-          website: data.website ?? artistUser.website,
-          defaultPrice: data.defaultPrice ?? artistUser.defaultPrice,
-        };
+      await db.$transaction(async (tx) => {
+        // Update the user data
+        const userUpdateData: { [key: string]: string | null } = {};
+        if (data.name) userUpdateData.name = data.name;
+        if (data.email) userUpdateData.email = data.email;
+        if (data.phone !== undefined) userUpdateData.phone = data.phone;
+        if (data.address !== undefined) userUpdateData.address = data.address;
+        if (data.image !== undefined) userUpdateData.image = data.image;
 
-        // Update the user data with artist settings
-        await tx.user.update({
-          where: {
-            id: targetUserId,
-          },
-          data: userUpdateData,
-        });
+        if (Object.keys(userUpdateData).length > 0) {
+          await tx.user.update({
+            where: {
+              id: targetUserId,
+            },
+            data: userUpdateData,
+          });
+        } // Update or create MakeUpArtist record
+        const artistUpdateData: {
+          [key: string]: string | number | boolean | null;
+        } = {};
+        if (data.bio !== undefined) artistUpdateData.bio = data.bio;
+        if (data.experience_years !== undefined)
+          artistUpdateData.experience_years = data.experience_years;
+        if (data.portfolio !== undefined)
+          artistUpdateData.portfolio = data.portfolio;
+        if (data.gender !== undefined) artistUpdateData.gender = data.gender;
+        if (data.pricing !== undefined) artistUpdateData.pricing = data.pricing;
+        if (data.availability !== undefined)
+          artistUpdateData.availability = data.availability;
 
-        // Update metadata for certificates and specialties
-        await tx.userMetadata.upsert({
-          where: {
-            userId: targetUserId,
-          },
-          update: {
-            artistSettings: JSON.stringify({
-              certificates: data.certificates || [],
-              specialties: data.specialties || [],
-            }),
-          },
-          create: {
-            userId: targetUserId,
-            artistSettings: JSON.stringify({
-              certificates: data.certificates || [],
-              specialties: data.specialties || [],
-            }),
-          },
-        });
+        if (Object.keys(artistUpdateData).length > 0) {
+          await tx.makeUpArtist.upsert({
+            where: {
+              user_id: targetUserId,
+            },
+            update: artistUpdateData,
+            create: {
+              user_id: targetUserId,
+              ...artistUpdateData,
+            },
+          });
+        }
 
         // Handle services
         if (data.services && data.services.length > 0) {
@@ -294,13 +276,6 @@ export async function PUT(request: Request) {
                   },
                 });
               }
-
-              // This ensures that any service added/updated in metadata is also in the database
-              await syncMetadataServicesToDatabase(
-                tx,
-                targetUserId,
-                data.services
-              );
             } catch (serviceError) {
               console.error(`Error processing service:`, service, serviceError);
               // Continue processing other services
@@ -312,12 +287,15 @@ export async function PUT(request: Request) {
       return NextResponse.json({
         message: "Artist settings updated successfully",
       });
-    } catch (dbError: any) {
+    } catch (dbError: unknown) {
       console.error("Database error updating artist settings:", dbError);
       return NextResponse.json(
         {
           error: "Database error",
-          details: dbError.message,
+          details:
+            dbError instanceof Error
+              ? dbError.message
+              : "Unknown database error",
         },
         { status: 500 }
       );
@@ -334,68 +312,5 @@ export async function PUT(request: Request) {
       },
       { status: 500 }
     );
-  }
-}
-
-// Helper function to sync metadata services to database
-async function syncMetadataServicesToDatabase(
-  tx: any,
-  artistId: string,
-  metadataServices: any[]
-) {
-  try {
-    // Get all existing database services for this artist
-    const existingServices = await tx.artistService.findMany({
-      where: { artistId: artistId },
-    });
-
-    // Create a map of existing service IDs to easily check if a service exists
-    const existingServiceMap = new Map();
-    existingServices.forEach((service: any) => {
-      existingServiceMap.set(service.id, service);
-    });
-
-    // Create a map of service names to avoid duplicates
-    const serviceNameMap = new Map();
-    existingServices.forEach((service: any) => {
-      serviceNameMap.set(service.name.toLowerCase(), service);
-    });
-
-    // Process each metadata service
-    for (const metadataService of metadataServices) {
-      // Skip services that already exist in the database by ID
-      if (metadataService.id && existingServiceMap.has(metadataService.id)) {
-        continue;
-      }
-
-      // Check if a service with this name already exists
-      const lowerName = metadataService.name.toLowerCase();
-      if (serviceNameMap.has(lowerName)) {
-        continue;
-      }
-
-      // Create the service in the database
-      const newService = await tx.artistService.create({
-        data: {
-          name: metadataService.name,
-          description: metadataService.description || "",
-          price:
-            typeof metadataService.price === "number"
-              ? metadataService.price
-              : 0,
-          isActive: metadataService.isActive ?? true,
-          artistId: artistId,
-        },
-      });
-
-      // Add to maps to prevent duplicates
-      existingServiceMap.set(newService.id, newService);
-      serviceNameMap.set(newService.name.toLowerCase(), newService);
-    }
-
-    return true;
-  } catch (error) {
-    console.error("Error syncing metadata services to database:", error);
-    return false;
   }
 }

@@ -7,17 +7,14 @@ import {
   Calendar,
   Clock,
   User,
-  Filter,
   CheckCircle,
-  XCircle,
-  AlertCircle,
   DollarSign,
   CreditCard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/components/ui/use-toast";
 import {
   AlertDialog,
@@ -40,17 +37,15 @@ interface Appointment {
   datetime: string;
   description: string | null;
   status: AppointmentStatus;
-  userId: string;
+  userId?: string;
   artistId: string | null;
   artistName?: string | null;
   artistImage?: string | null;
   serviceType: string;
-  duration: number;
   totalPrice: number;
   location: string | null;
-  notes: string | null;
   createdAt: string;
-  updatedAt: string;
+  updatedAt?: string;
   hasReview?: boolean;
   isPaid?: boolean;
 }
@@ -146,7 +141,7 @@ export default function AppointmentsPage() {
       const response = await fetch(
         `/api/appointments/${selectedAppointment.id}`,
         {
-          method: "PATCH",
+          method: "PUT",
           headers: {
             "Content-Type": "application/json",
           },
@@ -170,7 +165,6 @@ export default function AppointmentsPage() {
       toast({
         title: "Appointment Cancelled",
         description: "Your appointment has been cancelled",
-        variant: "success",
       });
     } catch (error) {
       console.error("Error cancelling appointment:", error);
@@ -185,7 +179,6 @@ export default function AppointmentsPage() {
       setSelectedAppointment(null);
     }
   };
-
   // Group appointments by status for better organization
   const pendingAppointments = filteredAppointments.filter(
     (appointment) => appointment.status === "CONFIRMED"
@@ -298,6 +291,10 @@ export default function AppointmentsPage() {
                         </p>
                       </div>
                     </div>
+                    <Badge variant="secondary" className="px-3 py-1">
+                      <CheckCircle className="h-4 w-4 mr-1 inline" />
+                      Confirmed
+                    </Badge>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 text-xs bg-gray-50 p-2 rounded-md mb-3">
@@ -317,48 +314,6 @@ export default function AppointmentsPage() {
                       <DollarSign className="h-3 w-3 mr-1 text-gray-500" />
                       <span>EGP {appointment.totalPrice}</span>
                     </div>
-                  </div>
-
-                  {/* Action buttons */}
-                  <div className="flex justify-end space-x-2">
-                    {appointment.status === "CONFIRMED" &&
-                      !appointment.isPaid && (
-                        <Button
-                          className="text-xs px-2 py-1 h-auto bg-green-600 hover:bg-green-700"
-                          onClick={() => {
-                            // Redirect to payment page
-                            window.location.href = `/payment/${appointment.id}`;
-                          }}
-                        >
-                          <CreditCard className="h-3 w-3 mr-1" />
-                          Pay Now
-                        </Button>
-                      )}
-
-                    {appointment.status === "CONFIRMED" &&
-                      appointment.isPaid && (
-                        <Badge
-                          variant="success"
-                          className="px-2 py-0.5 text-xs font-medium"
-                        >
-                          <CheckCircle className="h-3 w-3 mr-1" />
-                          Paid
-                        </Badge>
-                      )}
-
-                    {(appointment.status === "PENDING" ||
-                      appointment.status === "CONFIRMED") && (
-                      <Button
-                        variant="destructive"
-                        className="text-xs px-2 py-1 h-auto"
-                        onClick={() => {
-                          setSelectedAppointment(appointment);
-                          setShowCancelDialog(true);
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                    )}
                   </div>
                 </CardContent>
               </Card>

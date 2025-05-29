@@ -28,7 +28,6 @@ export default async function ArtistsPage({
   const currentPage = Number(searchParams.page) || 1;
   const limit = Number(searchParams.limit) || 10;
   const sort = searchParams.sort || "createdAt:desc";
-
   return (
     <div>
       <div className="flex justify-between items-center mb-6">

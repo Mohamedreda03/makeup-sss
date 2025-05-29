@@ -38,16 +38,18 @@ async function main() {
           name: product.name,
           description: product.description,
           price: product.price,
-          imageUrl: makeupImages[i % makeupImages.length],
+          image: makeupImages[i % makeupImages.length],
+          stock_quantity: 50, // Default stock quantity
         },
         create: {
           id: product.id,
           name: product.name,
           description: product.description,
           price: product.price,
-          imageUrl: makeupImages[i % makeupImages.length],
+          image: makeupImages[i % makeupImages.length],
           featured: false,
-          category: "",
+          category: product.category || "makeup",
+          stock_quantity: 50, // Default stock quantity
         },
       });
     }

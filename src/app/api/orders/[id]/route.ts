@@ -14,14 +14,12 @@ export async function GET(
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Get order by ID
+    } // Get order by ID
     const order = await db.order.findUnique({
       where: { id: params.id },
       include: {
         user: true,
-        items: {
+        order_details: {
           include: {
             product: true,
           },

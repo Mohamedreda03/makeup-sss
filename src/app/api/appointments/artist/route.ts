@@ -33,15 +33,20 @@ export async function GET(req: Request) {
       );
     }
 
-    // Determine artist ID (for admins viewing a specific artist's appointments)
-    let artistId = user.id;
-    const url = new URL(req.url);
+    // Find the makeup artist record
+    const makeupArtist = await db.makeUpArtist.findUnique({
+      where: { user_id: user.id },
+    });
 
-    if (user.role === "ADMIN" && url.searchParams.get("artistId")) {
-      artistId = url.searchParams.get("artistId") as string;
+    if (!makeupArtist) {
+      return NextResponse.json(
+        { message: "Artist profile not found" },
+        { status: 404 }
+      );
     }
 
     // Get URL parameters
+    const url = new URL(req.url);
     const status = url.searchParams.get("status");
     const page = parseInt(url.searchParams.get("page") || "1");
     const pageSize = parseInt(url.searchParams.get("pageSize") || "10");
@@ -54,12 +59,12 @@ export async function GET(req: Request) {
     // Calculate pagination skip
     const skip = (page - 1) * pageSize;
 
-    // Prepare search filter
-    const filter: any = { artistId };
+    // Prepare search filter using artist_id from makeup artist record
+    const filter: any = { artist_id: makeupArtist.id };
 
     // Add status filter if specified
     if (status && status !== "ALL") {
-      filter.status = status;
+      filter.booking_status = status;
     }
 
     // Add date filter if specified (single day)
@@ -70,7 +75,7 @@ export async function GET(req: Request) {
       const endDate = new Date(dateParam);
       endDate.setHours(23, 59, 59, 999);
 
-      filter.datetime = {
+      filter.date_time = {
         gte: startDate,
         lte: endDate,
       };
@@ -83,19 +88,19 @@ export async function GET(req: Request) {
       const endDate = new Date(endDateParam);
       endDate.setHours(23, 59, 59, 999);
 
-      filter.datetime = {
+      filter.date_time = {
         gte: startDate,
         lte: endDate,
       };
     }
 
-    // Get total appointment count for artist
-    const totalAppointments = await db.appointment.count({
+    // Get total booking count for artist
+    const totalBookings = await db.booking.count({
       where: filter,
     });
 
-    // Get appointments with user info
-    const appointments = await db.appointment.findMany({
+    // Get bookings with user info
+    const bookings = await db.booking.findMany({
       where: filter,
       include: {
         user: {
@@ -109,17 +114,17 @@ export async function GET(req: Request) {
         },
       },
       orderBy: {
-        datetime: "asc",
+        date_time: "asc",
       },
       skip: !startDateParam || !endDateParam ? skip : undefined, // Skip pagination for calendar view
       take: !startDateParam || !endDateParam ? pageSize : undefined, // Unlimited for calendar view
     });
 
     return NextResponse.json({
-      appointments,
+      appointments: bookings,
       pagination: {
-        total: totalAppointments,
-        pages: Math.ceil(totalAppointments / pageSize),
+        total: totalBookings,
+        pages: Math.ceil(totalBookings / pageSize),
         page,
         pageSize,
       },

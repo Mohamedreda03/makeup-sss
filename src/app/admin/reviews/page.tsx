@@ -20,12 +20,10 @@ interface ReviewWithRelations extends Review {
   };
   artist: {
     id: string;
-    name: string | null;
-    image: string | null;
-  };
-  appointment: {
-    serviceType: string;
-    datetime: Date;
+    user: {
+      name: string | null;
+      image: string | null;
+    };
   };
 }
 
@@ -46,27 +44,24 @@ async function getReviews() {
         artist: {
           select: {
             id: true,
-            name: true,
-            image: true,
-          },
-        },
-        appointment: {
-          select: {
-            serviceType: true,
-            datetime: true,
+            user: {
+              select: {
+                name: true,
+                image: true,
+              },
+            },
           },
         },
       },
-    });
-
-    // Convert Date objects to ISO strings for compatibility with ReviewData interface
+    }); // Convert Date objects to ISO strings and transform artist structure for compatibility with ReviewData interface
     return reviews.map((review: ReviewWithRelations) => ({
       ...review,
       createdAt: review.createdAt.toISOString(),
       updatedAt: review.updatedAt.toISOString(),
-      appointment: {
-        ...review.appointment,
-        datetime: review.appointment.datetime.toISOString(),
+      artist: {
+        id: review.artist.id,
+        name: review.artist.user.name,
+        image: review.artist.user.image,
       },
     }));
   } catch (error) {

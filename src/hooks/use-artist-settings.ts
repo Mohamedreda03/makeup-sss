@@ -99,7 +99,7 @@ export function useArtistSettings() {
       toast({
         title: "Profile Updated",
         description: "Your profile has been updated successfully.",
-        variant: "success",
+        
       });
 
       // Update NextAuth session with the new name and email if changed
@@ -166,7 +166,7 @@ export function useArtistSettings() {
       toast({
         title: "Image Updated",
         description: "Your profile image has been updated successfully.",
-        variant: "success",
+        
       });
     },
     onError: (error: any) => {
@@ -198,7 +198,7 @@ export function useArtistSettings() {
       toast({
         title: "Password Updated",
         description: "Your password has been changed successfully.",
-        variant: "success",
+        
       });
     },
     onError: (error: any) => {

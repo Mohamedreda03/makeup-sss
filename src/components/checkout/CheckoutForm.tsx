@@ -14,6 +14,7 @@ export default function CheckoutForm() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
+  // استخدام المخزن للحصول على القيم
   const { items, total, clearCart } = useCartStore();
 
   const [formData, setFormData] = useState({

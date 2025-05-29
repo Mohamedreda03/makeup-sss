@@ -1,14 +1,12 @@
 import type { Metadata } from "next";
-import { Inter as FontSans } from "next/font/google";
+import { Inter_Tight } from "next/font/google";
 import { cn } from "@/lib/utils";
 import "@/app/globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { Providers } from "./providers";
 import { SessionProvider } from "@/components/providers/session-provider";
-import { Footer } from "@/components/footer";
-import { Navbar } from "@/components/navbar";
 
-const fontSans = FontSans({
+const fontSans = Inter_Tight({
   subsets: ["latin"],
   variable: "--font-sans",
 });

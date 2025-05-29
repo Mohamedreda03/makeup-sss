@@ -30,56 +30,53 @@ export async function PUT(
 
     const user = session.user as ExtendedUser;
     const userId = user.id;
-    const userRole = user.role || "CUSTOMER";
-
-    // Check if appointment exists
-    const appointment = await db.appointment.findUnique({
+    const userRole = user.role || "CUSTOMER"; // Check if booking exists
+    const booking = await db.booking.findUnique({
       where: { id: appointmentId },
     });
 
-    if (!appointment) {
+    if (!booking) {
       return NextResponse.json(
-        { message: "Appointment not found" },
+        { message: "Booking not found" },
         { status: 404 }
       );
     }
 
-    // Verify permissions: users can only cancel their own appointments, while admins can cancel any appointment
-    if (appointment.userId !== userId && userRole !== "ADMIN") {
+    // Verify permissions: users can only cancel their own bookings, while admins can cancel any booking
+    if (booking.user_id !== userId && userRole !== "ADMIN") {
       return NextResponse.json(
         {
-          message: "Forbidden - You are not allowed to cancel this appointment",
+          message: "Forbidden - You are not allowed to cancel this booking",
         },
         { status: 403 }
       );
     }
 
-    // Check if appointment is already cancelled or completed
-    if (appointment.status === "CANCELLED") {
+    // Check if booking is already cancelled or completed
+    if (booking.booking_status === "CANCELLED") {
       return NextResponse.json(
-        { message: "Appointment already cancelled" },
+        { message: "Booking already cancelled" },
         { status: 400 }
       );
     }
 
-    if (appointment.status === "COMPLETED") {
+    if (booking.booking_status === "COMPLETED") {
       return NextResponse.json(
         {
-          message: "Cannot cancel completed appointment",
+          message: "Cannot cancel completed booking",
         },
         { status: 400 }
       );
     }
 
-    // Update appointment status to "CANCELLED"
-    const updatedAppointment = await db.appointment.update({
+    // Update booking status to "CANCELLED"
+    const updatedBooking = await db.booking.update({
       where: { id: appointmentId },
-      data: { status: "CANCELLED" },
+      data: { booking_status: "CANCELLED" },
     });
-
-    return NextResponse.json(updatedAppointment);
+    return NextResponse.json(updatedBooking);
   } catch (error) {
-    console.error("Error cancelling appointment:", error);
+    console.error("Error cancelling booking:", error);
     return NextResponse.json({ message: "Server error" }, { status: 500 });
   }
 }

@@ -1,177 +1,16 @@
-import Image from "next/image";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import {
-  Star,
-  Calendar,
-  Clock,
-  MapPin,
-  Instagram,
-  Facebook,
-  Twitter,
-  ArrowRight,
-  Check,
-  ArrowLeft,
-  Heart,
-  Award,
-  CheckCircle,
-} from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Award } from "lucide-react";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
-import { format } from "date-fns";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import ArtistClientPage from "@/components/artists/ArtistClientPage";
 import dynamic from "next/dynamic";
 import { ReviewList } from "@/components/reviews/ReviewList";
-
-// Import the PublicReviewForm component
-const PublicReviewForm = dynamic(
-  () =>
-    import("@/components/reviews/PublicReviewForm").then(
-      (mod) => mod.PublicReviewForm
-    ),
-  { ssr: false }
-);
 
 // Dynamically import ArtistBooking with no SSR
 const ArtistBookingWrapper = dynamic(
   () => import("@/components/booking/ArtistBookingWrapper"),
   { ssr: false }
 );
-
-// Sample artists data - in production, fetch from API
-const artists = [
-  {
-    id: "1",
-    name: "Sophia Williams",
-    role: "Professional Makeup Artist",
-    bio: "Professional makeup artist with over 10 years of experience in bridal and fashion makeup. Sophia specializes in creating flawless, natural looks that enhance your features while ensuring your makeup lasts all day. Her attention to detail and personalized approach means every client receives a custom look tailored to their unique style and preferences.",
-    specialties: ["Bridal", "Fashion", "Natural Look"],
-    rating: 4.9,
-    reviewCount: 189,
-    yearsExperience: 10,
-    location: "New York City",
-    imageUrl:
-      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80",
-    socialMedia: {
-      instagram: "#",
-      facebook: "#",
-      twitter: "#",
-    },
-    portfolio: [
-      {
-        id: "p1",
-        title: "Bridal Elegance",
-        imageUrl:
-          "https://images.unsplash.com/photo-1600091166971-7f9fadd2bc07?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
-        category: "Bridal",
-      },
-      {
-        id: "p2",
-        title: "Fashion Week Glamour",
-        imageUrl:
-          "https://images.unsplash.com/photo-1588558352342-bbd9654633cf?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
-        category: "Fashion",
-      },
-      {
-        id: "p3",
-        title: "Natural Daytime Look",
-        imageUrl:
-          "https://images.unsplash.com/photo-1613967193490-1a58d868586k?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
-        category: "Natural",
-      },
-      {
-        id: "p4",
-        title: "Editorial Shoot",
-        imageUrl:
-          "https://images.unsplash.com/photo-1549411037-2af0bf8cfe31?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
-        category: "Editorial",
-      },
-    ],
-    services: [
-      {
-        id: "s1",
-        name: "Bridal Makeup",
-        description: "Complete bridal makeup including trial session",
-        price: 250,
-        duration: 120,
-      },
-      {
-        id: "s2",
-        name: "Special Event Makeup",
-        description: "Full makeup for special occasions",
-        price: 150,
-        duration: 90,
-      },
-      {
-        id: "s3",
-        name: "Natural Everyday Look",
-        description: "Light, natural makeup for daily wear",
-        price: 100,
-        duration: 60,
-      },
-      {
-        id: "s4",
-        name: "Makeup Lesson",
-        description: "Personal makeup tutorial and techniques",
-        price: 200,
-        duration: 120,
-      },
-    ],
-    reviews: [
-      {
-        id: "r1",
-        user: "Emily Johnson",
-        rating: 5,
-        date: "2023-08-15",
-        comment:
-          "Sophia did my wedding makeup and I couldn't have been happier! She understood exactly what I wanted and made me feel beautiful all day.",
-        userImage:
-          "https://images.unsplash.com/photo-1544005313-94ddf0286df2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=100&q=80",
-      },
-      {
-        id: "r2",
-        user: "Rebecca Liu",
-        rating: 5,
-        date: "2023-07-22",
-        comment:
-          "Amazing work for my photoshoot! Sophia is professional, punctual, and incredibly talented. Highly recommend!",
-        userImage:
-          "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=100&q=80",
-      },
-      {
-        id: "r3",
-        user: "Maria Gonzalez",
-        rating: 4,
-        date: "2023-06-30",
-        comment:
-          "Great experience working with Sophia for my sister's wedding. She made everyone look gorgeous.",
-        userImage:
-          "https://images.unsplash.com/photo-1580489944761-15a19d654956?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=100&q=80",
-      },
-    ],
-    availability: [
-      {
-        date: "2023-10-15",
-        slots: ["09:00", "13:00", "16:00"],
-      },
-      {
-        date: "2023-10-16",
-        slots: ["10:00", "14:00"],
-      },
-      {
-        date: "2023-10-17",
-        slots: ["09:00", "11:00", "15:00", "17:00"],
-      },
-    ],
-  },
-  // More artists data...
-];
 
 // Get artist data by ID
 async function getArtist(id: string) {
@@ -186,28 +25,32 @@ async function getArtist(id: string) {
       email: true,
       image: true,
       phone: true,
-      instagram: true,
-      facebook: true,
-      twitter: true,
-      tiktok: true,
-      website: true,
-      bio: true,
-      yearsOfExperience: true,
-      defaultPrice: true,
-      // Count completed appointments
+      address: true,
+      makeup_artist: {
+        select: {
+          id: true,
+          bio: true,
+          experience_years: true,
+          pricing: true,
+          rating: true,
+          availability: true,
+          available_slots: true,
+        },
+      },
+      // Count completed bookings
       _count: {
         select: {
-          artistAppointments: {
+          bookings: {
             where: {
-              status: "COMPLETED",
+              booking_status: "COMPLETED",
             },
           },
         },
       },
-      // Get recent appointments for reviews
-      artistAppointments: {
+      // Get recent bookings
+      bookings: {
         where: {
-          status: "COMPLETED",
+          booking_status: "COMPLETED",
         },
         orderBy: {
           updatedAt: "desc",
@@ -215,9 +58,9 @@ async function getArtist(id: string) {
         take: 5,
         select: {
           id: true,
-          serviceType: true,
-          totalPrice: true,
-          notes: true,
+          service_type: true,
+          service_price: true,
+          date_time: true,
           updatedAt: true,
           user: {
             select: {
@@ -228,21 +71,13 @@ async function getArtist(id: string) {
           },
         },
       },
-      metadata: {
-        select: {
-          id: true,
-          availabilitySettings: true,
-          artistSettings: true,
-          preferences: true,
-        },
-      },
     },
   });
 
   return artist;
 }
 
-// Get artist services from metadata and database
+// Get artist services from database
 async function getArtistServices(id: string) {
   console.log("Fetching services for artist:", id);
 
@@ -267,90 +102,149 @@ async function getArtistServices(id: string) {
     name: service.name,
     description: service.description || "",
     price: service.price,
-    duration: 60, // Default duration since it might not be in the database schema yet
+    duration: service.duration || 60,
     isActive: service.isActive,
+    artistId: service.artistId,
   }));
 
-  // If we found database services, combine them with any metadata services
+  // If we found database services, return them
   if (formattedDatabaseServices.length > 0) {
     return formattedDatabaseServices;
   }
 
-  // Otherwise, fall back to metadata services
-  const metadata = await db.userMetadata.findUnique({
-    where: {
-      userId: id,
+  // Default services if none are found
+  return [
+    {
+      id: "default-1",
+      name: "Bridal Makeup",
+      description: "Complete bridal makeup with trials and day-of services",
+      price: 250,
+      duration: 120,
+      isActive: true,
+      artistId: id,
     },
-    select: {
-      artistSettings: true,
+    {
+      id: "default-2",
+      name: "Special Occasion Makeup",
+      description: "Perfect for parties, events, or photoshoots",
+      price: 150,
+      duration: 90,
+      isActive: true,
+      artistId: id,
     },
-  });
-
-  if (!metadata || !metadata.artistSettings) {
-    // Default services if none are found
-    return [
-      {
-        id: "1",
-        name: "Bridal Makeup",
-        description: "Complete bridal makeup with trials and day-of services",
-        price: 250,
-        duration: 120,
-        isActive: true,
-      },
-      {
-        id: "2",
-        name: "Special Occasion Makeup",
-        description: "Perfect for parties, events, or photoshoots",
-        price: 150,
-        duration: 90,
-        isActive: true,
-      },
-    ];
-  }
-
-  try {
-    const settings = JSON.parse(metadata.artistSettings);
-    // Return only active services
-    const metadataServices =
-      settings.services?.filter((service: any) => service.isActive) || [];
-    console.log(
-      `Found ${metadataServices.length} metadata services for artist ${id}`
-    );
-    return metadataServices;
-  } catch (error) {
-    console.error("Error parsing artist services:", error);
-    return [];
-  }
+  ];
 }
 
-// Get availability settings for the artist
+// Get availability settings for the artist with booking data
 async function getArtistAvailabilitySettings(id: string) {
-  const metadata = await db.userMetadata.findUnique({
+  // Get artist data and makeup artist profile
+  const artist = await db.user.findUnique({
     where: {
-      userId: id,
+      id,
+      role: "ARTIST",
     },
     select: {
-      availabilitySettings: true,
+      makeup_artist: {
+        select: {
+          id: true,
+          available_slots: true,
+        },
+      },
     },
   });
 
-  // Default settings if none are found
+  // Get existing bookings for the artist
+  const existingBookings = artist?.makeup_artist?.id
+    ? await db.booking.findMany({
+        where: {
+          artist_id: artist.makeup_artist.id,
+          booking_status: {
+            in: ["PENDING", "CONFIRMED"], // Only confirmed and pending bookings
+          },
+          date_time: {
+            gte: new Date(), // Only future bookings
+          },
+        },
+        select: {
+          id: true,
+          date_time: true,
+          service_type: true,
+          booking_status: true,
+        },
+      })
+    : [];
+
+  console.log(
+    `Found ${existingBookings.length} existing bookings for artist ${id}`
+  );
+
+  // Default settings that match AvailabilitySettings interface
   const defaultAvailabilitySettings = {
     isAvailable: true,
     workingHours: {
-      start: 10,
-      end: 24,
-      interval: 30,
+      start: 9,
+      end: 18,
+      interval: 60,
     },
     regularDaysOff: [0, 6], // Sunday and Saturday
+    bookedSlots: existingBookings.map((booking) => ({
+      date: booking.date_time.toISOString().split("T")[0],
+      time: booking.date_time.toTimeString().slice(0, 5), // HH:mm format
+      booking_id: booking.id,
+      service_type: booking.service_type,
+      status: booking.booking_status,
+    })),
   };
 
-  if (!metadata || !metadata.availabilitySettings) {
+  if (!artist?.makeup_artist?.available_slots) {
     return defaultAvailabilitySettings;
   }
 
   try {
-    return JSON.parse(metadata.availabilitySettings);
+    const availableSlots = artist.makeup_artist.available_slots as {
+      workingDays?: number[];
+      startTime?: string;
+      endTime?: string;
+      sessionDuration?: number;
+      breakBetweenSessions?: number;
+      isAvailable?: boolean;
+    };
+
+    console.log("Available slots data:", availableSlots);
+
+    // Convert workingDays to regularDaysOff
+    let regularDaysOff = [0, 6]; // Default to Sunday and Saturday off
+    if (
+      availableSlots.workingDays &&
+      Array.isArray(availableSlots.workingDays)
+    ) {
+      const allDays = [0, 1, 2, 3, 4, 5, 6]; // Sunday=0 to Saturday=6
+      regularDaysOff = allDays.filter(
+        (day) => !availableSlots.workingDays!.includes(day)
+      );
+      console.log("Working days:", availableSlots.workingDays);
+      console.log("Regular days off:", regularDaysOff);
+    }
+
+    const settings = {
+      isAvailable: availableSlots.isAvailable ?? true,
+      workingHours: {
+        start: parseInt(availableSlots.startTime?.split(":")[0] || "9"),
+        end: parseInt(availableSlots.endTime?.split(":")[0] || "18"),
+        interval: availableSlots.sessionDuration || 60,
+      },
+      regularDaysOff,
+      bookedSlots: existingBookings.map((booking) => ({
+        date: booking.date_time.toISOString().split("T")[0],
+        time: booking.date_time.toTimeString().slice(0, 5), // HH:mm format
+        booking_id: booking.id,
+        service_type: booking.service_type,
+        status: booking.booking_status,
+      })),
+    };
+
+    console.log("Processed availability settings with bookings:", settings);
+    return settings;
   } catch (error) {
     console.error("Error parsing artist availability settings:", error);
     return defaultAvailabilitySettings;
@@ -362,20 +256,26 @@ async function getArtistReviews(id: string) {
   try {
     console.log("Fetching reviews for artist ID:", id);
 
-    // First check if there are ANY reviews for this artist regardless of status
-    const allReviews = await db.review.count({
+    // Get the makeup artist first
+    const makeupArtist = await db.makeUpArtist.findFirst({
       where: {
-        artistId: id,
+        user_id: id,
+      },
+      select: {
+        id: true,
       },
     });
 
-    console.log("Total reviews for artist (all statuses):", allReviews);
+    if (!makeupArtist) {
+      console.log("No makeup artist profile found for user:", id);
+      return [];
+    }
 
-    // Then get the approved reviews
+    // Get reviews for this makeup artist
     const reviews = await db.review.findMany({
       where: {
-        artistId: id,
-        status: "APPROVED", // Only show approved reviews
+        artist_id: makeupArtist.id,
+        status: "APPROVED",
       },
       orderBy: {
         createdAt: "desc",
@@ -388,17 +288,10 @@ async function getArtistReviews(id: string) {
             image: true,
           },
         },
-        appointment: {
-          select: {
-            serviceType: true,
-            datetime: true,
-          },
-        },
       },
     });
 
     console.log("Found approved reviews:", reviews.length);
-
     return reviews;
   } catch (error) {
     console.error("Error fetching artist reviews:", error);
@@ -441,29 +334,19 @@ export default async function ArtistPage({
 
   // Make sure we only include approved reviews
   const approvedReviews = reviews.filter(
-    (review: any) => review.status === "APPROVED"
+    (review) => review.status === "APPROVED"
   );
 
   // Calculate average rating from approved reviews
   const averageRating =
     approvedReviews.length > 0
       ? approvedReviews.reduce(
-          (sum: number, review: any) => sum + review.rating,
+          (sum: number, review) => sum + review.rating,
           0
         ) / approvedReviews.length
-      : null;
-  const totalReviews = approvedReviews.length;
+      : artist.makeup_artist?.rating || null;
 
-  // تحويل updatedAt من نوع Date إلى string لكل تعيين فني
-  const formattedArtist = {
-    ...artist,
-    averageRating,
-    totalReviews,
-    artistAppointments: artist.artistAppointments.map((appointment: any) => ({
-      ...appointment,
-      updatedAt: appointment.updatedAt.toISOString(), // تحويل التاريخ إلى سلسلة نصية
-    })),
-  };
+  const totalReviews = approvedReviews.length;
 
   // Get real services from database
   const services = await getArtistServices(params.id);
@@ -472,7 +355,7 @@ export default async function ArtistPage({
   const availabilitySettings = await getArtistAvailabilitySettings(params.id);
 
   // Format reviews for the ReviewList component
-  const formattedReviews = approvedReviews.map((review: any) => ({
+  const formattedReviews = approvedReviews.map((review) => ({
     id: review.id,
     rating: review.rating,
     comment: review.comment,
@@ -484,8 +367,8 @@ export default async function ArtistPage({
       image: review.user.image,
     },
     appointment: {
-      serviceType: review.appointment.serviceType,
-      datetime: review.appointment.datetime.toISOString(),
+      serviceType: "Makeup Service",
+      datetime: review.createdAt.toISOString(),
     },
   }));
 
@@ -501,26 +384,38 @@ export default async function ArtistPage({
 
   // Prepare data for our component
   const artistData = {
-    id: artist?.id || "",
-    name: artist?.name || "",
-    email: artist?.email || null,
-    image: artist?.image || null,
-    phone: artist?.phone || null,
-    bio: artist?.bio || "",
-    instagram: artist?.instagram || null,
-    facebook: artist?.facebook || null,
-    twitter: artist?.twitter || null,
-    tiktok: artist?.tiktok || null,
-    website: artist?.website || null,
-    yearsOfExperience: artist?.yearsOfExperience || 0,
-    defaultPrice: artist?.defaultPrice || null,
-    _count: artist?._count || { artistAppointments: 0 },
-    artistAppointments:
-      artist?.artistAppointments?.map((appointment: any) => ({
-        ...appointment,
-        updatedAt: appointment.updatedAt.toISOString(), // Convert Date to string
-      })) || [],
-    metadata: artist?.metadata || null,
+    id: artist.id,
+    name: artist.name,
+    email: artist.email,
+    image: artist.image,
+    phone: artist.phone,
+    instagram: null,
+    facebook: null,
+    twitter: null,
+    tiktok: null,
+    website: null,
+    bio: artist.makeup_artist?.bio || "",
+    yearsOfExperience:
+      typeof artist.makeup_artist?.experience_years === "string"
+        ? parseInt(artist.makeup_artist.experience_years) || 0
+        : artist.makeup_artist?.experience_years || 0,
+    defaultPrice: artist.makeup_artist?.pricing || 100,
+    _count: {
+      artistAppointments: artist._count.bookings,
+    },
+    artistAppointments: artist.bookings.map((booking) => ({
+      id: booking.id,
+      serviceType: booking.service_type,
+      totalPrice: booking.service_price || 0,
+      notes: null,
+      updatedAt: booking.updatedAt.toISOString(),
+      user: {
+        id: booking.user.id,
+        name: booking.user.name,
+        image: booking.user.image,
+      },
+    })),
+    metadata: null,
     averageRating: averageRating,
     totalReviews: totalReviews,
   };
@@ -548,11 +443,12 @@ export default async function ArtistPage({
         }
       >
         {/* Experience years display */}
-        {artist.yearsOfExperience && (
+        {artist.makeup_artist?.experience_years && (
           <div className="flex items-center gap-1 mb-6 text-gray-600 bg-purple-50 border border-purple-100 rounded-lg p-3">
             <Award className="h-5 w-5 text-purple-500" />
             <span className="font-medium">
-              {artist.yearsOfExperience} years of professional makeup experience
+              {artist.makeup_artist.experience_years} years of professional
+              makeup experience
             </span>
           </div>
         )}

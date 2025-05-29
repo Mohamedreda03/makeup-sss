@@ -58,7 +58,7 @@ export function ReviewManagement({ initialReviews }: ReviewManagementProps) {
         description: `Review has been ${
           actionType === "APPROVE" ? "approved" : "rejected"
         }.`,
-        variant: "success",
+        
       });
 
       // Refresh the page to update the reviews list

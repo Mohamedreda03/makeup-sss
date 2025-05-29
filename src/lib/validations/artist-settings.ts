@@ -16,23 +16,27 @@ export const artistServiceSchema = z.object({
 
 // Schema for artist settings validation
 export const artistSettingsSchema = z.object({
+  // User fields
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Please provide a valid email address"),
-  yearsOfExperience: z.number().min(0).optional().nullable(),
+  phone: z.string().optional().nullable(),
+  address: z.string().optional().nullable(),
+  image: z.string().optional().nullable(),
+
+  // MakeUpArtist fields
   bio: z
     .string()
     .max(1000, "Bio must be less than 1000 characters")
     .optional()
     .nullable(),
-  instagram: z.string().optional().nullable(),
-  facebook: z.string().optional().nullable(),
-  twitter: z.string().optional().nullable(),
-  tiktok: z.string().optional().nullable(),
-  website: z.string().optional().nullable(),
-  defaultPrice: z.number().min(0).optional().nullable(),
-  certificates: z.array(z.string()).optional().nullable().default([]),
+  experience_years: z.string().optional().nullable(),
+  portfolio: z.string().optional().nullable(),
+  gender: z.string().optional().nullable(),
+  pricing: z.number().min(0).optional().nullable(),
+  availability: z.boolean().default(false).optional(),
+
+  // Services
   services: z.array(artistServiceSchema).optional().nullable().default([]),
-  specialties: z.array(z.string()).optional().nullable().default([]),
 });
 
 // Schema for password update validation
@@ -49,3 +53,4 @@ export const passwordUpdateSchema = z
   });
 
 export type PasswordUpdateFormValues = z.infer<typeof passwordUpdateSchema>;
+export type ArtistSettingsFormValues = z.infer<typeof artistSettingsSchema>;

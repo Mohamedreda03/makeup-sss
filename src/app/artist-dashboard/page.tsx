@@ -10,20 +10,12 @@ import {
   CheckCircle,
   XCircle,
   Loader2,
-  Filter,
   User as UserIcon,
   Phone,
   Mail,
-  Calendar as CalendarIcon,
   Check,
   X,
-  AlertCircle,
-  DollarSign,
   Users,
-  BarChart3,
-  Settings,
-  CreditCard,
-  Wallet,
   PiggyBank,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -35,7 +27,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -61,13 +52,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
-import { Separator } from "@/components/ui/separator";
-
-// Data type definitions
-type AppointmentStatus = "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED";
+import {
+  Booking,
+  BookingStatus,
+  DashboardStats,
+  PaginationInfo,
+  ArtistAccount,
+} from "@/types/booking";
 
 // Extended user interface for typing session.user
 interface ExtendedUser {
@@ -78,57 +71,12 @@ interface ExtendedUser {
   role?: string;
 }
 
-interface Appointment {
-  id: string;
-  datetime: string;
-  description: string | null;
-  status: AppointmentStatus;
-  userId: string;
-  artistId: string | null;
-  serviceType: string;
-  duration: number;
-  totalPrice: number;
-  location: string | null;
-  notes: string | null;
-  createdAt: string;
-  updatedAt: string;
-  user: {
-    id: string;
-    name: string | null;
-    email: string | null;
-    image: string | null;
-    phone: string | null;
-  };
-}
-
-interface PaginationInfo {
-  total: number;
-  pages: number;
-  page: number;
-  pageSize: number;
-}
-
-// Extending appointment interface to include profit calculation
-interface AppointmentWithProfit extends Appointment {
-  profit?: number;
-}
-
-interface DashboardStats {
-  totalAppointments: number;
-  pendingAppointments: number;
-  confirmedAppointments: number;
-  completedAppointments: number;
-  cancelledAppointments: number;
-  totalCustomers: number;
-  availableBalance: number;
-}
-
 export default function ArtistDashboard() {
   const router = useRouter();
   const { data: session, status } = useSession();
 
-  // State for appointment list and selected appointment
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  // State for booking list and selected booking
+  const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("PENDING");
   const [pagination, setPagination] = useState<PaginationInfo>({
@@ -137,44 +85,28 @@ export default function ArtistDashboard() {
     page: 1,
     pageSize: 10,
   });
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedDate, setSelectedDate] = useState<string>("");
 
-  // State for appointment detail modal
-  const [selectedAppointment, setSelectedAppointment] =
-    useState<Appointment | null>(null);
+  // State for booking detail modal
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newStatus, setNewStatus] = useState<AppointmentStatus>("PENDING");
+  const [newStatus, setNewStatus] = useState<BookingStatus>("PENDING");
   const [statusNotes, setStatusNotes] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
 
   // State for dashboard stats
   const [stats, setStats] = useState<DashboardStats>({
-    totalAppointments: 0,
-    pendingAppointments: 0,
-    confirmedAppointments: 0,
-    completedAppointments: 0,
-    cancelledAppointments: 0,
+    totalBookings: 0,
+    pendingBookings: 0,
+    confirmedBookings: 0,
+    completedBookings: 0,
+    cancelledBookings: 0,
     totalCustomers: 0,
     availableBalance: 0,
+    totalEarnings: 0,
   });
-
-  const [artistAccount, setArtistAccount] = useState<{
-    totalEarnings: number;
-    pendingPayouts: number;
-    availableBalance: number;
-    currency: string;
-  } | null>(null);
-  const [transactions, setTransactions] = useState<
-    {
-      id: string;
-      amount: number;
-      type: string;
-      status: string;
-      createdAt: string;
-      description: string | null;
-    }[]
-  >([]);
+  const [artistAccount, setArtistAccount] = useState<ArtistAccount | null>(
+    null
+  );
 
   // Redirect if not artist
   useEffect(() => {
@@ -190,10 +122,9 @@ export default function ArtistDashboard() {
       });
     }
   }, [session, status, router]);
-
-  // Fetch appointments
+  // Fetch bookings
   useEffect(() => {
-    const fetchAppointments = async () => {
+    const fetchBookings = async () => {
       if (!session?.user || status !== "authenticated") return;
 
       try {
@@ -203,30 +134,22 @@ export default function ArtistDashboard() {
         if (statusFilter && statusFilter !== "ALL") {
           params.append("status", statusFilter);
         }
-
         params.append("page", pagination.page.toString());
         params.append("pageSize", pagination.pageSize.toString());
 
-        if (selectedDate) {
-          params.append("date", selectedDate);
-        }
-
-        const response = await fetch(
-          `/api/appointments/artist?${params.toString()}`
-        );
+        const response = await fetch(`/api/artist/bookings?${params}`);
         const data = await response.json();
-
         if (response.ok) {
-          setAppointments(data.appointments);
-          setPagination(data.pagination);
+          setBookings(data.bookings || []);
+          setPagination((prev) => ({ ...prev, ...data.pagination }));
         } else {
-          throw new Error(data.message || "Failed to fetch appointments");
+          throw new Error(data.error || "Failed to fetch bookings");
         }
       } catch (error) {
-        console.error("Error fetching appointments:", error);
+        console.error("Error fetching bookings:", error);
         toast({
           title: "Error",
-          description: "Could not load appointments. Please try again later.",
+          description: "Could not load bookings. Please try again later.",
           variant: "destructive",
         });
       } finally {
@@ -235,16 +158,9 @@ export default function ArtistDashboard() {
     };
 
     if (session?.user && status === "authenticated") {
-      fetchAppointments();
+      fetchBookings();
     }
-  }, [
-    session,
-    status,
-    statusFilter,
-    pagination.page,
-    pagination.pageSize,
-    selectedDate,
-  ]);
+  }, [session, status, statusFilter, pagination.page, pagination.pageSize]);
 
   // Fetch artist account
   useEffect(() => {
@@ -255,60 +171,61 @@ export default function ArtistDashboard() {
 
   // Calculate dashboard stats
   useEffect(() => {
-    if (!appointments.length) return;
+    if (!bookings.length) return;
 
-    const currentMonth = new Date().getMonth();
-    const currentYear = new Date().getFullYear();
-
-    const pendingCount = appointments.filter(
-      (a) => a.status === "PENDING"
+    const pendingCount = bookings.filter(
+      (b) => b.booking_status === "PENDING"
     ).length;
-    const confirmedCount = appointments.filter(
-      (a) => a.status === "CONFIRMED"
+    const confirmedCount = bookings.filter(
+      (b) => b.booking_status === "CONFIRMED"
     ).length;
-    const completedCount = appointments.filter(
-      (a) => a.status === "COMPLETED"
+    const completedCount = bookings.filter(
+      (b) => b.booking_status === "COMPLETED"
     ).length;
-    const cancelledCount = appointments.filter(
-      (a) => a.status === "CANCELLED"
+    const cancelledCount = bookings.filter(
+      (b) => b.booking_status === "CANCELLED"
     ).length;
 
     // Count unique customers
-    const uniqueCustomerIds = new Set(appointments.map((a) => a.userId));
+    const uniqueCustomerIds = new Set(bookings.map((b) => b.user_id));
     const customerCount = uniqueCustomerIds.size;
 
+    // Calculate total earnings from completed bookings
+    const totalEarnings = bookings
+      .filter((b) => b.booking_status === "COMPLETED")
+      .reduce((sum, b) => sum + (b.service_price || 0), 0);
+
     setStats({
-      totalAppointments: appointments.length,
-      pendingAppointments: pendingCount,
-      confirmedAppointments: confirmedCount,
-      completedAppointments: completedCount,
-      cancelledAppointments: cancelledCount,
+      totalBookings: bookings.length,
+      pendingBookings: pendingCount,
+      confirmedBookings: confirmedCount,
+      completedBookings: completedCount,
+      cancelledBookings: cancelledCount,
       totalCustomers: customerCount,
       availableBalance: artistAccount?.availableBalance || 0,
+      totalEarnings: artistAccount?.totalEarnings || totalEarnings,
     });
-  }, [appointments, artistAccount]);
-
+  }, [bookings, artistAccount]);
   const fetchArtistAccount = async () => {
     try {
       const response = await fetch("/api/artist/account");
       if (response.ok) {
         const data = await response.json();
         setArtistAccount(data.account);
-        setTransactions(data.transactions || []);
       }
     } catch (error) {
       console.error("Error fetching artist account:", error);
     }
   };
 
-  // Update appointment status
-  const updateAppointmentStatus = async () => {
-    if (!selectedAppointment) return;
+  // Update booking status and earnings
+  const updateBookingStatus = async () => {
+    if (!selectedBooking) return;
 
     try {
       setIsUpdating(true);
       const response = await fetch(
-        `/api/appointments/${selectedAppointment.id}/status`,
+        `/api/bookings/${selectedBooking.id}/status`,
         {
           method: "PUT",
           headers: {
@@ -326,34 +243,36 @@ export default function ArtistDashboard() {
       if (response.ok) {
         toast({
           title: "Status Updated",
-          description: `Appointment status updated to ${getStatusText(
-            newStatus
-          )}`,
-          variant: "success",
+          description: `Booking status updated to ${getStatusText(newStatus)}`,
+          variant: "default",
         });
 
         // Update local state
-        setAppointments(
-          appointments.map((appointment) =>
-            appointment.id === selectedAppointment.id
+        setBookings(
+          bookings.map((booking) =>
+            booking.id === selectedBooking.id
               ? {
-                  ...appointment,
-                  status: newStatus,
-                  notes: statusNotes || appointment.notes,
+                  ...booking,
+                  booking_status: newStatus,
                 }
-              : appointment
+              : booking
           )
         );
 
+        // If booking is completed, update artist earnings
+        if (newStatus === "COMPLETED" && selectedBooking.service_price) {
+          await updateArtistEarnings(selectedBooking.service_price);
+        }
+
         setIsModalOpen(false);
       } else {
-        throw new Error(data.message || "Failed to update appointment status");
+        throw new Error(data.message || "Failed to update booking status");
       }
     } catch (error) {
-      console.error("Error updating appointment status:", error);
+      console.error("Error updating booking status:", error);
       toast({
         title: "Error",
-        description: "Could not update appointment status. Please try again.",
+        description: "Could not update booking status. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -361,94 +280,85 @@ export default function ArtistDashboard() {
     }
   };
 
-  // Open appointment detail modal
-  const openAppointmentDetail = (appointment: Appointment) => {
-    setSelectedAppointment(appointment);
-    setNewStatus(appointment.status);
-    setStatusNotes(appointment.notes || "");
+  // Update artist earnings when booking is completed
+  const updateArtistEarnings = async (amount: number) => {
+    try {
+      const response = await fetch("/api/artist/earnings", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ amount }),
+      });
+
+      if (response.ok) {
+        // Refresh artist account data
+        await fetchArtistAccount();
+      }
+    } catch (error) {
+      console.error("Error updating artist earnings:", error);
+    }
+  };
+
+  // Open booking detail modal
+  const openBookingDetail = (booking: Booking) => {
+    setSelectedBooking(booking);
+    setNewStatus(booking.booking_status);
+    setStatusNotes("");
     setIsModalOpen(true);
   };
 
   // Quick status update without opening modal
   const quickUpdateStatus = async (
-    appointment: Appointment,
-    newStatus: AppointmentStatus
+    booking: Booking,
+    newStatus: BookingStatus
   ) => {
     try {
-      console.log(
-        `Updating appointment ${appointment.id} to status: ${newStatus}`
-      );
-
-      const response = await fetch(
-        `/api/appointments/${appointment.id}/status`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            status: newStatus,
-          }),
-        }
-      );
+      const response = await fetch(`/api/bookings/${booking.id}/status`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          status: newStatus,
+        }),
+      });
 
       const data = await response.json();
 
       if (response.ok) {
-        console.log("Status update successful:", data);
-
         toast({
           title: "Status Updated",
-          description: `Appointment status updated to ${getStatusText(
-            newStatus
-          )}`,
-          variant: "success",
+          description: `Booking status updated to ${getStatusText(newStatus)}`,
+          variant: "default",
         });
 
         // Update local state
-        setAppointments(
-          appointments.map((a) =>
-            a.id === appointment.id ? { ...a, status: newStatus } : a
+        setBookings(
+          bookings.map((b) =>
+            b.id === booking.id ? { ...b, booking_status: newStatus } : b
           )
         );
 
-        // Refresh appointments list after status update
-        if (session?.user && status === "authenticated") {
-          const params = new URLSearchParams();
-          if (statusFilter && statusFilter !== "ALL") {
-            params.append("status", statusFilter);
-          }
-          params.append("page", pagination.page.toString());
-          params.append("pageSize", pagination.pageSize.toString());
-          if (selectedDate) {
-            params.append("date", selectedDate);
-          }
-
-          const refreshResponse = await fetch(
-            `/api/appointments/artist?${params.toString()}`
-          );
-
-          if (refreshResponse.ok) {
-            const refreshData = await refreshResponse.json();
-            setAppointments(refreshData.appointments);
-            setPagination(refreshData.pagination);
-          }
+        // If booking is completed, update artist earnings
+        if (newStatus === "COMPLETED" && booking.service_price) {
+          await updateArtistEarnings(booking.service_price);
         }
       } else {
-        throw new Error(data.message || "Failed to update appointment status");
+        throw new Error(data.message || "Failed to update booking status");
       }
     } catch (error) {
-      console.error("Error updating appointment status:", error);
+      console.error("Error updating booking status:", error);
       toast({
         title: "Error",
-        description: "Could not update appointment status. Please try again.",
+        description: "Could not update booking status. Please try again.",
         variant: "destructive",
       });
     }
   };
 
   // Helper functions
-  const getStatusColor = (status: AppointmentStatus) => {
+  const getStatusColor = (status: BookingStatus) => {
     switch (status) {
       case "PENDING":
         return "bg-amber-100 text-amber-800 border-amber-200";
@@ -463,7 +373,7 @@ export default function ArtistDashboard() {
     }
   };
 
-  const getStatusIcon = (status: AppointmentStatus) => {
+  const getStatusIcon = (status: BookingStatus) => {
     switch (status) {
       case "PENDING":
         return <Clock className="h-4 w-4 mr-1" />;
@@ -478,7 +388,7 @@ export default function ArtistDashboard() {
     }
   };
 
-  const getStatusText = (status: AppointmentStatus) => {
+  const getStatusText = (status: BookingStatus) => {
     switch (status) {
       case "PENDING":
         return "Pending";
@@ -510,20 +420,19 @@ export default function ArtistDashboard() {
 
   return (
     <div className="container py-10 max-w-7xl">
-      <h1 className="text-3xl font-bold mb-6">Artist Dashboard</h1>
-
+      <h1 className="text-3xl font-bold mb-6">Artist Dashboard</h1>{" "}
       {/* Main Stats Section */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <Card className="bg-gradient-to-br from-blue-50 to-blue-100">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-medium mb-1">Total Appointments</h3>
-                <p className="text-3xl font-bold">{stats.totalAppointments}</p>
+                <h3 className="text-lg font-medium mb-1">Total Bookings</h3>
+                <p className="text-3xl font-bold">{stats.totalBookings}</p>
                 <div className="flex mt-2 space-x-2 text-xs">
                   <span className="flex items-center text-amber-600">
                     <Clock className="h-3 w-3 mr-1" />
-                    {stats.pendingAppointments} Pending
+                    {stats.pendingBookings} Pending
                   </span>
                 </div>
               </div>
@@ -531,7 +440,6 @@ export default function ArtistDashboard() {
             </div>
           </CardContent>
         </Card>
-
         <Card className="bg-gradient-to-br from-purple-50 to-purple-100">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
@@ -546,240 +454,246 @@ export default function ArtistDashboard() {
             </div>
           </CardContent>
         </Card>
-
-        <Card className="bg-gradient-to-br from-amber-50 to-amber-100">
+        <Card className="bg-gradient-to-br from-green-50 to-green-100">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-medium mb-1">Available Balance</h3>
+                <h3 className="text-lg font-medium mb-1">Total Earnings</h3>
                 <div className="font-bold text-3xl text-green-600">
-                  EGP {stats.availableBalance.toFixed(2)}
+                  EGP {stats.totalEarnings.toFixed(2)}
                 </div>
-                <p className="text-xs text-amber-600 mt-2">
-                  Ready for withdrawal
+                <p className="text-xs text-green-600 mt-2">
+                  From completed bookings
                 </p>
               </div>
-              <Wallet className="h-10 w-10 text-amber-500" />
+              <PiggyBank className="h-10 w-10 text-green-500" />
             </div>
           </CardContent>
-        </Card>
+        </Card>{" "}
       </div>
-
-      <Tabs defaultValue="appointments" className="space-y-4">
-        <TabsContent value="appointments" className="space-y-4">
-          <div className="flex flex-col md:flex-row justify-between gap-4 items-center">
-            <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full md:w-[180px]">
-                  <SelectValue placeholder="Filter by status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">All Statuses</SelectItem>
-                  <SelectItem value="PENDING">Pending</SelectItem>
-                  <SelectItem value="CONFIRMED">Confirmed</SelectItem>
-                  <SelectItem value="COMPLETED">Completed</SelectItem>
-                  <SelectItem value="CANCELLED">Cancelled</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+      {/* Bookings Section */}
+      <div className="space-y-4">
+        <div className="flex flex-col md:flex-row justify-between gap-4 items-center">
+          <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full md:w-[180px]">
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All Statuses</SelectItem>
+                <SelectItem value="PENDING">Pending</SelectItem>
+                <SelectItem value="CONFIRMED">Confirmed</SelectItem>
+                <SelectItem value="COMPLETED">Completed</SelectItem>
+                <SelectItem value="CANCELLED">Cancelled</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
+        </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Appointments</CardTitle>
-              <CardDescription>
-                Manage your upcoming and past appointments
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {appointments.length > 0 ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Client</TableHead>
-                      <TableHead>Date & Time</TableHead>
-                      <TableHead>Service</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {appointments.map((appointment) => (
-                      <TableRow key={appointment.id}>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Avatar className="h-8 w-8">
-                              <AvatarImage
-                                src={appointment.user.image || undefined}
-                                alt={appointment.user.name || "Client"}
-                              />
-                              <AvatarFallback>
-                                {appointment.user.name?.[0] || "C"}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <div className="font-medium">
-                                {appointment.user.name}
-                              </div>
-                              <div className="text-xs text-gray-500">
-                                {appointment.user.phone}
-                              </div>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
+        <Card>
+          <CardHeader>
+            <CardTitle>Bookings</CardTitle>
+            <CardDescription>
+              Manage your upcoming and past bookings
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {bookings.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Client</TableHead>
+                    <TableHead>Date & Time</TableHead>
+                    <TableHead>Service</TableHead>
+                    <TableHead>Price</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {bookings.map((booking) => (
+                    <TableRow key={booking.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage
+                              src={booking.user.image || undefined}
+                              alt={booking.user.name || "Client"}
+                            />
+                            <AvatarFallback>
+                              {booking.user.name?.[0] || "C"}
+                            </AvatarFallback>
+                          </Avatar>
                           <div>
-                            {format(
-                              new Date(appointment.datetime),
-                              "MMM d, yyyy"
-                            )}
+                            <div className="font-medium">
+                              {booking.user.name}
+                            </div>
                             <div className="text-xs text-gray-500">
-                              {format(new Date(appointment.datetime), "h:mm a")}{" "}
-                              • {appointment.duration} min
+                              {booking.user.phone}
                             </div>
                           </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="font-medium">
-                            {appointment.serviceType}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          {format(new Date(booking.date_time), "MMM d, yyyy")}
+                          <div className="text-xs text-gray-500">
+                            {format(new Date(booking.date_time), "h:mm a")}
                           </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant="outline"
-                            className={`flex items-center w-fit ${getStatusColor(
-                              appointment.status
-                            )}`}
-                          >
-                            {getStatusIcon(appointment.status)}
-                            {getStatusText(appointment.status)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex space-x-2">
-                            {appointment.status === "PENDING" && (
-                              <>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="bg-blue-50 hover:bg-blue-100 text-blue-600 border-blue-200"
-                                  onClick={() =>
-                                    quickUpdateStatus(appointment, "CONFIRMED")
-                                  }
-                                  title="Confirm Appointment"
-                                >
-                                  <Check className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="bg-red-50 hover:bg-red-100 text-red-600 border-red-200"
-                                  onClick={() =>
-                                    quickUpdateStatus(appointment, "CANCELLED")
-                                  }
-                                  title="Cancel Appointment"
-                                >
-                                  <X className="h-4 w-4" />
-                                </Button>
-                              </>
-                            )}
-                            {appointment.status === "CONFIRMED" && (
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-medium">
+                          {booking.service_type}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-medium text-green-600">
+                          EGP {(booking.service_price || 0).toFixed(2)}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="outline"
+                          className={`flex items-center w-fit ${getStatusColor(
+                            booking.booking_status
+                          )}`}
+                        >
+                          {getStatusIcon(booking.booking_status)}
+                          {getStatusText(booking.booking_status)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex space-x-2">
+                          {booking.booking_status === "PENDING" && (
+                            <>
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="bg-green-50 hover:bg-green-100 text-green-600 border-green-200"
+                                className="bg-blue-50 hover:bg-blue-100 text-blue-600 border-blue-200"
                                 onClick={() =>
-                                  quickUpdateStatus(appointment, "COMPLETED")
+                                  quickUpdateStatus(booking, "CONFIRMED")
                                 }
-                                title="Mark as Completed"
+                                title="Confirm Booking"
                               >
-                                <CheckCircle className="h-4 w-4" />
+                                <Check className="h-4 w-4" />
                               </Button>
-                            )}
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="bg-red-50 hover:bg-red-100 text-red-600 border-red-200"
+                                onClick={() =>
+                                  quickUpdateStatus(booking, "CANCELLED")
+                                }
+                                title="Cancel Booking"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </>
+                          )}
+                          {booking.booking_status === "CONFIRMED" && (
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => openAppointmentDetail(appointment)}
+                              className="bg-green-50 hover:bg-green-100 text-green-600 border-green-200"
+                              onClick={() =>
+                                quickUpdateStatus(booking, "COMPLETED")
+                              }
+                              title="Mark as Completed"
                             >
-                              Manage
+                              <CheckCircle className="h-4 w-4" />
                             </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  No appointments found for the selected filters
-                </div>
-              )}
-            </CardContent>
-            <CardFooter className="flex justify-between">
-              <div className="text-sm text-gray-500">
-                Showing {appointments.length} of {pagination.total} appointments
+                          )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openBookingDetail(booking)}
+                          >
+                            Manage
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                No bookings found for the selected filters
               </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={pagination.page <= 1}
-                  onClick={() =>
-                    setPagination({ ...pagination, page: pagination.page - 1 })
-                  }
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={pagination.page >= pagination.pages}
-                  onClick={() =>
-                    setPagination({ ...pagination, page: pagination.page + 1 })
-                  }
-                >
-                  Next
-                </Button>
-              </div>
-            </CardFooter>
-          </Card>
-        </TabsContent>
-      </Tabs>
-
-      {/* Appointment Detail Modal */}
+            )}
+          </CardContent>
+          <CardFooter className="flex justify-between">
+            <div className="text-sm text-gray-500">
+              Showing {bookings.length} of {pagination.total} bookings
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={pagination.page <= 1}
+                onClick={() =>
+                  setPagination({ ...pagination, page: pagination.page - 1 })
+                }
+              >
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={pagination.page >= pagination.pages}
+                onClick={() =>
+                  setPagination({ ...pagination, page: pagination.page + 1 })
+                }
+              >
+                Next
+              </Button>
+            </div>
+          </CardFooter>
+        </Card>
+      </div>
+      {/* Booking Detail Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Appointment Details</DialogTitle>
+            <DialogTitle>Booking Details</DialogTitle>
             <DialogDescription>
-              View and manage appointment details
+              View and manage booking details
             </DialogDescription>
           </DialogHeader>
 
-          {selectedAppointment && (
+          {selectedBooking && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <div className="text-sm font-medium">Service</div>
+                  <div className="text-gray-900 font-medium">
+                    {selectedBooking.service_type}
+                  </div>
                 </div>
                 <div className="space-y-1">
                   <div className="text-sm font-medium">Price</div>
                   <div className="text-gray-900 font-medium">
-                    EGP {selectedAppointment.totalPrice.toFixed(2)}
+                    EGP {(selectedBooking.service_price || 0).toFixed(2)}
                   </div>
                 </div>
                 <div className="space-y-1">
                   <div className="text-sm font-medium">Date & Time</div>
                   <div>
-                    {format(new Date(selectedAppointment.datetime), "PPP")}
+                    {format(new Date(selectedBooking.date_time), "PPP")}
                     <div className="text-sm text-gray-500">
-                      {format(new Date(selectedAppointment.datetime), "p")}
+                      {format(new Date(selectedBooking.date_time), "p")}
                     </div>
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <div className="text-sm font-medium">Duration</div>
-                  <div>{selectedAppointment.duration} minutes</div>
+                  <div className="text-sm font-medium">Status</div>
+                  <Badge
+                    variant="outline"
+                    className={getStatusColor(selectedBooking.booking_status)}
+                  >
+                    {getStatusText(selectedBooking.booking_status)}
+                  </Badge>
                 </div>
               </div>
 
@@ -790,37 +704,28 @@ export default function ArtistDashboard() {
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <UserIcon className="h-4 w-4 text-gray-500" />
-                    <span>{selectedAppointment.user.name}</span>
+                    <span>{selectedBooking.user.name}</span>
                   </div>
-                  {selectedAppointment.user.email && (
+                  {selectedBooking.user.email && (
                     <div className="flex items-center gap-2">
                       <Mail className="h-4 w-4 text-gray-500" />
-                      <span>{selectedAppointment.user.email}</span>
+                      <span>{selectedBooking.user.email}</span>
                     </div>
                   )}
-                  {selectedAppointment.user.phone && (
+                  {selectedBooking.user.phone && (
                     <div className="flex items-center gap-2">
                       <Phone className="h-4 w-4 text-gray-500" />
-                      <span>{selectedAppointment.user.phone}</span>
+                      <span>{selectedBooking.user.phone}</span>
                     </div>
                   )}
                 </div>
               </div>
 
               <div className="pt-2 border-t">
-                <div className="text-sm font-medium mb-2">Notes</div>
-                <p className="text-sm text-gray-700">
-                  {selectedAppointment.notes || "No notes provided"}
-                </p>
-              </div>
-
-              <div className="pt-2 border-t">
                 <div className="text-sm font-medium mb-2">Update Status</div>
                 <Select
                   value={newStatus}
-                  onValueChange={(value: AppointmentStatus) =>
-                    setNewStatus(value)
-                  }
+                  onValueChange={(value: BookingStatus) => setNewStatus(value)}
                   disabled={isUpdating}
                 >
                   <SelectTrigger>
@@ -859,7 +764,7 @@ export default function ArtistDashboard() {
             >
               Cancel
             </Button>
-            <Button onClick={updateAppointmentStatus} disabled={isUpdating}>
+            <Button onClick={updateBookingStatus} disabled={isUpdating}>
               {isUpdating ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

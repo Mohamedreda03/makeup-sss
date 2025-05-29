@@ -59,20 +59,18 @@ export async function PATCH(
         { status: 401 }
       );
     }
-
     const body = await req.json();
     const {
       name,
       price,
       description,
       category,
-      imageUrl,
-      gallery,
-      inStock,
+      image,
+      stock_quantity,
       featured,
     } = body;
 
-    if (!name || !price || !description || !category) {
+    if (!name || !price || !description) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
@@ -88,7 +86,6 @@ export async function PATCH(
     if (!existingProduct) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
-
     const updatedProduct = await db.product.update({
       where: {
         id: params.id,
@@ -98,8 +95,8 @@ export async function PATCH(
         price,
         description,
         category,
-        imageUrl,
-        inStock,
+        image,
+        stock_quantity,
         featured,
       },
     });

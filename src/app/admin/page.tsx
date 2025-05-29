@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
   CardFooter,
@@ -18,13 +17,10 @@ import {
   TrendingUp,
   ShoppingBag,
   ArrowRight,
-  Clock,
-  MapPin,
 } from "lucide-react";
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
@@ -46,8 +42,7 @@ export default async function AdminPage() {
   });
 
   // Get appointment count
-  const appointmentsCount = await db.appointment.count();
-
+  const appointmentsCount = await db.booking.count();
   // Get recent orders
   const recentOrders = await db.order.findMany({
     take: 5,
@@ -60,9 +55,23 @@ export default async function AdminPage() {
           name: true,
         },
       },
+      order_details: {
+        select: {
+          price: true,
+          quantity: true,
+        },
+      },
     },
   });
 
+  // Calculate total for each order
+  const ordersWithTotals = recentOrders.map((order) => ({
+    ...order,
+    total: order.order_details.reduce(
+      (sum, detail) => sum + detail.price * detail.quantity,
+      0
+    ),
+  }));
   // Get recent products
   const recentProducts = await db.product.findMany({
     take: 5,
@@ -74,25 +83,35 @@ export default async function AdminPage() {
       name: true,
       price: true,
       category: true,
+      stock_quantity: true,
       createdAt: true,
     },
   });
 
-  // Get recent appointments
-  const recentAppointments = await db.appointment.findMany({
+  const recentAppointments = await db.booking.findMany({
     take: 5,
     orderBy: {
-      datetime: "desc",
+      createdAt: "desc",
     },
     include: {
       user: {
         select: {
           name: true,
+          email: true,
         },
       },
       artist: {
         select: {
-          name: true,
+          id: true,
+
+          user: {
+            select: {
+              name: true,
+              image: true,
+            },
+          },
+          pricing: true,
+          rating: true,
         },
       },
     },
@@ -118,27 +137,6 @@ export default async function AdminPage() {
       title: "Appointments",
       value: appointmentsCount,
       icon: <Calendar className="h-6 w-6 text-green-600" />,
-    },
-  ];
-
-  const quickLinks = [
-    {
-      title: "Add New Product",
-      description: "Create a new product listing",
-      icon: <ShoppingBag className="h-6 w-6 text-rose-600" />,
-      href: "/admin/products/new",
-    },
-    {
-      title: "Manage Artists",
-      description: "View and manage artist profiles",
-      icon: <UserCog className="h-6 w-6 text-rose-600" />,
-      href: "/admin/artists",
-    },
-    {
-      title: "View Analytics",
-      description: "See detailed performance metrics",
-      icon: <TrendingUp className="h-6 w-6 text-rose-600" />,
-      href: "/admin/analytics",
     },
   ];
 
@@ -186,6 +184,7 @@ export default async function AdminPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
+              {" "}
               {recentOrders.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center py-4">
@@ -193,7 +192,7 @@ export default async function AdminPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                recentOrders.map((order) => (
+                ordersWithTotals.map((order) => (
                   <TableRow key={order.id} className="hover:bg-slate-50">
                     <TableCell className="font-medium">
                       <Link
@@ -230,10 +229,10 @@ export default async function AdminPage() {
               )}
             </TableBody>
           </Table>
-        </CardContent>
+        </CardContent>{" "}
         <CardFooter className="border-t flex justify-end py-2">
           <Button variant="ghost" asChild className="text-sm">
-            <Link href="/admin/orders">
+            <Link href="/admin/orders" className="flex items-center">
               View all orders <ArrowRight className="h-4 w-4 ml-1" />
             </Link>
           </Button>
@@ -250,16 +249,19 @@ export default async function AdminPage() {
           <Table>
             <TableHeader>
               <TableRow>
+                {" "}
                 <TableHead className="font-medium">Product Name</TableHead>
                 <TableHead className="font-medium">Price</TableHead>
-
+                <TableHead className="font-medium">Category</TableHead>
+                <TableHead className="font-medium">Stock</TableHead>
                 <TableHead className="font-medium">Added</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
+              {" "}
               {recentProducts.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-4">
+                  <TableCell colSpan={5} className="text-center py-4">
                     No products found
                   </TableCell>
                 </TableRow>
@@ -273,9 +275,20 @@ export default async function AdminPage() {
                       >
                         {product.name}
                       </Link>
-                    </TableCell>
+                    </TableCell>{" "}
                     <TableCell>EGP {product.price.toFixed(2)}</TableCell>
-
+                    <TableCell>{product.category}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          product.stock_quantity > 0 ? "default" : "destructive"
+                        }
+                      >
+                        {product.stock_quantity > 0
+                          ? `${product.stock_quantity} in stock`
+                          : "Out of stock"}
+                      </Badge>
+                    </TableCell>
                     <TableCell className="text-slate-500 text-sm">
                       {formatDistanceToNow(new Date(product.createdAt), {
                         addSuffix: true,
@@ -286,11 +299,88 @@ export default async function AdminPage() {
               )}
             </TableBody>
           </Table>
-        </CardContent>
+        </CardContent>{" "}
         <CardFooter className="border-t flex justify-end py-2">
           <Button variant="ghost" asChild className="text-sm">
-            <Link href="/admin/products">
+            <Link href="/admin/products" className="flex items-center">
               View all products <ArrowRight className="h-4 w-4 ml-1" />
+            </Link>
+          </Button>
+        </CardFooter>
+      </Card>
+
+      {/* Recent Appointments Section */}
+      <h2 className="text-xl font-bold mb-4">Recent Appointments</h2>
+      <Card className="mb-8 shadow-sm">
+        <CardHeader className="bg-white border-b pb-3">
+          <CardTitle className="text-lg">Recent Appointments</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="font-medium">Customer</TableHead>
+                <TableHead className="font-medium">Artist</TableHead>
+                <TableHead className="font-medium">Service</TableHead>
+                <TableHead className="font-medium">Date & Time</TableHead>
+                <TableHead className="font-medium">Status</TableHead>
+                <TableHead className="font-medium">Price</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {recentAppointments.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-4">
+                    No appointments found
+                  </TableCell>
+                </TableRow>
+              ) : (
+                recentAppointments.map((appointment) => (
+                  <TableRow key={appointment.id} className="hover:bg-slate-50">
+                    <TableCell className="font-medium">
+                      {appointment.user?.name || "Guest"}
+                    </TableCell>
+                    <TableCell>
+                      {appointment.artist?.user?.name || "Unknown Artist"}
+                    </TableCell>
+                    <TableCell>{appointment.service_type}</TableCell>
+                    <TableCell className="text-slate-500 text-sm">
+                      {format(new Date(appointment.date_time), "MMM dd, yyyy")}
+                      <br />
+                      <span className="text-xs">
+                        {format(new Date(appointment.date_time), "HH:mm")}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          appointment.booking_status === "COMPLETED"
+                            ? "success"
+                            : appointment.booking_status === "CONFIRMED"
+                            ? "default"
+                            : appointment.booking_status === "PENDING"
+                            ? "outline"
+                            : "destructive"
+                        }
+                      >
+                        {appointment.booking_status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {appointment.service_price
+                        ? `EGP ${appointment.service_price.toFixed(2)}`
+                        : "N/A"}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>{" "}
+        <CardFooter className="border-t flex justify-end py-2">
+          <Button variant="ghost" asChild className="text-sm">
+            <Link href="/admin/bookings" className="flex items-center">
+              View all appointments <ArrowRight className="h-4 w-4 ml-1" />
             </Link>
           </Button>
         </CardFooter>

@@ -113,7 +113,7 @@ export function AdminImageUpload({
         toast({
           title: "Success",
           description: "Image uploaded successfully",
-          variant: "success",
+          
         });
       } else {
         console.error("Image upload failed: No URL returned");

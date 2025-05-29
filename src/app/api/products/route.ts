@@ -20,13 +20,16 @@ export async function GET(req: NextRequest) {
 
     console.log(
       `API: Fetching products - page ${page}, limit ${limit}, sort ${sort}`
-    );
-
-    // Calculate skip for pagination
+    ); // Calculate skip for pagination
     const skip = (page - 1) * limit;
 
     // Prepare filters
-    const filters: any = {};
+    const filters: {
+      OR?: Array<{
+        name?: { contains: string; mode: "insensitive" };
+        description?: { contains: string; mode: "insensitive" };
+      }>;
+    } = {};
 
     // Add search query filter if provided
     if (query) {
@@ -38,10 +41,12 @@ export async function GET(req: NextRequest) {
 
     // Parse sort parameter (format: field:direction)
     const [sortField, sortDirection] = sort.split(":");
-    const orderBy: any = {};
-
-    // Set default sorting if invalid sort field provided
-    if (["name", "price", "createdAt", "category"].includes(sortField)) {
+    const orderBy: Record<string, "asc" | "desc"> = {}; // Set default sorting if invalid sort field provided
+    if (
+      ["name", "price", "createdAt", "category", "stock_quantity"].includes(
+        sortField
+      )
+    ) {
       orderBy[sortField] = sortDirection === "asc" ? "asc" : "desc";
     } else {
       orderBy["createdAt"] = "desc"; // default sorting

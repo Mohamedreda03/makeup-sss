@@ -18,10 +18,7 @@ import { toast } from "@/components/ui/use-toast";
 import {
   CreditCard,
   Calendar,
-  Clock,
   User,
-  DollarSign,
-  CheckCircle,
   Loader2,
   ShieldCheck,
   Lock,
@@ -36,9 +33,7 @@ interface AppointmentRequest {
   artistName: string;
   datetime: string;
   serviceType: string;
-  duration: number;
   totalPrice: number;
-  notes?: string;
   location?: string;
   status: string;
   created: string;
@@ -247,9 +242,7 @@ export default function PaymentRequestPage() {
         artistId: appointmentRequest.artistId,
         serviceType: appointmentRequest.serviceType,
         datetime: datetimeValue,
-        duration: appointmentRequest.duration,
         totalPrice: appointmentRequest.totalPrice,
-        notes: appointmentRequest.notes || "",
         // Handle location correctly - if it's null or undefined, don't include it
         ...(appointmentRequest.location
           ? { location: appointmentRequest.location }
@@ -303,7 +296,6 @@ export default function PaymentRequestPage() {
       toast({
         title: "Booking Successful!",
         description: "Your appointment has been booked and payment processed",
-        variant: "success",
       });
 
       // Redirect to appointments page
@@ -384,16 +376,6 @@ export default function PaymentRequestPage() {
                           "MMMM d, yyyy 'at' h:mm a"
                         )
                       : "Not specified"}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start">
-                <Clock className="h-5 w-5 text-gray-500 mt-0.5 mr-3" />
-                <div>
-                  <p className="font-medium">Duration</p>
-                  <p className="text-gray-600">
-                    {appointmentRequest.duration} minutes
                   </p>
                 </div>
               </div>

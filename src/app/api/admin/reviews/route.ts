@@ -69,14 +69,12 @@ export async function GET(req: NextRequest) {
         artist: {
           select: {
             id: true,
-            name: true,
-            image: true,
-          },
-        },
-        appointment: {
-          select: {
-            serviceType: true,
-            datetime: true,
+            user: {
+              select: {
+                name: true,
+                image: true,
+              },
+            },
           },
         },
       },

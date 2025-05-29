@@ -151,7 +151,7 @@ export default async function ProductsPage({
                     <div className="relative h-64 overflow-hidden">
                       <Image
                         src={
-                          product.imageUrl ||
+                          product.image ||
                           "https://placehold.co/400x400/rose/white?text=No+Image"
                         }
                         alt={product.name}
@@ -165,7 +165,7 @@ export default async function ProductsPage({
                         </div>
                       )}
 
-                      {!product.inStock && (
+                      {product.stock_quantity <= 0 && (
                         <div className="absolute top-4 right-4 bg-gray-700 text-white text-xs font-bold px-3 py-1 rounded-full">
                           Out of Stock
                         </div>

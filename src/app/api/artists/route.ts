@@ -17,9 +17,7 @@ export async function GET(request: Request): Promise<Response> {
         contains: name,
         mode: "insensitive",
       };
-    }
-
-    // Get artists
+    } // Get artists
     const artists = await db.user.findMany({
       where,
       select: {
@@ -27,25 +25,26 @@ export async function GET(request: Request): Promise<Response> {
         name: true,
         email: true,
         image: true,
-        bio: true,
-        yearsOfExperience: true,
-        defaultPrice: true,
-        instagram: true,
-        facebook: true,
-        twitter: true,
-        tiktok: true,
-        website: true,
-        // Get metadata for availability
-        metadata: {
+        phone: true,
+        address: true,
+        makeup_artist: {
           select: {
-            availabilitySettings: true,
-            artistSettings: true,
+            id: true,
+            bio: true,
+            experience_years: true,
+            pricing: true,
+            rating: true,
+            availability: true,
+            portfolio: true,
+            gender: true,
+            available_slots: true,
+            earnings: true,
           },
         },
-        // Get total appointments
+        // Get total bookings
         _count: {
           select: {
-            artistAppointments: true,
+            bookings: true,
           },
         },
         // Get ratings
@@ -61,9 +60,7 @@ export async function GET(request: Request): Promise<Response> {
       orderBy: {
         name: "asc",
       },
-    });
-
-    // Process artists data
+    }); // Process artists data
     const processedArtists = artists.map((artist) => {
       // Calculate rating
       const totalRatings = artist.reviews.length;
@@ -73,11 +70,14 @@ export async function GET(request: Request): Promise<Response> {
             totalRatings
           : 0;
 
-      // Check availability
-      let isAvailable = true;
-      if (artist.metadata?.availabilitySettings) {
+      // Check availability from makeup_artist profile
+      let isAvailable = artist.makeup_artist?.availability || false;
+      if (artist.makeup_artist?.available_slots) {
         try {
-          const settings = JSON.parse(artist.metadata.availabilitySettings);
+          const settings =
+            typeof artist.makeup_artist.available_slots === "string"
+              ? JSON.parse(artist.makeup_artist.available_slots)
+              : artist.makeup_artist.available_slots;
           if (typeof settings.isAvailable !== "undefined") {
             isAvailable = settings.isAvailable;
           }
@@ -91,19 +91,14 @@ export async function GET(request: Request): Promise<Response> {
         id: artist.id,
         name: artist.name,
         image: artist.image,
-        bio: artist.bio || "",
-        yearsOfExperience: artist.yearsOfExperience || 0,
-        defaultPrice: artist.defaultPrice || 0,
-        totalAppointments: artist._count.artistAppointments,
+        bio: artist.makeup_artist?.bio || "",
+        yearsOfExperience: artist.makeup_artist?.experience_years || 0,
+        defaultPrice: artist.makeup_artist?.pricing || 0,
+        totalAppointments: artist._count.bookings,
         rating: averageRating,
         totalReviews: totalRatings,
-        social: {
-          instagram: artist.instagram,
-          facebook: artist.facebook,
-          twitter: artist.twitter,
-          tiktok: artist.tiktok,
-          website: artist.website,
-        },
+        phone: artist.phone,
+        address: artist.address,
         isAvailable,
       };
     });

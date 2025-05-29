@@ -13,7 +13,6 @@ export async function GET() {
         { status: 401 }
       );
     }
-
     const user = await db.user.findUnique({
       where: {
         email: session.user.email!,
@@ -23,15 +22,10 @@ export async function GET() {
         name: true,
         email: true,
         phone: true,
+        address: true,
         image: true,
         role: true,
         createdAt: true,
-        instagram: true,
-        facebook: true,
-        twitter: true,
-        tiktok: true,
-        website: true,
-        bio: true,
       },
     });
 
@@ -62,24 +56,24 @@ export async function PUT(req: Request) {
       );
     }
 
-    const userId = (session.user as any).id;
+    const userEmail = session.user.email;
 
-    // Get current user data
+    if (!userEmail) {
+      return NextResponse.json(
+        { message: "User email not found in session" },
+        { status: 400 }
+      );
+    } // Get current user data
     const user = await db.user.findUnique({
-      where: { id: userId },
+      where: { email: userEmail },
       select: {
         id: true,
         name: true,
         email: true,
         phone: true,
+        address: true,
         image: true,
         role: true,
-        instagram: true,
-        facebook: true,
-        twitter: true,
-        tiktok: true,
-        website: true,
-        bio: true,
       },
     });
 
@@ -98,23 +92,13 @@ export async function PUT(req: Request) {
       );
     }
 
-    // Prepare update data based on user role
-    const updateData: any = {
+    // Prepare update data for user
+    const updateData = {
       name: body.name,
       email: body.email,
       phone: body.phone || null,
+      address: body.address || null,
     };
-
-    // Include social media fields only for artists
-    if (user.role === "ARTIST") {
-      // Add social media fields if they're present in the request
-      if (body.instagram !== undefined) updateData.instagram = body.instagram;
-      if (body.facebook !== undefined) updateData.facebook = body.facebook;
-      if (body.twitter !== undefined) updateData.twitter = body.twitter;
-      if (body.tiktok !== undefined) updateData.tiktok = body.tiktok;
-      if (body.website !== undefined) updateData.website = body.website;
-      if (body.bio !== undefined) updateData.bio = body.bio;
-    }
 
     // Check if email is being changed and it already exists
     if (body.email !== user.email) {
@@ -128,25 +112,18 @@ export async function PUT(req: Request) {
           { status: 400 }
         );
       }
-    }
-
-    // Update user
+    } // Update user
     const updatedUser = await db.user.update({
-      where: { id: userId },
+      where: { id: user.id },
       data: updateData,
       select: {
         id: true,
         name: true,
         email: true,
         phone: true,
+        address: true,
         image: true,
         role: true,
-        instagram: true,
-        facebook: true,
-        twitter: true,
-        tiktok: true,
-        website: true,
-        bio: true,
         createdAt: true,
       },
     });

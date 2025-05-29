@@ -44,9 +44,8 @@ async function getFeaturedProducts() {
     const products = await db.product.findMany({
       where: {
         featured: true,
-        inStock: true,
       },
-      take: 4, // الحد الأقصى للمنتجات المميزة
+      take: 4,
       orderBy: {
         createdAt: "desc",
       },
@@ -71,13 +70,6 @@ async function getFeaturedArtists() {
         id: true,
         name: true,
         image: true,
-        // استخراج البيانات الوصفية للتحقق من التوفر
-        metadata: {
-          select: {
-            availabilitySettings: true,
-          },
-        },
-        // استخراج متوسط التقييمات
         reviews: {
           where: {
             status: "APPROVED", // فقط التقييمات المعتمدة
@@ -279,7 +271,7 @@ export default async function HomePage() {
                     <div className="relative h-60 overflow-hidden">
                       <Image
                         src={
-                          product.imageUrl ||
+                          product.image ||
                           "https://placehold.co/400x400/rose/white?text=No+Image"
                         }
                         alt={product.name}

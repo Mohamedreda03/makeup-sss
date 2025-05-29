@@ -23,6 +23,18 @@ export const metadata = {
   description: "Manage orders and view order details",
 };
 
+// Interface for order details
+interface OrderDetails {
+  id: string;
+  quantity: number;
+  price: number;
+  product: {
+    id: string;
+    name: string;
+    price: number;
+  } | null;
+}
+
 // Interface for order with included relations
 interface OrderWithRelations extends Order {
   user: {
@@ -30,7 +42,7 @@ interface OrderWithRelations extends Order {
     name: string | null;
     email: string | null;
   } | null;
-  items: any[];
+  order_details: OrderDetails[];
 }
 
 // Format price
@@ -92,7 +104,6 @@ function OrdersTableSkeleton() {
 async function OrdersList({ status }: { status: OrderStatus | "ALL" }) {
   // Prepare filter based on status
   const filter = status === "ALL" ? {} : { status };
-
   // Fetch orders with filter
   const orders = await db.order.findMany({
     where: filter,
@@ -101,7 +112,7 @@ async function OrdersList({ status }: { status: OrderStatus | "ALL" }) {
     },
     include: {
       user: true,
-      items: {
+      order_details: {
         include: {
           product: true,
         },
@@ -148,12 +159,17 @@ async function OrdersList({ status }: { status: OrderStatus | "ALL" }) {
                         {order.user?.email || "No email"}
                       </div>
                     </div>
-                  </TableCell>
+                  </TableCell>{" "}
                   <TableCell>
                     <OrderStatusBadge status={order.status} />
                   </TableCell>
                   <TableCell className="text-right font-medium">
-                    {formatPrice(order.total)}
+                    {formatPrice(
+                      order.order_details.reduce(
+                        (total, item) => total + item.price * item.quantity,
+                        0
+                      )
+                    )}
                   </TableCell>
                   <TableCell>
                     {format(new Date(order.createdAt), "MMM d, yyyy")}

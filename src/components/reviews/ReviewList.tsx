@@ -176,7 +176,7 @@ export function ReviewList({
         description: `Review has been ${
           pendingAction === "APPROVE" ? "approved" : "rejected"
         }.`,
-        variant: "success",
+        
       });
 
       // Close dialog

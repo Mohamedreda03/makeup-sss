@@ -2,13 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { z } from "zod";
-import {
-  getDay,
-  parseISO,
-  format,
-  addMinutes,
-  isWithinInterval,
-} from "date-fns";
+import { getDay, format, addMinutes } from "date-fns";
 import { v4 as uuidv4 } from "uuid";
 
 // Define status type
@@ -71,13 +65,14 @@ export async function POST(req: Request) {
 
     try {
       const validatedData = appointmentRequestSchema.parse(requestBody);
-      console.log("Data validation successful:", validatedData);
-
-      // Verify the artist exists
+      console.log("Data validation successful:", validatedData); // Verify the artist exists and get availability settings
       const artist = await db.user.findUnique({
         where: {
           id: validatedData.artistId,
           role: "ARTIST",
+        },
+        include: {
+          makeup_artist: true,
         },
       });
 
@@ -109,26 +104,47 @@ export async function POST(req: Request) {
       const timeHour = appointmentDateTime.getHours();
       const timeMinute = appointmentDateTime.getMinutes();
 
-      // Fetch artist's availability settings
-      const artistMetadata = await db.userMetadata.findUnique({
-        where: {
-          userId: validatedData.artistId,
-        },
-      });
-
       // Parse availability settings or use defaults
       let workingHours = DEFAULT_BUSINESS_HOURS;
       let regularDaysOff = DEFAULT_REGULAR_DAYS_OFF;
       let isAvailable = true; // Default to available if no settings found
 
-      if (artistMetadata?.availabilitySettings) {
-        const settings = JSON.parse(artistMetadata.availabilitySettings);
-        workingHours = settings.workingHours || DEFAULT_BUSINESS_HOURS;
-        regularDaysOff = settings.regularDaysOff || DEFAULT_REGULAR_DAYS_OFF;
+      if (artist?.makeup_artist?.available_slots) {
+        try {
+          // available_slots is already a JSON object, no need to parse
+          const settings = artist.makeup_artist.available_slots as {
+            workingDays?: number[];
+            startTime?: string;
+            endTime?: string;
+            sessionDuration?: number;
+            breakBetweenSessions?: number;
+            isAvailable?: boolean;
+          };
 
-        // Get the artist's overall availability status
-        if (settings.isAvailable !== undefined) {
-          isAvailable = settings.isAvailable;
+          console.log("Artist availability settings retrieved:", settings);
+
+          if (settings.startTime && settings.endTime) {
+            workingHours = {
+              start: parseInt(settings.startTime.split(":")[0]),
+              end: parseInt(settings.endTime.split(":")[0]),
+              interval: settings.sessionDuration || 30,
+            };
+          }
+          if (settings.workingDays && Array.isArray(settings.workingDays)) {
+            // Convert workingDays to regularDaysOff
+            const allDays = [0, 1, 2, 3, 4, 5, 6]; // Sunday=0 to Saturday=6
+            regularDaysOff = allDays.filter(
+              (day) => !settings.workingDays!.includes(day)
+            );
+            console.log("Working days:", settings.workingDays);
+            console.log("Regular days off:", regularDaysOff);
+          }
+          if (settings.isAvailable !== undefined) {
+            isAvailable = settings.isAvailable;
+          }
+        } catch (error) {
+          console.error("Error parsing availability settings:", error);
+          // Continue with defaults
         }
       }
       console.log("Artist availability settings retrieved");
@@ -175,16 +191,14 @@ export async function POST(req: Request) {
           },
           { status: 400 }
         );
-      }
-
-      // Check for conflicts with existing appointments
-      const existingAppointments = await db.appointment.findMany({
+      } // Check for conflicts with existing bookings
+      const existingBookings = await db.booking.findMany({
         where: {
-          artistId: validatedData.artistId,
-          status: {
+          artist_id: validatedData.artistId,
+          booking_status: {
             in: ["PENDING", "CONFIRMED"],
           },
-          datetime: {
+          date_time: {
             gte: new Date(new Date(dateString).setHours(0, 0, 0, 0)),
             lt: new Date(new Date(dateString).setHours(24, 0, 0, 0)),
           },
@@ -192,13 +206,15 @@ export async function POST(req: Request) {
       });
 
       console.log(
-        `Found ${existingAppointments.length} existing appointments for the day`
+        `Found ${existingBookings.length} existing bookings for the day`
       );
 
-      // Check for overlapping appointments
-      const isOverlapping = existingAppointments.some((appointment: any) => {
-        const existingStart = new Date(appointment.datetime);
-        const existingEnd = addMinutes(existingStart, appointment.duration);
+      // Check for overlapping bookings
+      const isOverlapping = existingBookings.some((booking) => {
+        const existingStart = new Date(booking.date_time);
+        // Note: We need to estimate duration since booking model doesn't have duration field
+        // Using 60 minutes as default duration for existing bookings
+        const existingEnd = addMinutes(existingStart, 60);
 
         return (
           (appointmentDateTime >= existingStart &&
@@ -247,17 +263,23 @@ export async function POST(req: Request) {
         appointmentRequest: appointmentRequestData,
         redirectUrl: `/payment/request/${tempRequestId}`,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Validation error:", error);
       return NextResponse.json(
-        { message: error.message || "Invalid request data" },
+        {
+          message:
+            error instanceof Error ? error.message : "Invalid request data",
+        },
         { status: 400 }
       );
     }
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error creating appointment request:", error);
     return NextResponse.json(
-      { message: "Server error", error: String(error) },
+      {
+        message: "Server error",
+        error: error instanceof Error ? error.message : String(error),
+      },
       { status: 500 }
     );
   }

@@ -1,14 +1,6 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import {
-  addDays,
-  format,
-  parseISO,
-  startOfDay,
-  isWithinInterval,
-  getDay,
-} from "date-fns";
+import { addDays, format, parseISO, startOfDay, getDay } from "date-fns";
 
 // Default working hours if none are set
 const DEFAULT_BUSINESS_HOURS = {
@@ -51,10 +43,13 @@ export async function GET(
       );
     }
 
-    // Fetch artist's availability settings from metadata
-    const artistMetadata = await db.userMetadata.findUnique({
+    // Fetch artist's availability settings from makeup_artist table
+    const makeupArtist = await db.makeUpArtist.findFirst({
       where: {
-        userId: artistId,
+        user_id: artistId,
+      },
+      select: {
+        available_slots: true,
       },
     });
 
@@ -63,22 +58,53 @@ export async function GET(
     let regularDaysOff = DEFAULT_REGULAR_DAYS_OFF;
     let isAvailable = true; // Default to available if not specified
 
-    if (artistMetadata?.availabilitySettings) {
+    if (makeupArtist?.available_slots) {
       try {
-        const settings = JSON.parse(artistMetadata.availabilitySettings);
-        workingHours = settings.workingHours || DEFAULT_BUSINESS_HOURS;
-        regularDaysOff = settings.regularDaysOff || DEFAULT_REGULAR_DAYS_OFF;
+        const settings = makeupArtist.available_slots as {
+          workingDays?: number[];
+          startTime?: string;
+          endTime?: string;
+          sessionDuration?: number;
+          breakBetweenSessions?: number;
+          isAvailable?: boolean;
+        };
+
+        // Convert availability settings to the format expected by this API
+        if (settings.startTime && settings.endTime) {
+          workingHours = {
+            start:
+              parseInt(settings.startTime.split(":")[0]) ||
+              DEFAULT_BUSINESS_HOURS.start,
+            end:
+              parseInt(settings.endTime.split(":")[0]) ||
+              DEFAULT_BUSINESS_HOURS.end,
+            interval:
+              settings.sessionDuration || DEFAULT_BUSINESS_HOURS.interval,
+          };
+        }
+
+        // Convert workingDays to regularDaysOff
+        if (settings.workingDays && Array.isArray(settings.workingDays)) {
+          const allDays = [0, 1, 2, 3, 4, 5, 6]; // Sunday=0 to Saturday=6
+          regularDaysOff = allDays.filter(
+            (day) => !settings.workingDays!.includes(day)
+          );
+        }
 
         // Get the artist's overall availability status
         if (settings.isAvailable !== undefined) {
           isAvailable = settings.isAvailable;
         }
 
-        console.log("Using artist availability settings:", {
-          isAvailable,
-          workingHours,
-          regularDaysOff: JSON.stringify(regularDaysOff),
-        });
+        console.log(
+          "Using artist availability settings from available_slots:",
+          {
+            isAvailable,
+            workingHours,
+            regularDaysOff: JSON.stringify(regularDaysOff),
+            originalSettings: settings,
+          }
+        );
       } catch (error) {
         console.error("Error parsing availability settings:", error);
       }
@@ -105,26 +131,66 @@ export async function GET(
 
     const endDate = addDays(startDate, parseInt(daysParam, 10));
 
-    // Fetch all appointments for the artist in the date range
-    const appointments = await db.appointment.findMany({
+    // Get the makeup artist ID first
+    const makeupArtistRecord = await db.makeUpArtist.findFirst({
       where: {
+        user_id: artistId,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!makeupArtistRecord) {
+      console.log(`No makeup artist record found for user ID: ${artistId}`);
+      return NextResponse.json({
         artistId,
-        datetime: {
+        artistName: artist.name,
+        isAvailable: false,
+        message: "Artist profile not found",
+        availability: [],
+      });
+    }
+
+    // Fetch all bookings for the artist in the date range
+    const appointments = await db.booking.findMany({
+      where: {
+        artist_id: makeupArtistRecord.id, // Use makeup artist ID, not user ID
+        date_time: {
           gte: startDate,
           lt: endDate,
         },
         // Only include confirmed and pending appointments
-        status: {
+        booking_status: {
           in: ["PENDING", "CONFIRMED"],
         },
       },
       select: {
         id: true,
-        datetime: true,
-        duration: true,
-        status: true,
+        date_time: true,
+        service_type: true,
+        booking_status: true,
       },
     });
+
+    console.log(
+      `Found ${appointments.length} appointments for makeup artist ID: ${makeupArtistRecord.id}`
+    );
+    console.log(
+      "Appointments:",
+      appointments.map((apt) => ({
+        id: apt.id,
+        date_time: apt.date_time,
+        status: apt.booking_status,
+      }))
+    );
+
+    console.log(
+      `Artist ID: ${artistId}, Makeup Artist ID: ${makeupArtistRecord.id}`
+    );
+    console.log(
+      `Date range: ${startDate.toISOString()} to ${endDate.toISOString()}`
+    );
 
     // Generate available time slots for each day
     const availabilityByDay = [];
@@ -182,15 +248,14 @@ export async function GET(
               continue;
             }
 
-            // Check if this slot conflicts with any appointment
+            // Check if this slot conflicts with any booking
             let isBooked = false;
 
             for (const appointment of appointments) {
-              const appointmentStart = new Date(appointment.datetime);
+              const appointmentStart = new Date(appointment.date_time);
               const appointmentEnd = new Date(appointmentStart);
-              appointmentEnd.setMinutes(
-                appointmentEnd.getMinutes() + appointment.duration
-              );
+              // Assume default duration of 60 minutes if not specified
+              appointmentEnd.setMinutes(appointmentEnd.getMinutes() + 60);
 
               // Create date objects for the current slot
               const slotStart = new Date(slotTime);
@@ -210,22 +275,42 @@ export async function GET(
                 // Slot completely contains an appointment
                 (slotStart <= appointmentStart && slotEnd >= appointmentEnd)
               ) {
+                console.log(
+                  `CONFLICT FOUND! Slot ${format(
+                    slotTime,
+                    "HH:mm"
+                  )} on ${dayString} conflicts with appointment at ${format(
+                    appointmentStart,
+                    "HH:mm"
+                  )}`
+                );
                 isBooked = true;
                 break;
               }
             }
 
+            // Log slot status for debugging
+            if (
+              format(slotTime, "HH:mm") === "10:00" ||
+              format(slotTime, "HH:mm") === "14:00"
+            ) {
+              console.log(
+                `Slot ${format(
+                  slotTime,
+                  "HH:mm"
+                )} on ${dayString}: isBooked = ${isBooked}`
+              );
+            }
+
             // Format the time display (e.g., "10:00 AM")
             const timeLabel = format(slotTime, "h:mm a");
 
-            // Add slot to the list (only include slots that aren't booked)
-            if (!isBooked) {
-              allTimeSlots.push({
-                time: format(slotTime, "HH:mm"),
-                label: timeLabel,
-                isBooked,
-              });
-            }
+            // Add both available and booked slots to the list
+            allTimeSlots.push({
+              time: format(slotTime, "HH:mm"),
+              label: timeLabel,
+              isBooked: isBooked,
+            });
           }
         }
       }

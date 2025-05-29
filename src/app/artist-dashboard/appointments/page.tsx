@@ -48,7 +48,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 
 // Data type definitions
-type AppointmentStatus = "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED";
+type BookingStatus = "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED";
 
 // Extended user interface for typing session.user
 interface ExtendedUser {
@@ -59,18 +59,14 @@ interface ExtendedUser {
   role?: string;
 }
 
-interface Appointment {
+interface Booking {
   id: string;
-  datetime: string;
-  description: string | null;
-  status: AppointmentStatus;
-  userId: string;
-  artistId: string | null;
-  serviceType: string;
-  duration: number;
-  totalPrice: number;
-  location: string | null;
-  notes: string | null;
+  date_time: string;
+  service_type: string;
+  service_price: number | null;
+  booking_status: BookingStatus;
+  user_id: string;
+  artist_id: string;
   createdAt: string;
   updatedAt: string;
   user: {
@@ -92,9 +88,8 @@ interface PaginationInfo {
 export default function AppointmentsPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
-
   // State for appointment list and selected appointment
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [appointments, setAppointments] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("PENDING");
   const [pagination, setPagination] = useState<PaginationInfo>({
@@ -108,9 +103,9 @@ export default function AppointmentsPage() {
 
   // State for appointment detail modal
   const [selectedAppointment, setSelectedAppointment] =
-    useState<Appointment | null>(null);
+    useState<Booking | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newStatus, setNewStatus] = useState<AppointmentStatus>("PENDING");
+  const [newStatus, setNewStatus] = useState<BookingStatus>("PENDING");
   const [statusNotes, setStatusNotes] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
 
@@ -185,7 +180,6 @@ export default function AppointmentsPage() {
     pagination.pageSize,
     selectedDate,
   ]);
-
   // Update appointment status
   const updateAppointmentStatus = async () => {
     if (!selectedAppointment) return;
@@ -201,33 +195,30 @@ export default function AppointmentsPage() {
           },
           body: JSON.stringify({
             status: newStatus,
-            notes: statusNotes,
           }),
         }
       );
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(
-          errorData.message || "Failed to update appointment status"
-        );
+        throw new Error(errorData.message || "Failed to update booking status");
       }
 
-      const updatedAppointment = await response.json();
-      console.log("Successfully updated appointment:", updatedAppointment);
+      const updatedBooking = await response.json();
+      console.log("Successfully updated booking:", updatedBooking);
 
       toast({
         title: "Success",
-        description: `Appointment status updated to ${getStatusText(
-          newStatus
-        )}`,
-        variant: "success",
+        description: `Booking status updated to ${getStatusText(newStatus)}`,
+        
       });
 
       // Update local state with the data returned from the API
       setAppointments((prev) =>
         prev.map((app) =>
-          app.id === selectedAppointment.id ? updatedAppointment : app
+          app.id === selectedAppointment.id
+            ? { ...app, booking_status: newStatus }
+            : app
         )
       );
 
@@ -263,7 +254,7 @@ export default function AppointmentsPage() {
 
       fetchUpdatedAppointments();
     } catch (error) {
-      console.error("Error updating appointment status:", error);
+      console.error("Error updating booking status:", error);
       toast({
         title: "Error",
         description:
@@ -276,24 +267,21 @@ export default function AppointmentsPage() {
       setIsUpdating(false);
     }
   };
-
   // Open appointment detail modal
-  const openAppointmentDetail = (appointment: Appointment) => {
+  const openAppointmentDetail = (appointment: Booking) => {
     setSelectedAppointment(appointment);
-    setNewStatus(appointment.status);
-    setStatusNotes(appointment.notes || "");
+    setNewStatus(appointment.booking_status);
+    setStatusNotes("");
     setIsModalOpen(true);
   };
 
   // Quick status update without opening modal
   const quickUpdateStatus = async (
-    appointment: Appointment,
-    newStatus: AppointmentStatus
+    appointment: Booking,
+    newStatus: BookingStatus
   ) => {
     try {
-      console.log(
-        `Updating appointment ${appointment.id} to status: ${newStatus}`
-      );
+      console.log(`Updating booking ${appointment.id} to status: ${newStatus}`);
 
       const response = await fetch(
         `/api/appointments/${appointment.id}/status`,
@@ -318,13 +306,13 @@ export default function AppointmentsPage() {
           description: `Appointment status updated to ${getStatusText(
             newStatus
           )}`,
-          variant: "success",
-        });
-
-        // Update local state
+          
+        }); // Update local state
         setAppointments((prev) =>
           prev.map((app) =>
-            app.id === appointment.id ? { ...app, status: newStatus } : app
+            app.id === appointment.id
+              ? { ...app, booking_status: newStatus }
+              : app
           )
         );
 
@@ -369,9 +357,8 @@ export default function AppointmentsPage() {
       });
     }
   };
-
   // Helper functions for status styling
-  const getStatusColor = (status: AppointmentStatus) => {
+  const getStatusColor = (status: BookingStatus) => {
     switch (status) {
       case "PENDING":
         return "bg-yellow-100 text-yellow-800 border-yellow-200";
@@ -386,7 +373,7 @@ export default function AppointmentsPage() {
     }
   };
 
-  const getStatusIcon = (status: AppointmentStatus) => {
+  const getStatusIcon = (status: BookingStatus) => {
     switch (status) {
       case "PENDING":
         return <AlertCircle className="h-4 w-4" />;
@@ -400,8 +387,7 @@ export default function AppointmentsPage() {
         return <AlertCircle className="h-4 w-4" />;
     }
   };
-
-  const getStatusText = (status: AppointmentStatus) => {
+  const getStatusText = (status: BookingStatus) => {
     switch (status) {
       case "PENDING":
         return "Pending";
@@ -520,41 +506,48 @@ export default function AppointmentsPage() {
                               </div>
                             </div>
                           </div>
-                        </TableCell>
+                        </TableCell>{" "}
                         <TableCell>
                           <div className="flex flex-col">
                             <span className="font-medium">
                               {format(
-                                new Date(appointment.datetime),
+                                new Date(appointment.date_time),
                                 "MMM dd, yyyy"
                               )}
                             </span>
                             <span className="text-xs text-muted-foreground">
-                              {format(new Date(appointment.datetime), "h:mm a")}{" "}
-                              • {appointment.duration} min
+                              {format(
+                                new Date(appointment.date_time),
+                                "h:mm a"
+                              )}
                             </span>
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="font-medium">
-                            {appointment.serviceType}
+                            {appointment.service_type}
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="mt-1">
                             <span className="text-gray-700 font-medium">
-                              EGP {appointment.totalPrice.toFixed(2)}
+                              EGP{" "}
+                              {appointment.service_price?.toFixed(2) || "0.00"}
                             </span>
                           </div>
                         </TableCell>
                         <TableCell>
                           <Badge
                             variant="outline"
-                            className={getStatusColor(appointment.status)}
+                            className={getStatusColor(
+                              appointment.booking_status
+                            )}
                           >
                             <span className="flex items-center space-x-1">
-                              {getStatusIcon(appointment.status)}
-                              <span>{getStatusText(appointment.status)}</span>
+                              {getStatusIcon(appointment.booking_status)}
+                              <span>
+                                {getStatusText(appointment.booking_status)}
+                              </span>
                             </span>
                           </Badge>
                         </TableCell>
@@ -567,7 +560,7 @@ export default function AppointmentsPage() {
                             >
                               Details
                             </Button>
-                            {appointment.status === "PENDING" && (
+                            {appointment.booking_status === "PENDING" && (
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -580,7 +573,7 @@ export default function AppointmentsPage() {
                                 Confirm
                               </Button>
                             )}
-                            {appointment.status === "CONFIRMED" && (
+                            {appointment.booking_status === "CONFIRMED" && (
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -593,8 +586,8 @@ export default function AppointmentsPage() {
                                 Complete
                               </Button>
                             )}
-                            {(appointment.status === "PENDING" ||
-                              appointment.status === "CONFIRMED") && (
+                            {(appointment.booking_status === "PENDING" ||
+                              appointment.booking_status === "CONFIRMED") && (
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -678,6 +671,7 @@ export default function AppointmentsPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
+            {" "}
             <div className="space-y-2">
               <div className="flex items-center">
                 <Calendar className="h-4 w-4 mr-2 text-gray-500" />
@@ -685,7 +679,7 @@ export default function AppointmentsPage() {
                 <span className="ml-2">
                   {selectedAppointment &&
                     format(
-                      new Date(selectedAppointment.datetime),
+                      new Date(selectedAppointment.date_time),
                       "MMMM d, yyyy"
                     )}
                 </span>
@@ -695,11 +689,7 @@ export default function AppointmentsPage() {
                 <span className="font-semibold">Time:</span>
                 <span className="ml-2">
                   {selectedAppointment &&
-                    format(
-                      new Date(selectedAppointment.datetime),
-                      "h:mm a"
-                    )}{" "}
-                  ({selectedAppointment?.duration} minutes)
+                    format(new Date(selectedAppointment.date_time), "h:mm a")}
                 </span>
               </div>
               <div className="flex items-center">
@@ -712,32 +702,30 @@ export default function AppointmentsPage() {
 
               <div className="flex items-start">
                 <span className="font-semibold mr-2">Service:</span>
-                <span>{selectedAppointment?.serviceType}</span>
+                <span>{selectedAppointment?.service_type}</span>
               </div>
 
-              {selectedAppointment?.location && (
-                <div className="flex items-start">
-                  <span className="font-semibold mr-2">Location:</span>
-                  <span>{selectedAppointment.location}</span>
-                </div>
-              )}
-            </div>
+              <div className="flex items-start">
+                <span className="font-semibold mr-2">Price:</span>
+                <span>
+                  EGP {selectedAppointment?.service_price?.toFixed(2) || "0.00"}
+                </span>
+              </div>
+            </div>{" "}
             <div>
               <span className="text-sm font-medium text-muted-foreground">
-                Description
+                Booking ID
               </span>
-              <p>
-                {selectedAppointment?.description || "No description provided"}
-              </p>
+              <p>{selectedAppointment?.id || "N/A"}</p>
             </div>
             <div className="space-y-2">
               <span className="text-sm font-medium text-muted-foreground">
                 Update Status
-              </span>
+              </span>{" "}
               <Select
                 value={newStatus}
                 onValueChange={(value: string) =>
-                  setNewStatus(value as AppointmentStatus)
+                  setNewStatus(value as BookingStatus)
                 }
               >
                 <SelectTrigger>

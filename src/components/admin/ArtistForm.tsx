@@ -210,7 +210,7 @@ export default function ArtistForm({
           mode === "edit"
             ? "The artist has been updated successfully."
             : "The artist has been created successfully.",
-        variant: "success",
+        
       });
 
       // Redirect to artists list

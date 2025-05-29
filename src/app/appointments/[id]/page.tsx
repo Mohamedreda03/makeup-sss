@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { format } from "date-fns";
 import { Metadata } from "next";
 import { Calendar, Clock, MapPin, User } from "lucide-react";
-import { AppointmentStatus } from "@/generated/prisma";
+import { BookingStatus } from "@/generated/prisma";
 import { PaymentButton } from "@/components/appointment/PaymentButton";
 import {
   Card,
@@ -32,16 +32,18 @@ async function getAppointmentDetails(id: string) {
     where: { email: session.user.email },
   });
   if (!user) return null;
-
   // Get appointment with artist details
-  return db.appointment.findUnique({
+  return db.booking.findUnique({
     where: {
       id,
-      userId: user.id, // Ensure appointment belongs to this user
+      user_id: user.id, // Ensure appointment belongs to this user
     },
     include: {
-      artist: true,
-      paymentDetails: true,
+      artist: {
+        include: {
+          user: true,
+        },
+      },
     },
   });
 }
@@ -56,10 +58,9 @@ export default async function AppointmentPage({
   if (!appointment) {
     return notFound();
   }
-
-  const isPaid = appointment.paymentDetails !== null;
+  const isPaid = appointment.booking_status === "COMPLETED";
   const showPaymentButton =
-    appointment.status === AppointmentStatus.CONFIRMED && !isPaid;
+    appointment.booking_status === BookingStatus.CONFIRMED && !isPaid;
 
   return (
     <div className="container py-10 max-w-4xl">
@@ -68,7 +69,7 @@ export default async function AppointmentPage({
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <AppointmentStatusBadge status={appointment.status} />
+            <AppointmentStatusBadge status={appointment.booking_status} />
           </div>
           <CardDescription>
             Booked on {format(new Date(appointment.createdAt), "PPP")}
@@ -83,15 +84,14 @@ export default async function AppointmentPage({
                   Date & Time
                 </h3>
                 <div className="flex items-center mt-1">
-                  <Calendar className="h-4 w-4 mr-2 text-gray-500" />
-                  <span>{format(new Date(appointment.datetime), "PPPP")}</span>
+                  <Calendar className="h-4 w-4 mr-2 text-gray-500" />{" "}
+                  <span>{format(new Date(appointment.date_time), "PPPP")}</span>
                 </div>
                 <div className="flex items-center mt-1">
                   <Clock className="h-4 w-4 mr-2 text-gray-500" />
-                  <span>{format(new Date(appointment.datetime), "p")}</span>
+                  <span>{format(new Date(appointment.date_time), "p")}</span>
                 </div>
               </div>
-
               {appointment.location && (
                 <div>
                   <h3 className="text-sm font-medium text-gray-500">
@@ -102,15 +102,14 @@ export default async function AppointmentPage({
                     <span>{appointment.location}</span>
                   </div>
                 </div>
-              )}
-
+              )}{" "}
               <div>
                 <h3 className="text-sm font-medium text-gray-500">
-                  Duration & Price
-                </h3>
-                <p className="mt-1">{appointment.duration} minutes</p>
+                  Service & Price
+                </h3>{" "}
+                <p className="mt-1">{appointment.service_type}</p>{" "}
                 <p className="font-semibold text-lg">
-                  ${appointment.totalPrice.toFixed(2)}
+                  ${appointment.total_price?.toFixed(2) || "0.00"}
                 </p>
               </div>
             </div>
@@ -120,10 +119,11 @@ export default async function AppointmentPage({
                 <h3 className="text-sm font-medium text-gray-500">Artist</h3>
                 <div className="flex items-start space-x-3 mt-2">
                   <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
-                    {appointment.artist?.image ? (
+                    {" "}
+                    {appointment.artist?.user?.image ? (
                       <img
-                        src={appointment.artist.image}
-                        alt={appointment.artist?.name || "Artist"}
+                        src={appointment.artist.user.image}
+                        alt={appointment.artist?.user?.name || "Artist"}
                         className="h-10 w-10 rounded-full"
                       />
                     ) : (
@@ -132,23 +132,16 @@ export default async function AppointmentPage({
                   </div>
                   <div>
                     <p className="font-medium">
-                      {appointment.artist?.name || "Artist"}
+                      {appointment.artist?.user?.name || "Artist"}
                     </p>
                     <p className="text-sm text-gray-500">
-                      {appointment.artist?.email}
+                      {appointment.artist?.user?.email}
                     </p>
                   </div>
-                </div>
+                </div>{" "}
               </div>
 
-              {appointment.notes && (
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500">Notes</h3>
-                  <p className="mt-1 text-gray-700">{appointment.notes}</p>
-                </div>
-              )}
-
-              {appointment.paymentDetails && (
+              {appointment.booking_status === "COMPLETED" && (
                 <div>
                   <h3 className="text-sm font-medium text-gray-500">
                     Payment Status
@@ -157,12 +150,8 @@ export default async function AppointmentPage({
                     variant="outline"
                     className="mt-1 bg-green-100 text-green-800"
                   >
-                    Paid on{" "}
-                    {format(new Date(appointment.paymentDetails.paidAt), "PPP")}
+                    Completed
                   </Badge>
-                  <p className="mt-1 text-sm text-gray-500">
-                    Payment method: {appointment.paymentDetails.paymentMethod}
-                  </p>
                 </div>
               )}
             </div>
@@ -176,11 +165,12 @@ export default async function AppointmentPage({
                 <p className="text-sm text-gray-500">
                   Your payment will go directly to the artist and your
                   appointment will be marked as completed.
-                </p>
+                </p>{" "}
                 <div className="mt-2">
+                  {" "}
                   <PaymentButton
                     appointmentId={appointment.id}
-                    amount={appointment.totalPrice}
+                    amount={appointment.total_price || 0}
                   />
                 </div>
               </div>
@@ -199,21 +189,21 @@ export default async function AppointmentPage({
 }
 
 // Helper component for status badge
-function AppointmentStatusBadge({ status }: { status: AppointmentStatus }) {
+function AppointmentStatusBadge({ status }: { status: BookingStatus }) {
   const statusConfig = {
-    [AppointmentStatus.PENDING]: {
+    [BookingStatus.PENDING]: {
       color: "bg-amber-100 text-amber-800",
       label: "Pending",
     },
-    [AppointmentStatus.CONFIRMED]: {
+    [BookingStatus.CONFIRMED]: {
       color: "bg-blue-100 text-blue-800",
       label: "Confirmed",
     },
-    [AppointmentStatus.COMPLETED]: {
+    [BookingStatus.COMPLETED]: {
       color: "bg-green-100 text-green-800",
       label: "Completed",
     },
-    [AppointmentStatus.CANCELLED]: {
+    [BookingStatus.CANCELLED]: {
       color: "bg-red-100 text-red-800",
       label: "Cancelled",
     },

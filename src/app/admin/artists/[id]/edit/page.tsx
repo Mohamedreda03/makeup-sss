@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -27,12 +27,36 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useSession } from "next-auth/react";
-import { Loader2 } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Separator } from "@/components/ui/separator";
-import { CategorySelector } from "@/components/admin/CategorySelector";
+import { Loader2, Plus, Trash2, Edit2 } from "lucide-react";
 import { AdminImageUpload } from "@/components/admin/AdminImageUpload";
-import ServiceManager from "@/components/services/ServiceManager";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+
+// Service interface
+interface Service {
+  id?: string;
+  name: string;
+  description?: string | null;
+  price: number;
+  duration?: number;
+  isActive: boolean;
+  artistId: string;
+}
 
 // Form validation schema
 const formSchema = z.object({
@@ -43,16 +67,26 @@ const formSchema = z.object({
     message: "Please enter a valid email address.",
   }),
   phone: z.string().optional(),
-  instagram: z.string().optional(),
-  facebook: z.string().optional(),
-  twitter: z.string().optional(),
-  tiktok: z.string().optional(),
-  website: z.string().optional(),
-  bio: z.string().optional(),
-  yearsOfExperience: z.coerce.number().min(0).optional(),
-  category: z.string().optional(),
-  defaultPrice: z.coerce.number().min(0).optional(),
+  address: z.string().optional(),
   image: z.string().optional(),
+  bio: z.string().optional(),
+  pricing: z.coerce.number().min(0).optional(),
+  experience_years: z.string().optional(),
+  portfolio: z.string().optional(),
+  gender: z.string().optional(),
+  availability: z.boolean().default(false),
+});
+
+// Service validation schema
+const serviceSchema = z.object({
+  name: z.string().min(2, "Service name is required"),
+  description: z.string().optional(),
+  price: z.coerce.number().min(0, "Price must be a positive number"),
+  duration: z.coerce
+    .number()
+    .min(15, "Duration must be at least 15 minutes")
+    .optional(),
+  isActive: z.boolean().default(true),
 });
 
 // Artist type definition
@@ -62,42 +96,46 @@ interface Artist {
   email: string | null;
   image: string | null;
   phone: string | null;
-  instagram: string | null;
-  facebook: string | null;
-  twitter: string | null;
-  tiktok: string | null;
-  website: string | null;
-  bio: string | null;
-  yearsOfExperience?: number | null;
-  category?: string | null;
-  defaultPrice?: number | null;
-  metadata?: {
-    artistSettings?: string | null;
-  };
+  address: string | null;
+  role: string;
+  createdAt: string;
+  makeup_artist?: {
+    pricing: number;
+    experience_years: string;
+    portfolio: string | null;
+    gender: string;
+    rating: number;
+    address: string;
+    bio: string | null;
+    availability: boolean;
+  } | null;
+  services?: Service[];
 }
 
-// Service interface
-interface Service {
-  id: string;
-  name: string;
-  description?: string;
-  price: number;
-  duration?: number;
-  isActive?: boolean;
-}
+// Service interface - removed as not needed anymore
 
 export default function EditArtistPage({ params }: { params: { id: string } }) {
   const { data: session } = useSession();
   const router = useRouter();
   const [artist, setArtist] = useState<Artist | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [artistSettings, setArtistSettings] = useState<any>({
-    category: "",
-    specialties: [],
-    certificates: [],
-    services: [],
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+
+  // Services state
+  const [services, setServices] = useState<Service[]>([]);
+  const [isServiceDialogOpen, setIsServiceDialogOpen] =
+    useState<boolean>(false);
+  const [editingService, setEditingService] = useState<Service | null>(null);
+  const [serviceForm, setServiceForm] = useState({
+    name: "",
+    description: "",
+    price: 0,
+    duration: 60,
+    isActive: true,
   });
+  // State for delete confirmation
+  const [deleteServiceId, setDeleteServiceId] = useState<string | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState<boolean>(false);
 
   // Initialize the form
   const form = useForm<z.infer<typeof formSchema>>({
@@ -106,20 +144,175 @@ export default function EditArtistPage({ params }: { params: { id: string } }) {
       name: "",
       email: "",
       phone: "",
-      instagram: "",
-      facebook: "",
-      twitter: "",
-      tiktok: "",
-      website: "",
-      bio: "",
-      yearsOfExperience: 0,
-      category: "",
-      defaultPrice: 0,
+      address: "",
       image: "",
+      bio: "",
+      pricing: 0,
+      experience_years: "",
+      portfolio: "",
+      gender: "",
+      availability: false,
     },
   });
+  const { reset, setValue } = form;
 
-  // Fetch artist data
+  // Fetch services for the artist with stable reference
+  const fetchServices = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/services?userId=${params.id}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch services");
+      }
+      const servicesData = await response.json();
+      setServices(servicesData);
+    } catch (error) {
+      console.error("Error fetching services:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load services. Please try again.",
+        variant: "destructive",
+      });
+    }
+  }, [params.id]);
+
+  // Create or update service
+  const handleSaveService = async () => {
+    // Show loading toast while saving service
+    const loadingToast = toast({
+      title: editingService?.id ? "Updating service..." : "Adding service...",
+      description: "Please wait",
+    });
+    try {
+      const validation = serviceSchema.safeParse(serviceForm);
+      if (!validation.success) {
+        toast({
+          title: "Validation Error",
+          description: validation.error.errors[0].message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const serviceData = {
+        ...validation.data,
+        artistId: params.id,
+      };
+
+      let response;
+      if (editingService?.id) {
+        // Update existing service
+        response = await fetch("/api/services", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...serviceData, id: editingService.id }),
+        });
+      } else {
+        // Create new service
+        response = await fetch("/api/services", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(serviceData),
+        });
+      }
+
+      if (!response.ok) {
+        throw new Error("Failed to save service");
+      }
+
+      // Show success message
+      toast({
+        title: "Success",
+        description: editingService?.id
+          ? "Service updated successfully"
+          : "Service created successfully",
+      });
+
+      setIsServiceDialogOpen(false);
+      setEditingService(null);
+      setServiceForm({
+        name: "",
+        description: "",
+        price: 0,
+        duration: 60,
+        isActive: true,
+      });
+      fetchServices(); // Refresh services list
+    } catch (error) {
+      console.error("Error saving service:", error);
+      // Update loading toast to error state
+      // Show error message
+      toast({
+        title: "Error",
+        description: "Failed to save service. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Delete service by id
+  const handleDeleteService = async (serviceId: string) => {
+    try {
+      const response = await fetch(
+        `/api/services?id=${serviceId}&artistId=${params.id}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to delete service");
+      }
+
+      toast({
+        title: "Success",
+        description: "Service deleted successfully",
+      });
+
+      fetchServices(); // Refresh services list
+    } catch (error) {
+      console.error("Error deleting service:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete service. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Confirm deletion after dialog
+  const handleConfirmDelete = () => {
+    if (deleteServiceId) {
+      handleDeleteService(deleteServiceId);
+    }
+    setIsDeleteDialogOpen(false);
+    setDeleteServiceId(null);
+  };
+
+  // Open service dialog for editing
+  const openServiceDialog = (service?: Service) => {
+    if (service) {
+      setEditingService(service);
+      setServiceForm({
+        name: service.name,
+        description: service.description || "",
+        price: service.price,
+        duration: service.duration || 60,
+        isActive: service.isActive,
+      });
+    } else {
+      setEditingService(null);
+      setServiceForm({
+        name: "",
+        description: "",
+        price: 0,
+        duration: 60,
+        isActive: true,
+      });
+    }
+    setIsServiceDialogOpen(true);
+  };
+
+  // Fetch artist and services only when ID or session changes
   useEffect(() => {
     const fetchArtist = async () => {
       try {
@@ -133,34 +326,25 @@ export default function EditArtistPage({ params }: { params: { id: string } }) {
         console.log("Artist data received:", data);
         setArtist(data);
 
-        // Parse artist settings if available
-        if (data.metadata?.artistSettings) {
-          try {
-            const settings = JSON.parse(data.metadata.artistSettings);
-            setArtistSettings(settings);
-          } catch (error) {
-            console.error("Error parsing artist settings:", error);
-          }
-        }
-
         // Set form values
         const formValues = {
           name: data.name || "",
           email: data.email || "",
           phone: data.phone || "",
-          instagram: data.instagram || "",
-          facebook: data.facebook || "",
-          twitter: data.twitter || "",
-          tiktok: data.tiktok || "",
-          website: data.website || "",
-          bio: data.bio || "",
-          yearsOfExperience: data.yearsOfExperience || 0,
-          category: data.category || "",
-          defaultPrice: data.defaultPrice || 0,
+          address: data.address || "",
           image: data.image || "",
+          bio: data.makeup_artist?.bio || "",
+          pricing: data.makeup_artist?.pricing || 0,
+          experience_years: data.makeup_artist?.experience_years || "",
+          portfolio: data.makeup_artist?.portfolio || "",
+          gender: data.makeup_artist?.gender || "",
+          availability: data.makeup_artist?.availability || false,
         };
         console.log("Setting form values:", formValues);
-        form.reset(formValues);
+        reset(formValues);
+
+        // Fetch services for this artist
+        await fetchServices();
       } catch (error) {
         console.error("Error fetching artist:", error);
         toast({
@@ -176,12 +360,12 @@ export default function EditArtistPage({ params }: { params: { id: string } }) {
     if (session?.user) {
       fetchArtist();
     }
-  }, [params.id, session, form]);
+  }, [params.id, session?.user, fetchServices, reset]);
 
   // Handle image update
   const handleImageUploaded = (imageUrl: string) => {
     console.log("Image uploaded successfully, setting value:", imageUrl);
-    form.setValue("image", imageUrl);
+    setValue("image", imageUrl);
 
     // Auto-save image update to make sure it's applied immediately
     updateArtistImage(imageUrl);
@@ -223,7 +407,6 @@ export default function EditArtistPage({ params }: { params: { id: string } }) {
       toast({
         title: "Success",
         description: "Artist image updated successfully.",
-        variant: "success",
       });
     } catch (error) {
       console.error("Error updating artist image:", error);
@@ -237,14 +420,6 @@ export default function EditArtistPage({ params }: { params: { id: string } }) {
     }
   };
 
-  // Handle service changes
-  const handleServicesChange = (services: Service[]) => {
-    setArtistSettings({
-      ...artistSettings,
-      services,
-    });
-  };
-
   // Handle form submission
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSaving(true);
@@ -253,34 +428,9 @@ export default function EditArtistPage({ params }: { params: { id: string } }) {
       // Format numeric values properly
       const formattedValues = {
         ...values,
-        yearsOfExperience:
-          values.yearsOfExperience !== undefined
-            ? Number(values.yearsOfExperience)
-            : undefined,
-        defaultPrice:
-          values.defaultPrice !== undefined
-            ? Number(values.defaultPrice)
-            : undefined,
+        pricing:
+          values.pricing !== undefined ? Number(values.pricing) : undefined,
       };
-
-      // Validate website URL format if non-empty
-      let website = formattedValues.website;
-      if (website && website.trim() !== "") {
-        // Check if it starts with http:// or https://
-        if (!website.startsWith("http://") && !website.startsWith("https://")) {
-          website = "https://" + website;
-        }
-
-        // Basic URL validity check
-        try {
-          new URL(website);
-          formattedValues.website = website;
-        } catch (e) {
-          // If invalid URL format, store as empty string
-          console.warn("Invalid website URL format, storing as empty string");
-          formattedValues.website = "";
-        }
-      }
 
       // Log values being sent to API
       console.log("Updating artist with data:", formattedValues);
@@ -320,53 +470,32 @@ export default function EditArtistPage({ params }: { params: { id: string } }) {
       const updatedArtist = await response.json();
       console.log("Artist updated successfully:", updatedArtist);
 
-      // Format services data to ensure price is a number
-      const formattedServices = artistSettings.services
-        ? artistSettings.services.map((service: any) => ({
-            ...service,
-            price:
-              typeof service.price === "string"
-                ? Number(service.price)
-                : service.price,
-          }))
-        : [];
+      // Update local state with the new data
+      setArtist(updatedArtist);
 
-      // Use the same website value we validated above
-      const settingsUpdateData = {
-        ...updateData,
-        website, // Use the validated website
-        specialties: artistSettings.specialties || [],
-        certificates: artistSettings.certificates || [],
-        services: formattedServices,
+      // Update form values with the returned data
+      const formValues = {
+        name: updatedArtist.name || "",
+        email: updatedArtist.email || "",
+        phone: updatedArtist.phone || "",
+        address: updatedArtist.address || "",
+        image: updatedArtist.image || "",
+        bio: updatedArtist.makeup_artist?.bio || "",
+        pricing: updatedArtist.makeup_artist?.pricing || 0,
+        experience_years: updatedArtist.makeup_artist?.experience_years || "",
+        portfolio: updatedArtist.makeup_artist?.portfolio || "",
+        gender: updatedArtist.makeup_artist?.gender || "",
+        availability: updatedArtist.makeup_artist?.availability || false,
       };
-
-      // Update artist settings with category and services
-      const settingsResponse = await fetch(
-        `/api/artist/settings?artistId=${params.id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(settingsUpdateData),
-        }
-      );
-
-      if (!settingsResponse.ok) {
-        const settingsError = await settingsResponse.json();
-        console.error("Settings API error:", settingsError);
-        throw new Error(
-          settingsError.error || "Failed to update artist settings"
-        );
-      }
+      reset(formValues);
 
       toast({
         title: "Success",
         description: "Artist information updated successfully.",
-        variant: "success",
       });
 
-      router.push("/admin/artists");
+      // Refresh the current page data to reflect updates in the UI
+      router.refresh();
     } catch (error) {
       console.error("Error updating artist:", error);
       toast({
@@ -503,20 +632,13 @@ export default function EditArtistPage({ params }: { params: { id: string } }) {
                   />
                   <FormField
                     control={form.control}
-                    name="yearsOfExperience"
+                    name="address"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Years of Experience</FormLabel>
+                        <FormLabel>Address</FormLabel>
                         <FormControl>
-                          <Input
-                            type="number"
-                            placeholder="Enter years of experience"
-                            {...field}
-                          />
+                          <Input placeholder="Address" {...field} />
                         </FormControl>
-                        <FormDescription>
-                          How many years of experience does the artist have?
-                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -542,25 +664,108 @@ export default function EditArtistPage({ params }: { params: { id: string } }) {
                       </FormItem>
                     )}
                   />
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Makeup Artist Information</CardTitle>
+                  <CardDescription>
+                    Professional details for the makeup artist.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
                   <FormField
                     control={form.control}
-                    name="defaultPrice"
+                    name="pricing"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Default Price (EGP)</FormLabel>
+                        <FormLabel>Pricing (EGP)</FormLabel>
                         <FormControl>
                           <Input
                             type="number"
                             min="0"
                             step="0.01"
-                            placeholder="Default service price"
+                            placeholder="Service pricing"
                             {...field}
                           />
                         </FormControl>
                         <FormDescription>
-                          The default price for the artist's services in
-                          Egyptian Pound
+                          The pricing for the artist's services in Egyptian
+                          Pound
                         </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="experience_years"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Years of Experience</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., 5 years" {...field} />
+                        </FormControl>
+                        <FormDescription>
+                          How many years of experience does the artist have?
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="portfolio"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Portfolio URL</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Portfolio website or social media link"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Link to the artist's portfolio or work samples
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="gender"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Gender</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., Female, Male" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="availability"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                        <FormControl>
+                          <input
+                            type="checkbox"
+                            checked={field.value}
+                            onChange={field.onChange}
+                            className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary"
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel>Available for Bookings</FormLabel>
+                          <FormDescription>
+                            Toggle on when the artist is available to take
+                            bookings
+                          </FormDescription>
+                        </div>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -568,96 +773,101 @@ export default function EditArtistPage({ params }: { params: { id: string } }) {
                 </CardContent>
               </Card>
 
-              <ServiceManager userId={artist.id} />
-
               <Card>
                 <CardHeader>
-                  <CardTitle>Social Media</CardTitle>
-                  <CardDescription>
-                    Add social media links to promote the artist's profile.
-                  </CardDescription>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle>Services</CardTitle>
+                      <CardDescription>
+                        Manage services offered by this artist
+                      </CardDescription>
+                    </div>
+                    <Button
+                      type="button"
+                      onClick={() => openServiceDialog()}
+                      className="flex items-center gap-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add Service
+                    </Button>
+                  </div>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="instagram"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Instagram</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="Instagram username or full URL"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          Enter username (e.g., "makeupbyname") or full URL.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="facebook"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Facebook</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="Facebook username or full URL"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="twitter"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Twitter</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="Twitter username or full URL"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="tiktok"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>TikTok</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="TikTok username or full URL"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="website"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Website</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Website URL" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                <CardContent>
+                  {services.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      <p>No services added yet.</p>
+                      <p className="text-sm">
+                        Click "Add Service" to get started.
+                      </p>
+                    </div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Price (EGP)</TableHead>
+                          <TableHead>Duration</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {services.map((service) => (
+                          <TableRow key={service.id}>
+                            <TableCell>
+                              <div>
+                                <div className="font-medium">
+                                  {service.name}
+                                </div>
+                                {service.description && (
+                                  <div className="text-sm text-gray-500">
+                                    {service.description}
+                                  </div>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>{service.price} EGP</TableCell>
+                            <TableCell>{service.duration || 60} min</TableCell>
+                            <TableCell>
+                              <span
+                                className={`px-2 py-1 text-xs rounded-full ${
+                                  service.isActive
+                                    ? "bg-green-100 text-green-800"
+                                    : "bg-gray-100 text-gray-800"
+                                }`}
+                              >
+                                {service.isActive ? "Active" : "Inactive"}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => openServiceDialog(service)}
+                                >
+                                  <Edit2 className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    setDeleteServiceId(service.id!);
+                                    setIsDeleteDialogOpen(true);
+                                  }}
+                                  className="text-red-600 hover:text-red-700"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
                 </CardContent>
               </Card>
 
@@ -684,6 +894,135 @@ export default function EditArtistPage({ params }: { params: { id: string } }) {
           </Form>
         </div>
       </div>
+
+      {/* Service Dialog */}
+      <Dialog open={isServiceDialogOpen} onOpenChange={setIsServiceDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>
+              {editingService ? "Edit Service" : "Add New Service"}
+            </DialogTitle>
+            <DialogDescription>
+              {editingService
+                ? "Update the service details below."
+                : "Add a new service for this artist."}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="serviceName">Service Name</Label>
+              <Input
+                id="serviceName"
+                value={serviceForm.name}
+                onChange={(e) =>
+                  setServiceForm({ ...serviceForm, name: e.target.value })
+                }
+                placeholder="e.g., Bridal Makeup"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="serviceDescription">Description</Label>
+              <Textarea
+                id="serviceDescription"
+                value={serviceForm.description}
+                onChange={(e) =>
+                  setServiceForm({
+                    ...serviceForm,
+                    description: e.target.value,
+                  })
+                }
+                placeholder="Describe the service..."
+                className="min-h-[80px]"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="servicePrice">Price (EGP)</Label>
+                <Input
+                  id="servicePrice"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={serviceForm.price}
+                  onChange={(e) =>
+                    setServiceForm({
+                      ...serviceForm,
+                      price: parseFloat(e.target.value) || 0,
+                    })
+                  }
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="serviceDuration">Duration (min)</Label>
+                <Input
+                  id="serviceDuration"
+                  type="number"
+                  min="15"
+                  step="15"
+                  value={serviceForm.duration}
+                  onChange={(e) =>
+                    setServiceForm({
+                      ...serviceForm,
+                      duration: parseInt(e.target.value) || 60,
+                    })
+                  }
+                />
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="serviceActive"
+                checked={serviceForm.isActive}
+                onChange={(e) =>
+                  setServiceForm({
+                    ...serviceForm,
+                    isActive: e.target.checked,
+                  })
+                }
+                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <Label htmlFor="serviceActive">Service is active</Label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsServiceDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="button" onClick={handleSaveService}>
+              {editingService ? "Update Service" : "Add Service"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Delete</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this service? This action cannot
+              be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleteDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleConfirmDelete}>
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

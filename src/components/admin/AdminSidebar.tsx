@@ -14,6 +14,7 @@ import {
   ShoppingBag,
   ArrowLeft,
   Home,
+  Star,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
@@ -61,6 +62,12 @@ export default function AdminSidebar() {
       icon: <Calendar className="h-5 w-5" />,
       href: "/admin/appointments",
       active: pathname === "/admin/appointments",
+    },
+    {
+      label: "Reviews",
+      icon: <Star className="h-5 w-5" />,
+      href: "/admin/reviews",
+      active: pathname === "/admin/reviews",
     },
   ];
 

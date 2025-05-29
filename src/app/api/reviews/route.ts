@@ -28,14 +28,27 @@ export async function GET(req: NextRequest) {
     const artistId = url.searchParams.get("artistId");
 
     console.log("GET /api/reviews - Artist ID:", artistId);
-    console.log("Session user:", session?.user?.id);
-
-    // Allow reviews to be fetched without authentication, but only approved ones for public
+    console.log("Session user:", session?.user?.id); // Allow reviews to be fetched without authentication, but only approved ones for public
     if (artistId) {
+      // First, get the makeup artist ID from the user ID
+      const makeupArtist = await db.makeUpArtist.findFirst({
+        where: {
+          user_id: artistId,
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      if (!makeupArtist) {
+        console.log("Makeup artist not found for user ID:", artistId);
+        return NextResponse.json([]);
+      }
+
       // If fetching reviews for a specific artist
       const reviews = await db.review.findMany({
         where: {
-          artistId,
+          artist_id: makeupArtist.id,
           // If user is logged in and is admin or the artist themself, show all reviews
           // Otherwise only show approved reviews
           ...(session?.user?.id === artistId ||
@@ -54,10 +67,16 @@ export async function GET(req: NextRequest) {
               image: true,
             },
           },
-          appointment: {
+          artist: {
             select: {
-              serviceType: true,
-              datetime: true,
+              id: true,
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  image: true,
+                },
+              },
             },
           },
         },
@@ -84,9 +103,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const user = session.user as ExtendedUser;
-
-    // If user is admin, return all reviews
+    const user = session.user as ExtendedUser; // If user is admin, return all reviews
     if (user.role === "ADMIN") {
       const reviews = await db.review.findMany({
         orderBy: {
@@ -100,17 +117,16 @@ export async function GET(req: NextRequest) {
               image: true,
             },
           },
-          appointment: {
-            select: {
-              serviceType: true,
-              datetime: true,
-            },
-          },
           artist: {
             select: {
               id: true,
-              name: true,
-              image: true,
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  image: true,
+                },
+              },
             },
           },
         },
@@ -121,9 +137,23 @@ export async function GET(req: NextRequest) {
 
     // If user is artist, return reviews for the artist
     if (user.role === "ARTIST") {
+      // Get the makeup artist ID for this user
+      const makeupArtist = await db.makeUpArtist.findFirst({
+        where: {
+          user_id: session.user.id,
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      if (!makeupArtist) {
+        return NextResponse.json([]);
+      }
+
       const reviews = await db.review.findMany({
         where: {
-          artistId: session.user.id,
+          artist_id: makeupArtist.id,
         },
         orderBy: {
           createdAt: "desc",
@@ -136,38 +166,29 @@ export async function GET(req: NextRequest) {
               image: true,
             },
           },
-          appointment: {
-            select: {
-              serviceType: true,
-              datetime: true,
-            },
-          },
         },
       });
 
       return NextResponse.json(reviews);
-    }
-
-    // If user is customer, return reviews written by the user
+    } // If user is customer, return reviews written by the user
     const reviews = await db.review.findMany({
       where: {
-        userId: session.user.id,
+        user_id: session.user.id,
       },
       orderBy: {
         createdAt: "desc",
       },
       include: {
-        appointment: {
-          select: {
-            serviceType: true,
-            datetime: true,
-          },
-        },
         artist: {
           select: {
             id: true,
-            name: true,
-            image: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                image: true,
+              },
+            },
           },
         },
       },
@@ -201,28 +222,31 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
 
     // Validate the request body
-    const validatedData = reviewSchema.parse(body);
-
-    // Check if the appointment exists and belongs to the user
-    const appointment = await db.appointment.findUnique({
+    const validatedData = reviewSchema.parse(body); // Check if the booking exists and belongs to the user
+    const booking = await db.booking.findUnique({
       where: {
         id: validatedData.appointmentId,
-        userId: user.id,
-        status: "COMPLETED", // Only completed appointments can be reviewed
+        user_id: user.id,
+        booking_status: "COMPLETED", // Only completed bookings can be reviewed
+      },
+      select: {
+        id: true,
+        artist_id: true,
       },
     });
 
-    if (!appointment) {
+    if (!booking) {
       return NextResponse.json(
-        { message: "Appointment not found or not eligible for review" },
+        { message: "Booking not found or not eligible for review" },
         { status: 404 }
       );
     }
 
-    // Check if review already exists for this appointment
-    const existingReview = await db.review.findUnique({
+    // Check if review already exists for this booking
+    const existingReview = await db.review.findFirst({
       where: {
-        appointmentId: validatedData.appointmentId,
+        user_id: user.id,
+        artist_id: booking.artist_id,
       },
     });
 
@@ -239,21 +263,8 @@ export async function POST(req: NextRequest) {
         rating: validatedData.rating,
         comment: validatedData.comment,
         status: "PENDING", // All reviews start as pending and need admin approval
-        appointment: {
-          connect: {
-            id: validatedData.appointmentId,
-          },
-        },
-        user: {
-          connect: {
-            id: user.id,
-          },
-        },
-        artist: {
-          connect: {
-            id: appointment.artistId!, // The ! is used because we know artist ID exists
-          },
-        },
+        user_id: user.id,
+        artist_id: booking.artist_id,
       },
     });
 

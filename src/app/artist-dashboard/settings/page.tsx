@@ -1,8 +1,6 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -14,14 +12,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { useArtistSettings } from "@/hooks/use-artist-settings";
-import { PasswordUpdateFormValues } from "@/lib/validations/artist-settings";
+import {
+  PasswordUpdateFormValues,
+  ArtistSettingsFormValues,
+} from "@/lib/validations/artist-settings";
 import { Separator } from "@/components/ui/separator";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useQueryClient } from "@tanstack/react-query";
 
 // Import our custom components
 import { ArtistProfileForm } from "@/components/forms/ArtistProfileForm";
-import { SocialMediaForm } from "@/components/forms/SocialMediaForm";
 import { PasswordUpdateForm } from "@/components/forms/PasswordUpdateForm";
 import { ProfileImageUpload } from "@/components/artist/ProfileImageUpload";
 
@@ -65,10 +65,10 @@ export default function ArtistSettingsPage() {
         toast({
           title: "Profile Image Updated",
           description: "Your profile image has been updated successfully.",
-          variant: "success",
+          
         });
       }, 100);
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to update profile image.",
@@ -78,7 +78,7 @@ export default function ArtistSettingsPage() {
   };
 
   // Handle settings form submission
-  const handleSettingsSubmit = (data: any) => {
+  const handleSettingsSubmit = (data: ArtistSettingsFormValues) => {
     updateSettings.mutate(data, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["artistSettings"] });
@@ -86,7 +86,7 @@ export default function ArtistSettingsPage() {
         toast({
           title: "Settings Updated",
           description: "Your settings have been updated successfully.",
-          variant: "success",
+          
         });
       },
     });
@@ -101,7 +101,7 @@ export default function ArtistSettingsPage() {
           toast({
             title: "Password Updated",
             description: "Your password has been changed successfully.",
-            variant: "success",
+            
           });
         },
       }
@@ -121,10 +121,9 @@ export default function ArtistSettingsPage() {
       <h1 className="text-3xl font-bold mb-6">Artist Settings</h1>
 
       <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="account">Account</TabsTrigger>
-          <TabsTrigger value="social">Social & Services</TabsTrigger>
         </TabsList>
 
         {/* Profile Tab */}
@@ -174,26 +173,6 @@ export default function ArtistSettingsPage() {
                   isSubmitting={updatePassword.isPending}
                 />
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Social Tab */}
-        <TabsContent value="social">
-          <Card>
-            <CardHeader>
-              <CardTitle>Social & Services</CardTitle>
-              <CardDescription>
-                Manage your social links and service information
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Social Media Form Component */}
-              <SocialMediaForm
-                defaultValues={settings || {}}
-                onSubmit={handleSettingsSubmit}
-                isSubmitting={updateSettings.isPending}
-              />
             </CardContent>
           </Card>
         </TabsContent>

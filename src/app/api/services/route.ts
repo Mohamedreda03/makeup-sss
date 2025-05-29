@@ -9,6 +9,10 @@ const serviceSchema = z.object({
   name: z.string().min(2, "Service name is required"),
   description: z.string().optional(),
   price: z.coerce.number().min(0, "Price must be a positive number"),
+  duration: z.coerce
+    .number()
+    .min(15, "Duration must be at least 15 minutes")
+    .optional(),
   isActive: z.boolean().default(true),
   artistId: z.string(),
 });
@@ -69,8 +73,8 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-
-    const { name, description, price, isActive, artistId } = validation.data;
+    const { name, description, price, duration, isActive, artistId } =
+      validation.data;
 
     // Verify the user has permission to create a service for this artist
     const user = await prisma.user.findUnique({
@@ -90,6 +94,7 @@ export async function POST(request: NextRequest) {
         name,
         description: description || "",
         price,
+        duration: duration || 60,
         isActive,
         artistId,
       },
@@ -128,8 +133,7 @@ export async function PATCH(request: NextRequest) {
         { status: 400 }
       );
     }
-
-    const { id, name, description, price, isActive, artistId } =
+    const { id, name, description, price, duration, isActive, artistId } =
       validation.data;
 
     if (!id) {
@@ -157,15 +161,14 @@ export async function PATCH(request: NextRequest) {
         { message: "You don't have permission to update this service" },
         { status: 403 }
       );
-    }
-
-    // Update the service
+    } // Update the service
     const updatedService = await prisma.artistService.update({
       where: { id },
       data: {
         name,
         description: description || "",
         price,
+        duration: duration || 60,
         isActive,
       },
     });

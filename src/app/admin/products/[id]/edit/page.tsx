@@ -5,38 +5,12 @@ import { checkAdmin } from "@/lib/utils/auth-utils";
 import { Button } from "@/components/ui/button";
 import ProductForm from "@/components/admin/ProductForm";
 import { ProductFormSkeleton } from "@/components/admin/loading-skeletons";
-import { db } from "@/lib/db";
 import { notFound } from "next/navigation";
 
 export const metadata = {
   title: "Edit Product | Admin Dashboard",
-  description: "Edit an existing product in the store",
+  description: "Edit an existing product in the admin dashboard",
 };
-
-// This ensures that the page is re-fetched on each request
-export const dynamic = "force-dynamic";
-
-async function getProductById(id: string) {
-  try {
-    const product = await db.product.findUnique({
-      where: { id },
-    });
-
-    if (!product) {
-      return null;
-    }
-
-    return {
-      ...product,
-      price: product.price.toString(),
-      description: product.description || undefined,
-      imageUrl: product.imageUrl || undefined,
-    };
-  } catch (error) {
-    console.error("Error fetching product:", error);
-    throw new Error("Failed to fetch product");
-  }
-}
 
 export default async function EditProductPage({
   params,
@@ -46,9 +20,7 @@ export default async function EditProductPage({
   // Check if user is admin
   await checkAdmin();
 
-  const product = await getProductById(params.id);
-
-  if (!product) {
+  if (!params.id) {
     notFound();
   }
 
@@ -66,7 +38,7 @@ export default async function EditProductPage({
 
       <div className="bg-white dark:bg-gray-950 rounded-lg shadow p-6">
         <Suspense fallback={<ProductFormSkeleton />}>
-          <ProductForm initialData={product} productId={params.id} />
+          <ProductForm productId={params.id} />
         </Suspense>
       </div>
     </div>

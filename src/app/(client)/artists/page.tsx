@@ -1,56 +1,37 @@
 import { Suspense } from "react";
-import Link from "next/link";
-import Image from "next/image";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-  Star,
-  Calendar,
-  Clock,
-  MapPin,
-  Instagram,
-  Facebook,
-  Twitter,
-  ArrowRight,
-} from "lucide-react";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { db } from "@/lib/db";
 import { ArtistsGrid } from "./components/ArtistsGrid";
 
-// تعريف واجهة الفنان
-interface Artist {
-  id: string;
-  name: string | null;
-  image: string | null;
-  completedAppointments: number;
-  isAvailable: boolean;
-}
-
 async function getArtists() {
-  // بناء شروط التصفية
-  const where: any = {
-    role: "ARTIST",
-  };
-
   // الحصول على الفنانين مع البيانات الوصفية
   const artists = await db.user.findMany({
-    where,
+    where: {
+      role: "ARTIST",
+      makeup_artist: {
+        isNot: null, // Only get users who have makeup_artist profile
+      },
+    },
     select: {
       id: true,
       name: true,
       email: true,
       image: true,
-      metadata: {
+      makeup_artist: {
         select: {
-          availabilitySettings: true,
+          id: true,
+          availability: true,
+          rating: true,
+          experience_years: true,
+          bio: true,
+          pricing: true,
         },
       },
       // عدد الجلسات المكتملة لكل فنان
       _count: {
         select: {
-          artistAppointments: {
+          bookings: {
             where: {
-              status: "COMPLETED",
+              booking_status: "COMPLETED",
             },
           },
         },
@@ -62,27 +43,17 @@ async function getArtists() {
   });
 
   // معالجة بيانات الفنانين لتحديد توفرهم
-  return artists.map((artist: any) => {
-    // التحقق من التوفر من البيانات الوصفية
-    let isAvailable = true;
-
-    if (artist.metadata?.availabilitySettings) {
-      try {
-        const settings = JSON.parse(artist.metadata.availabilitySettings);
-        if (settings.isAvailable !== undefined) {
-          isAvailable = settings.isAvailable;
-        }
-      } catch (error) {
-        console.error("Error parsing availability settings:", error);
-      }
-    }
-
+  return artists.map((artist) => {
     return {
       id: artist.id,
       name: artist.name,
       image: artist.image,
-      completedAppointments: artist._count.artistAppointments,
-      isAvailable,
+      completedAppointments: artist._count.bookings,
+      isAvailable: artist.makeup_artist?.availability || false,
+      rating: artist.makeup_artist?.rating || 0,
+      experienceYears: artist.makeup_artist?.experience_years || undefined,
+      bio: artist.makeup_artist?.bio || undefined,
+      pricing: artist.makeup_artist?.pricing || undefined,
     };
   });
 }

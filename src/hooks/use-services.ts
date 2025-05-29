@@ -6,6 +6,7 @@ interface Service {
   name: string;
   description: string | null;
   price: number;
+  duration?: number;
   isActive: boolean;
   artistId: string;
 }
@@ -15,6 +16,7 @@ interface ServiceFormData {
   name: string;
   description: string;
   price: number;
+  duration?: number;
   isActive: boolean;
   artistId: string;
 }
@@ -68,7 +70,7 @@ export function useServices(userId: string) {
       toast({
         title: "Success",
         description: "Service created successfully",
-        variant: "success",
+        variant: "default",
       });
     },
     onError: (error: Error) => {
@@ -112,7 +114,7 @@ export function useServices(userId: string) {
       toast({
         title: "Success",
         description: "Service updated successfully",
-        variant: "success",
+        variant: "default",
       });
     },
     onError: (error: Error) => {
@@ -159,7 +161,7 @@ export function useServices(userId: string) {
       toast({
         title: "Success",
         description: "Service deleted successfully",
-        variant: "success",
+        variant: "default",
       });
     },
     onError: (error: Error) => {

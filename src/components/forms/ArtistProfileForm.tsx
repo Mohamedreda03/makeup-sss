@@ -31,17 +31,16 @@ export function ArtistProfileForm({
     defaultValues: defaultValues || {
       name: "",
       email: "",
-      yearsOfExperience: undefined,
+      phone: "",
+      address: "",
+      image: "",
       bio: "",
-      instagram: "",
-      facebook: "",
-      twitter: "",
-      tiktok: "",
-      website: "",
-      defaultPrice: undefined,
-      certificates: [],
+      experience_years: "",
+      portfolio: "",
+      gender: "",
+      pricing: undefined,
+      availability: false,
       services: [],
-      specialties: [],
     },
     mode: "onChange",
   });
@@ -94,30 +93,64 @@ export function ArtistProfileForm({
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <FormField
             control={form.control}
-            name="yearsOfExperience"
-            render={({ field }) => (
+            name="phone"
+            render={({ field }) => {
+              const modifiedField = {
+                ...field,
+                value: field.value ?? "",
+              };
+              return (
+                <FormItem>
+                  <FormLabel>Phone Number</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Your phone number" {...modifiedField} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              );
+            }}
+          />
+
+          <FormField
+            control={form.control}
+            name="experience_years"
+            render={({ field }) => {
+              const modifiedField = {
+                ...field,
+                value: field.value ?? "",
+              };
+              return (
+                <FormItem>
+                  <FormLabel>Years of Experience</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g., 5 years" {...modifiedField} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              );
+            }}
+          />
+        </div>
+
+        <FormField
+          control={form.control}
+          name="address"
+          render={({ field }) => {
+            const modifiedField = {
+              ...field,
+              value: field.value ?? "",
+            };
+            return (
               <FormItem>
-                <FormLabel>Years of Experience</FormLabel>
+                <FormLabel>Address</FormLabel>
                 <FormControl>
-                  <Input
-                    type="number"
-                    placeholder="Years of experience"
-                    {...field}
-                    value={field.value ?? ""}
-                    onChange={(e) => {
-                      const value =
-                        e.target.value === ""
-                          ? undefined
-                          : Number(e.target.value);
-                      field.onChange(value);
-                    }}
-                  />
+                  <Input placeholder="Your address" {...modifiedField} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
-            )}
-          />
-        </div>
+            );
+          }}
+        />
 
         <FormField
           control={form.control}
@@ -143,30 +176,75 @@ export function ArtistProfileForm({
           }}
         />
 
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <FormField
+            control={form.control}
+            name="gender"
+            render={({ field }) => {
+              const modifiedField = {
+                ...field,
+                value: field.value ?? "",
+              };
+              return (
+                <FormItem>
+                  <FormLabel>Gender</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Your gender" {...modifiedField} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              );
+            }}
+          />
+
+          <FormField
+            control={form.control}
+            name="pricing"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Default Pricing</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    placeholder="Your default service price"
+                    {...field}
+                    value={field.value ?? ""}
+                    onChange={(e) => {
+                      const value =
+                        e.target.value === ""
+                          ? undefined
+                          : Number(e.target.value);
+                      field.onChange(value);
+                    }}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
         <FormField
           control={form.control}
-          name="defaultPrice"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Default Price</FormLabel>
-              <FormControl>
-                <Input
-                  type="number"
-                  placeholder="Your default service price"
-                  {...field}
-                  value={field.value ?? ""}
-                  onChange={(e) => {
-                    const value =
-                      e.target.value === ""
-                        ? undefined
-                        : Number(e.target.value);
-                    field.onChange(value);
-                  }}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+          name="portfolio"
+          render={({ field }) => {
+            const modifiedField = {
+              ...field,
+              value: field.value ?? "",
+            };
+            return (
+              <FormItem>
+                <FormLabel>Portfolio URL</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="Link to your portfolio"
+                    {...modifiedField}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            );
+          }}
         />
 
         <Button

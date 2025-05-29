@@ -44,9 +44,8 @@ export default function NavbarClient({ user, routes }: NavbarClientProps) {
   const [userImage, setUserImage] = useState<string | null | undefined>(
     user?.image
   );
-
   // Use Zustand store for cart count with hydration handling
-  const cartItemCount = useCartStore((state) => state.itemCount);
+  const { itemCount: cartItemCount } = useCartStore();
   const [mounted, setMounted] = useState(false);
 
   // Handle hydration

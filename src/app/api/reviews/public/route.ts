@@ -25,17 +25,22 @@ export async function POST(req: NextRequest) {
 
     // Validate the request body
     const validatedData = publicReviewSchema.parse(body);
-    console.log("Validated data:", validatedData);
-
-    // Check if the artist exists
-    const artist = await db.user.findUnique({
+    console.log("Validated data:", validatedData); // Check if the artist exists and get the makeup artist ID
+    const artistUser = await db.user.findUnique({
       where: {
         id: validatedData.artistId,
         role: "ARTIST",
       },
+      include: {
+        makeup_artist: {
+          select: {
+            id: true,
+          },
+        },
+      },
     });
 
-    if (!artist) {
+    if (!artistUser || !artistUser.makeup_artist) {
       console.error("Artist not found:", validatedData.artistId);
       return NextResponse.json(
         { message: "Artist not found" },
@@ -43,7 +48,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log("Artist found:", artist.name);
+    console.log("Artist found:", artistUser.name);
+    const makeupArtistId = artistUser.makeup_artist.id;
 
     // Create a temporary user for tracking the review if not already in the system
     let user = await db.user.findUnique({
@@ -65,45 +71,28 @@ export async function POST(req: NextRequest) {
       console.log("New user created:", user.id);
     } else {
       console.log("Existing user found:", user.id);
-    }
-
-    // Create a placeholder appointment for this review
-    console.log("Creating placeholder appointment");
-    const appointment = await db.appointment.create({
+    } // Create a placeholder booking for this review
+    console.log("Creating placeholder booking");
+    const booking = await db.booking.create({
       data: {
-        datetime: new Date(),
-        status: "COMPLETED",
-        serviceType: validatedData.serviceType,
-        duration: 60, // Placeholder duration
-        totalPrice: 0, // Placeholder price
-        userId: user.id,
-        artistId: validatedData.artistId,
+        date_time: new Date(),
+        booking_status: "COMPLETED",
+        service_type: validatedData.serviceType,
+        service_price: 0, // Placeholder price
+        total_price: 0, // Placeholder price
+        user_id: user.id,
+        artist_id: makeupArtistId, // Use the makeup artist ID, not the user ID
       },
     });
-    console.log("Appointment created:", appointment.id);
-
-    // Create the review
+    console.log("Booking created:", booking.id); // Create the review
     console.log("Creating review");
     const review = await db.review.create({
       data: {
         rating: validatedData.rating,
         comment: validatedData.comment,
         status: "PENDING", // All reviews start as pending and need admin approval
-        appointment: {
-          connect: {
-            id: appointment.id,
-          },
-        },
-        user: {
-          connect: {
-            id: user.id,
-          },
-        },
-        artist: {
-          connect: {
-            id: validatedData.artistId,
-          },
-        },
+        user_id: user.id,
+        artist_id: makeupArtistId, // Use the makeup artist ID, not the user ID
       },
     });
 

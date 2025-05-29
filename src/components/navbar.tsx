@@ -1,13 +1,12 @@
 import Link from "next/link";
 import { UserButton } from "@/components/user-button";
 import { MobileNav } from "@/components/mobile-nav";
-import { cn } from "@/lib/utils";
-import { usePathname } from "next/navigation";
 import { ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CartCount } from "@/components/cart-count";
 import NavLinks from "./NavLinks";
 import { auth } from "@/lib/auth";
+import Image from "next/image";
 
 export async function Navbar() {
   const session = await auth();
@@ -18,7 +17,7 @@ export async function Navbar() {
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
-            <img
+            <Image
               src="/images/logo.svg"
               alt="BrideGlam Logo"
               width={40}
