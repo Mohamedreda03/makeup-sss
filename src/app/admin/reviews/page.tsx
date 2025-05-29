@@ -6,6 +6,9 @@ import { ReviewManagement } from "@/components/admin/ReviewManagement";
 import { ExtendedUser } from "@/types/next-auth";
 import { Review } from "@/generated/prisma";
 
+// Force dynamic rendering to prevent build-time database queries
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: "Review Management | Admin Dashboard",
   description: "Manage and moderate user reviews",

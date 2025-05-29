@@ -22,6 +22,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+
+// Force dynamic rendering to prevent build-time database queries
+export const dynamic = 'force-dynamic';
 import {
   Users,
   ShoppingBag,

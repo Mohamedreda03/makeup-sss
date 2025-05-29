@@ -14,6 +14,9 @@ import {
 import { db } from "@/lib/db";
 import { formatPrice } from "@/lib/utils";
 
+// Force dynamic rendering to prevent build-time database queries
+export const dynamic = 'force-dynamic';
+
 // تخصصات المكياج للعرض
 const specialties = [
   {
@@ -54,6 +57,7 @@ async function getFeaturedProducts() {
     return products;
   } catch (error) {
     console.error("Error fetching featured products:", error);
+    // Return empty array if database is not available during build
     return [];
   }
 }
@@ -118,6 +122,7 @@ async function getFeaturedArtists() {
     });
   } catch (error) {
     console.error("Error fetching featured artists:", error);
+    // Return empty array if database is not available during build
     return [];
   }
 }

@@ -2,60 +2,69 @@ import { Suspense } from "react";
 import { db } from "@/lib/db";
 import { ArtistsGrid } from "./components/ArtistsGrid";
 
+// Force dynamic rendering to prevent build-time database queries
+export const dynamic = 'force-dynamic';
+
 async function getArtists() {
-  // الحصول على الفنانين مع البيانات الوصفية
-  const artists = await db.user.findMany({
-    where: {
-      role: "ARTIST",
-      makeup_artist: {
-        isNot: null, // Only get users who have makeup_artist profile
-      },
-    },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      image: true,
-      makeup_artist: {
-        select: {
-          id: true,
-          availability: true,
-          rating: true,
-          experience_years: true,
-          bio: true,
-          pricing: true,
+  try {
+    // الحصول على الفنانين مع البيانات الوصفية
+    const artists = await db.user.findMany({
+      where: {
+        role: "ARTIST",
+        makeup_artist: {
+          isNot: null, // Only get users who have makeup_artist profile
         },
       },
-      // عدد الجلسات المكتملة لكل فنان
-      _count: {
-        select: {
-          bookings: {
-            where: {
-              booking_status: "COMPLETED",
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        image: true,
+        makeup_artist: {
+          select: {
+            id: true,
+            availability: true,
+            rating: true,
+            experience_years: true,
+            bio: true,
+            pricing: true,
+          },
+        },
+        // عدد الجلسات المكتملة لكل فنان
+        _count: {
+          select: {
+            bookings: {
+              where: {
+                booking_status: "COMPLETED",
+              },
             },
           },
         },
       },
-    },
-    orderBy: {
-      name: "asc",
-    },
-  });
+      orderBy: {
+        name: "asc",
+      },
+    });
 
-  // معالجة بيانات الفنانين لتحديد توفرهم
-  return artists.map((artist) => {
-    return {
-      id: artist.id,
-      name: artist.name,
-      image: artist.image,
-      completedAppointments: artist._count.bookings,
-      isAvailable: artist.makeup_artist?.availability || false,
-      rating: artist.makeup_artist?.rating || 0,
-      experienceYears: artist.makeup_artist?.experience_years || undefined,
-      bio: artist.makeup_artist?.bio || undefined,
-      pricing: artist.makeup_artist?.pricing || undefined,
-    };
-  });
+    // معالجة بيانات الفنانين لتحديد توفرهم
+    return artists.map((artist) => {
+      return {
+        id: artist.id,
+        name: artist.name,
+        image: artist.image,
+        completedAppointments: artist._count.bookings,
+        isAvailable: artist.makeup_artist?.availability || false,
+        rating: artist.makeup_artist?.rating || 0,
+        experienceYears: artist.makeup_artist?.experience_years || undefined,
+        bio: artist.makeup_artist?.bio || undefined,
+        pricing: artist.makeup_artist?.pricing || undefined,
+      };
+    });
+  } catch (error) {
+    console.error("Error fetching artists:", error);
+    // Return empty array if database is not available during build
+    return [];
+  }
 }
 
 export default async function ArtistsPage() {

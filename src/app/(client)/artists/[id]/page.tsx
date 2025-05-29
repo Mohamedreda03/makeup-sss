@@ -3,237 +3,225 @@ import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import ArtistClientPage from "@/components/artists/ArtistClientPage";
-import dynamic from "next/dynamic";
+import dynamicImport from "next/dynamic";
 import { ReviewList } from "@/components/reviews/ReviewList";
 
+// Force dynamic rendering to prevent build-time database queries
+export const dynamic = 'force-dynamic';
+
 // Dynamically import ArtistBooking with no SSR
-const ArtistBookingWrapper = dynamic(
+const ArtistBookingWrapper = dynamicImport(
   () => import("@/components/booking/ArtistBookingWrapper"),
   { ssr: false }
 );
 
 // Get artist data by ID
 async function getArtist(id: string) {
-  const artist = await db.user.findUnique({
-    where: {
-      id,
-      role: "ARTIST",
-    },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      image: true,
-      phone: true,
-      address: true,
-      makeup_artist: {
-        select: {
-          id: true,
-          bio: true,
-          experience_years: true,
-          pricing: true,
-          rating: true,
-          availability: true,
-          available_slots: true,
-        },
+  try {
+    const artist = await db.user.findUnique({
+      where: {
+        id,
+        role: "ARTIST",
       },
-      // Count completed bookings
-      _count: {
-        select: {
-          bookings: {
-            where: {
-              booking_status: "COMPLETED",
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        image: true,
+        phone: true,
+        address: true,
+        makeup_artist: {
+          select: {
+            id: true,
+            bio: true,
+            experience_years: true,
+            pricing: true,
+            rating: true,
+            availability: true,
+            available_slots: true,
+          },
+        },
+        // Count completed bookings
+        _count: {
+          select: {
+            bookings: {
+              where: {
+                booking_status: "COMPLETED",
+              },
+            },
+          },
+        },
+        // Get recent bookings
+        bookings: {
+          where: {
+            booking_status: "COMPLETED",
+          },
+          orderBy: {
+            updatedAt: "desc",
+          },
+          take: 5,
+          select: {
+            id: true,
+            service_type: true,
+            service_price: true,
+            date_time: true,
+            updatedAt: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                image: true,
+              },
             },
           },
         },
       },
-      // Get recent bookings
-      bookings: {
-        where: {
-          booking_status: "COMPLETED",
-        },
-        orderBy: {
-          updatedAt: "desc",
-        },
-        take: 5,
-        select: {
-          id: true,
-          service_type: true,
-          service_price: true,
-          date_time: true,
-          updatedAt: true,
-          user: {
-            select: {
-              id: true,
-              name: true,
-              image: true,
-            },
-          },
-        },
-      },
-    },
-  });
+    });
 
-  return artist;
+    return artist;
+  } catch (error) {
+    console.error("Error fetching artist:", error);
+    // Return null if database is not available during build
+    return null;
+  }
 }
 
 // Get artist services from database
 async function getArtistServices(id: string) {
-  console.log("Fetching services for artist:", id);
+  try {
+    console.log("Fetching services for artist:", id);
 
-  // Get services from the ArtistService database table
-  const databaseServices = await db.artistService.findMany({
-    where: {
-      artistId: id,
-      isActive: true,
-    },
-    orderBy: {
-      price: "asc",
-    },
-  });
+    // Get services from the ArtistService database table
+    const databaseServices = await db.artistService.findMany({
+      where: {
+        artistId: id,
+        isActive: true,
+      },
+      orderBy: {
+        price: "asc",
+      },
+    });
 
-  console.log(
-    `Found ${databaseServices.length} database services for artist ${id}`
-  );
+    console.log(
+      `Found ${databaseServices.length} database services for artist ${id}`
+    );
 
-  // Format database services with needed properties
-  const formattedDatabaseServices = databaseServices.map((service) => ({
-    id: service.id,
-    name: service.name,
-    description: service.description || "",
-    price: service.price,
-    duration: service.duration || 60,
-    isActive: service.isActive,
-    artistId: service.artistId,
-  }));
+    // Format database services with needed properties
+    const formattedDatabaseServices = databaseServices.map((service) => ({
+      id: service.id,
+      name: service.name,
+      description: service.description || "",
+      price: service.price,
+      duration: service.duration || 60,
+      isActive: service.isActive,
+      artistId: service.artistId,
+    }));
 
-  // If we found database services, return them
-  if (formattedDatabaseServices.length > 0) {
-    return formattedDatabaseServices;
+    // If we found database services, return them
+    if (formattedDatabaseServices.length > 0) {
+      return formattedDatabaseServices;
+    }
+
+    // Default services if none are found
+    return [
+      {
+        id: "default-1",
+        name: "Bridal Makeup",
+        description: "Complete bridal makeup with trials and day-of services",
+        price: 250,
+        duration: 120,
+        isActive: true,
+        artistId: id,
+      },
+      {
+        id: "default-2",
+        name: "Special Occasion Makeup",
+        description: "Perfect for parties, events, or photoshoots",
+        price: 150,
+        duration: 90,
+        isActive: true,
+        artistId: id,
+      },
+    ];
+  } catch (error) {
+    console.error("Error fetching artist services:", error);
+    // Return default services if database is not available during build
+    return [
+      {
+        id: "default-1",
+        name: "Bridal Makeup",
+        description: "Complete bridal makeup with trials and day-of services",
+        price: 250,
+        duration: 120,
+        isActive: true,
+        artistId: id,
+      },
+      {
+        id: "default-2",
+        name: "Special Occasion Makeup",
+        description: "Perfect for parties, events, or photoshoots",
+        price: 150,
+        duration: 90,
+        isActive: true,
+        artistId: id,
+      },
+    ];
   }
-
-  // Default services if none are found
-  return [
-    {
-      id: "default-1",
-      name: "Bridal Makeup",
-      description: "Complete bridal makeup with trials and day-of services",
-      price: 250,
-      duration: 120,
-      isActive: true,
-      artistId: id,
-    },
-    {
-      id: "default-2",
-      name: "Special Occasion Makeup",
-      description: "Perfect for parties, events, or photoshoots",
-      price: 150,
-      duration: 90,
-      isActive: true,
-      artistId: id,
-    },
-  ];
 }
 
 // Get availability settings for the artist with booking data
 async function getArtistAvailabilitySettings(id: string) {
-  // Get artist data and makeup artist profile
-  const artist = await db.user.findUnique({
-    where: {
-      id,
-      role: "ARTIST",
-    },
-    select: {
-      makeup_artist: {
-        select: {
-          id: true,
-          available_slots: true,
-        },
-      },
-    },
-  });
-
-  // Get existing bookings for the artist
-  const existingBookings = artist?.makeup_artist?.id
-    ? await db.booking.findMany({
-        where: {
-          artist_id: artist.makeup_artist.id,
-          booking_status: {
-            in: ["PENDING", "CONFIRMED"], // Only confirmed and pending bookings
-          },
-          date_time: {
-            gte: new Date(), // Only future bookings
-          },
-        },
-        select: {
-          id: true,
-          date_time: true,
-          service_type: true,
-          booking_status: true,
-        },
-      })
-    : [];
-
-  console.log(
-    `Found ${existingBookings.length} existing bookings for artist ${id}`
-  );
-
-  // Default settings that match AvailabilitySettings interface
-  const defaultAvailabilitySettings = {
-    isAvailable: true,
-    workingHours: {
-      start: 9,
-      end: 18,
-      interval: 60,
-    },
-    regularDaysOff: [0, 6], // Sunday and Saturday
-    bookedSlots: existingBookings.map((booking) => ({
-      date: booking.date_time.toISOString().split("T")[0],
-      time: booking.date_time.toTimeString().slice(0, 5), // HH:mm format
-      booking_id: booking.id,
-      service_type: booking.service_type,
-      status: booking.booking_status,
-    })),
-  };
-
-  if (!artist?.makeup_artist?.available_slots) {
-    return defaultAvailabilitySettings;
-  }
-
   try {
-    const availableSlots = artist.makeup_artist.available_slots as {
-      workingDays?: number[];
-      startTime?: string;
-      endTime?: string;
-      sessionDuration?: number;
-      breakBetweenSessions?: number;
-      isAvailable?: boolean;
-    };
-
-    console.log("Available slots data:", availableSlots);
-
-    // Convert workingDays to regularDaysOff
-    let regularDaysOff = [0, 6]; // Default to Sunday and Saturday off
-    if (
-      availableSlots.workingDays &&
-      Array.isArray(availableSlots.workingDays)
-    ) {
-      const allDays = [0, 1, 2, 3, 4, 5, 6]; // Sunday=0 to Saturday=6
-      regularDaysOff = allDays.filter(
-        (day) => !availableSlots.workingDays!.includes(day)
-      );
-      console.log("Working days:", availableSlots.workingDays);
-      console.log("Regular days off:", regularDaysOff);
-    }
-
-    const settings = {
-      isAvailable: availableSlots.isAvailable ?? true,
-      workingHours: {
-        start: parseInt(availableSlots.startTime?.split(":")[0] || "9"),
-        end: parseInt(availableSlots.endTime?.split(":")[0] || "18"),
-        interval: availableSlots.sessionDuration || 60,
+    // Get artist data and makeup artist profile
+    const artist = await db.user.findUnique({
+      where: {
+        id,
+        role: "ARTIST",
       },
-      regularDaysOff,
+      select: {
+        makeup_artist: {
+          select: {
+            id: true,
+            available_slots: true,
+          },
+        },
+      },
+    });
+
+    // Get existing bookings for the artist
+    const existingBookings = artist?.makeup_artist?.id
+      ? await db.booking.findMany({
+          where: {
+            artist_id: artist.makeup_artist.id,
+            booking_status: {
+              in: ["PENDING", "CONFIRMED"], // Only confirmed and pending bookings
+            },
+            date_time: {
+              gte: new Date(), // Only future bookings
+            },
+          },
+          select: {
+            id: true,
+            date_time: true,
+            service_type: true,
+            booking_status: true,
+          },
+        })
+      : [];
+
+    console.log(
+      `Found ${existingBookings.length} existing bookings for artist ${id}`
+    );
+
+    // Default settings that match AvailabilitySettings interface
+    const defaultAvailabilitySettings = {
+      isAvailable: true,
+      workingHours: {
+        start: 9,
+        end: 18,
+        interval: 60,
+      },
+      regularDaysOff: [0, 6], // Sunday and Saturday
       bookedSlots: existingBookings.map((booking) => ({
         date: booking.date_time.toISOString().split("T")[0],
         time: booking.date_time.toTimeString().slice(0, 5), // HH:mm format
@@ -243,11 +231,72 @@ async function getArtistAvailabilitySettings(id: string) {
       })),
     };
 
-    console.log("Processed availability settings with bookings:", settings);
-    return settings;
+    if (!artist?.makeup_artist?.available_slots) {
+      return defaultAvailabilitySettings;
+    }
+
+    try {
+      const availableSlots = artist.makeup_artist.available_slots as {
+        workingDays?: number[];
+        startTime?: string;
+        endTime?: string;
+        sessionDuration?: number;
+        breakBetweenSessions?: number;
+        isAvailable?: boolean;
+      };
+
+      console.log("Available slots data:", availableSlots);
+
+      // Convert workingDays to regularDaysOff
+      let regularDaysOff = [0, 6]; // Default to Sunday and Saturday off
+      if (
+        availableSlots.workingDays &&
+        Array.isArray(availableSlots.workingDays)
+      ) {
+        const allDays = [0, 1, 2, 3, 4, 5, 6]; // Sunday=0 to Saturday=6
+        regularDaysOff = allDays.filter(
+          (day) => !availableSlots.workingDays!.includes(day)
+        );
+        console.log("Working days:", availableSlots.workingDays);
+        console.log("Regular days off:", regularDaysOff);
+      }
+
+      const settings = {
+        isAvailable: availableSlots.isAvailable ?? true,
+        workingHours: {
+          start: parseInt(availableSlots.startTime?.split(":")[0] || "9"),
+          end: parseInt(availableSlots.endTime?.split(":")[0] || "18"),
+          interval: availableSlots.sessionDuration || 60,
+        },
+        regularDaysOff,
+        bookedSlots: existingBookings.map((booking) => ({
+          date: booking.date_time.toISOString().split("T")[0],
+          time: booking.date_time.toTimeString().slice(0, 5), // HH:mm format
+          booking_id: booking.id,
+          service_type: booking.service_type,
+          status: booking.booking_status,
+        })),
+      };
+
+      console.log("Processed availability settings with bookings:", settings);
+      return settings;
+    } catch (error) {
+      console.error("Error parsing artist availability settings:", error);
+      return defaultAvailabilitySettings;
+    }
   } catch (error) {
-    console.error("Error parsing artist availability settings:", error);
-    return defaultAvailabilitySettings;
+    console.error("Error fetching artist availability settings - database may be unavailable during build:", error);
+    // Return default settings if database is not available during build
+    return {
+      isAvailable: true,
+      workingHours: {
+        start: 9,
+        end: 18,
+        interval: 60,
+      },
+      regularDaysOff: [0, 6], // Sunday and Saturday
+      bookedSlots: [],
+    };
   }
 }
 
@@ -294,7 +343,8 @@ async function getArtistReviews(id: string) {
     console.log("Found approved reviews:", reviews.length);
     return reviews;
   } catch (error) {
-    console.error("Error fetching artist reviews:", error);
+    console.error("Error fetching artist reviews - database may be unavailable during build:", error);
+    // Return empty array if database is not available during build
     return [];
   }
 }
