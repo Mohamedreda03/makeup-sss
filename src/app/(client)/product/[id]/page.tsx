@@ -258,51 +258,118 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
         {/* Related Products */}
         {relatedProducts.length > 0 && (
-          <div className="mt-12">
-            <h2 className="text-2xl font-bold text-gray-900 mb-8 text-center">
-              You might also like
-            </h2>
+          <div className="mt-16">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-rose-600 via-pink-600 to-rose-700 bg-clip-text text-transparent mb-4">
+                You might also like
+              </h2>
+              <p className="text-gray-600 text-lg max-w-2xl mx-auto">
+                Discover more beautiful products from our curated collection
+              </p>
+              <div className="w-24 h-1 bg-gradient-to-r from-rose-400 to-pink-600 mx-auto mt-4 rounded-full"></div>
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {relatedProducts.map((relatedProduct: any) => (
                 <Link
                   href={`/product/${relatedProduct.id}`}
                   key={relatedProduct.id}
+                  className="group"
                 >
-                  <div className="bg-white rounded-xl border border-rose-100 overflow-hidden shadow-sm hover:shadow-md transition-all group">
-                    <div className="relative h-48 overflow-hidden">
+                  <div className="bg-white rounded-2xl border border-rose-100/50 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500 group-hover:-translate-y-2 backdrop-blur-sm">
+                    {/* Image Container with Enhanced Effects */}
+                    <div className="relative h-56 overflow-hidden bg-gradient-to-br from-rose-50 via-pink-50 to-rose-100">
+                      {/* Decorative Background Elements */}
+                      <div className="absolute top-4 right-4 w-16 h-16 bg-pink-200/30 rounded-full blur-xl"></div>
+                      <div className="absolute bottom-4 left-4 w-20 h-20 bg-rose-200/20 rounded-full blur-xl"></div>
+
                       <Image
                         src={
-                          relatedProduct.imageUrl ||
+                          relatedProduct.image ||
                           "https://placehold.co/400x400/rose/white?text=No+Image"
                         }
                         alt={relatedProduct.name}
                         fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                        className="object-contain p-4 group-hover:scale-110 transition-all duration-700 ease-out"
                       />
+
+                      {/* Hover Overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+                      {/* Stock Badge */}
+                      {relatedProduct.stock_quantity > 0 ? (
+                        <div className="absolute top-3 left-3 bg-green-500/90 backdrop-blur-sm text-white text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
+                          In Stock
+                        </div>
+                      ) : (
+                        <div className="absolute top-3 left-3 bg-red-500/90 backdrop-blur-sm text-white text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
+                          Out of Stock
+                        </div>
+                      )}
+
+                      {/* Featured Badge */}
+                      {relatedProduct.featured && (
+                        <div className="absolute top-3 right-3 bg-gradient-to-r from-rose-500 to-pink-600 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-lg">
+                          ⭐ Featured
+                        </div>
+                      )}
+
+                      {/* Quick View Button */}
+                      <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
+                        <div className="bg-white/90 backdrop-blur-sm p-2 rounded-full shadow-lg hover:bg-white transition-colors">
+                          <ZoomIn className="h-4 w-4 text-rose-500" />
+                        </div>
+                      </div>
                     </div>
-                    <div className="p-4">
-                      <h3 className="font-medium text-gray-800 mb-1 truncate">
-                        {relatedProduct.name}
-                      </h3>
-                      <p className="text-rose-600 font-bold">
-                        {formatPrice(relatedProduct.price)}
-                      </p>
+
+                    {/* Content Section */}
+                    <div className="p-5">
+                      <div className="mb-3">
+                        <h3 className="font-semibold text-gray-900 mb-1 truncate text-lg group-hover:text-rose-600 transition-colors duration-300">
+                          {relatedProduct.name}
+                        </h3>
+                        <p className="text-gray-500 text-sm truncate">
+                          {relatedProduct.category}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div className="flex flex-col">
+                          <span className="text-2xl font-bold text-rose-600 group-hover:text-rose-700 transition-colors">
+                            {formatPrice(relatedProduct.price)}
+                          </span>
+                          {relatedProduct.stock_quantity > 0 && (
+                            <span className="text-xs text-green-600 font-medium">
+                              {relatedProduct.stock_quantity} available
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Add to Cart Icon */}
+                        <div className="opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
+                          <div className="bg-gradient-to-r from-rose-500 to-pink-600 p-2.5 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110">
+                            <ChevronRight className="h-4 w-4 text-white" />
+                          </div>
+                        </div>
+                      </div>
                     </div>
+
+                    {/* Bottom Gradient Border */}
+                    <div className="h-1 bg-gradient-to-r from-rose-400 via-pink-500 to-rose-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"></div>
                   </div>
                 </Link>
               ))}
             </div>
 
-            <div className="flex justify-center mt-8">
+            <div className="flex justify-center mt-12">
               <Button
                 variant="outline"
-                className="border-rose-200 text-rose-600 hover:bg-rose-50"
+                className="border-2 border-rose-300 text-rose-600 hover:bg-gradient-to-r hover:from-rose-500 hover:to-pink-600 hover:text-white hover:border-transparent transition-all duration-300 px-8 py-3 rounded-full font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-1"
                 asChild
               >
-                <Link href="/products" className="flex items-center gap-2">
-                  View All Products
-                  <ChevronRight className="h-4 w-4" />
+                <Link href="/products" className="flex items-center gap-3">
+                  <span>View All Products</span>
+                  <ChevronRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
                 </Link>
               </Button>
             </div>

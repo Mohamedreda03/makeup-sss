@@ -7,7 +7,7 @@ import dynamicImport from "next/dynamic";
 import { ReviewList } from "@/components/reviews/ReviewList";
 
 // Force dynamic rendering to prevent build-time database queries
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 // Dynamically import ArtistBooking with no SSR
 const ArtistBookingWrapper = dynamicImport(
@@ -36,6 +36,7 @@ async function getArtist(id: string) {
             bio: true,
             experience_years: true,
             pricing: true,
+            portfolio: true,
             rating: true,
             availability: true,
             available_slots: true,
@@ -285,7 +286,10 @@ async function getArtistAvailabilitySettings(id: string) {
       return defaultAvailabilitySettings;
     }
   } catch (error) {
-    console.error("Error fetching artist availability settings - database may be unavailable during build:", error);
+    console.error(
+      "Error fetching artist availability settings - database may be unavailable during build:",
+      error
+    );
     // Return default settings if database is not available during build
     return {
       isAvailable: true,
@@ -343,7 +347,10 @@ async function getArtistReviews(id: string) {
     console.log("Found approved reviews:", reviews.length);
     return reviews;
   } catch (error) {
-    console.error("Error fetching artist reviews - database may be unavailable during build:", error);
+    console.error(
+      "Error fetching artist reviews - database may be unavailable during build:",
+      error
+    );
     // Return empty array if database is not available during build
     return [];
   }
@@ -439,11 +446,7 @@ export default async function ArtistPage({
     email: artist.email,
     image: artist.image,
     phone: artist.phone,
-    instagram: null,
-    facebook: null,
-    twitter: null,
-    tiktok: null,
-    website: null,
+    portfolio: artist.makeup_artist?.portfolio || null,
     bio: artist.makeup_artist?.bio || "",
     yearsOfExperience:
       typeof artist.makeup_artist?.experience_years === "string"

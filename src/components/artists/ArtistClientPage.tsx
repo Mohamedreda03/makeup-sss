@@ -8,11 +8,8 @@ import {
   Calendar,
   Clock,
   MapPin,
-  Instagram,
-  Facebook,
   CheckCircle,
   Award,
-  Twitter,
   Globe,
   ExternalLink,
   Share2,
@@ -65,11 +62,7 @@ interface Artist {
   email: string | null;
   image: string | null;
   phone: string | null;
-  instagram: string | null;
-  facebook: string | null;
-  twitter: string | null;
-  tiktok: string | null;
-  website: string | null;
+  portfolio: string | null;
   bio: string | null;
   yearsOfExperience?: number | null;
   defaultPrice?: number | null;
@@ -103,23 +96,6 @@ interface ArtistClientPageProps {
   reviewsComponent?: React.ReactNode;
 }
 
-const TiktokIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    {...props}
-  >
-    <path d="M9 12a4 4 0 1 0 4 4V4c0 1.1.9 2 2 2h2" />
-  </svg>
-);
-
 export default function ArtistClientPage({
   artist,
   services,
@@ -128,25 +104,8 @@ export default function ArtistClientPage({
   bookingComponent,
   reviewsComponent,
 }: ArtistClientPageProps & { children?: React.ReactNode }) {
-  // Check if artist has any social media links
-  const hasSocialMedia =
-    artist.instagram ||
-    artist.facebook ||
-    artist.twitter ||
-    artist.tiktok ||
-    artist.website;
-
-  // Parse artist settings if available
-  const artistSettings = artist.metadata?.artistSettings
-    ? JSON.parse(artist.metadata.artistSettings)
-    : null;
-
-  // Check if artist has specialties or certificates
-  const hasSpecialties = true; // Always show fixed categories
-  const hasCertificates = artistSettings?.certificates?.length > 0;
-
-  // Check if reviews component exists
-  const hasReviewsComponent = !!reviewsComponent;
+  // Check if artist has website
+  const hasWebsite = artist.portfolio;
 
   return (
     <div className="container mx-auto px-4 py-12">
@@ -224,20 +183,21 @@ export default function ArtistClientPage({
                     <span className="text-gray-700">{artist.phone}</span>
                   </p>
                 )}
-                {artist.website && (
+                {artist.portfolio && (
                   <p className="flex items-center">
                     <span className="font-medium w-20">Website:</span>
                     <a
                       href={
-                        artist.website.startsWith("http")
-                          ? artist.website
-                          : `https://${artist.website}`
+                        artist.portfolio.startsWith("http")
+                          ? artist.portfolio
+                          : `https://${artist.portfolio}`
                       }
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-rose-500 hover:underline flex items-center"
                     >
-                      {artist.website} <ExternalLink className="h-3 w-3 ml-1" />
+                      {artist.portfolio}{" "}
+                      <ExternalLink className="h-3 w-3 ml-1" />
                     </a>
                   </p>
                 )}
@@ -247,97 +207,24 @@ export default function ArtistClientPage({
 
           {children}
 
-          {hasSocialMedia && (
+          {hasWebsite && artist.portfolio && (
             <div className="flex gap-4">
-              {artist.instagram && (
-                <Button variant="outline" size="icon" asChild>
-                  <a
-                    href={
-                      artist.instagram.startsWith("http")
-                        ? artist.instagram
-                        : `https://instagram.com/${artist.instagram.replace(
-                            "@",
-                            ""
-                          )}`
-                    }
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label="Instagram"
-                  >
-                    <Instagram className="h-4 w-4" />
-                  </a>
-                </Button>
-              )}
-              {artist.facebook && (
-                <Button variant="outline" size="icon" asChild>
-                  <a
-                    href={
-                      artist.facebook.startsWith("http")
-                        ? artist.facebook
-                        : `https://facebook.com/${artist.facebook}`
-                    }
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label="Facebook"
-                  >
-                    <Facebook className="h-4 w-4" />
-                  </a>
-                </Button>
-              )}
-              {artist.twitter && (
-                <Button variant="outline" size="icon" asChild>
-                  <a
-                    href={
-                      artist.twitter.startsWith("http")
-                        ? artist.twitter
-                        : `https://twitter.com/${artist.twitter.replace(
-                            "@",
-                            ""
-                          )}`
-                    }
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label="Twitter"
-                  >
-                    <Twitter className="h-4 w-4" />
-                  </a>
-                </Button>
-              )}
-              {artist.tiktok && (
-                <Button variant="outline" size="icon" asChild>
-                  <a
-                    href={
-                      artist.tiktok.startsWith("http")
-                        ? artist.tiktok
-                        : `https://tiktok.com/@${artist.tiktok.replace(
-                            "@",
-                            ""
-                          )}`
-                    }
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label="TikTok"
-                  >
-                    <TiktokIcon className="h-4 w-4" />
-                  </a>
-                </Button>
-              )}
-              {artist.website && (
-                <Button variant="outline" size="icon" asChild>
-                  <a
-                    href={
-                      artist.website.startsWith("http")
-                        ? artist.website
-                        : `https://${artist.website}`
-                    }
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label="Website"
-                  >
-                    <Globe className="h-4 w-4" />
-                  </a>
-                </Button>
-              )}
+              <Button variant="outline" size="sm" asChild>
+                <a
+                  href={
+                    artist.portfolio.startsWith("http")
+                      ? artist.portfolio
+                      : `https://${artist.portfolio}`
+                  }
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Website"
+                  className="flex items-center gap-2"
+                >
+                  <Globe className="h-4 w-4" />
+                  Visit Website
+                </a>
+              </Button>
             </div>
           )}
         </div>

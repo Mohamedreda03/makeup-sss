@@ -30,7 +30,7 @@ import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow, format } from "date-fns";
 
 // Force dynamic rendering to prevent build-time database queries
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
   const user = (await checkAdmin()) as any;

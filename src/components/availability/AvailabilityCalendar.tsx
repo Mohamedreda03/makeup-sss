@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Calendar, dateFnsLocalizer } from "react-big-calendar";
 import { format, parse, startOfWeek, getDay } from "date-fns";
-import enUS from "date-fns/locale/en-US";
+import { enUS } from "date-fns/locale/en-US";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -232,14 +232,13 @@ export default function AvailabilityCalendar({
         <CardContent>
           <div style={{ height: 600 }}>
             <Calendar
-              localizer={localizer}
-              events={events}
+              localizer={localizer}              events={events}
               startAccessor="start"
               endAccessor="end"
               style={{ height: "100%" }}
               selectable={!isLoading}
               onSelectSlot={handleSelectSlot}
-              onSelectEvent={(event: any) => {
+              onSelectEvent={(event: CalendarEvent) => {
                 if (window.confirm("Do you want to delete this time slot?")) {
                   handleDeleteSlot(event.id);
                 }

@@ -15,7 +15,7 @@ import { db } from "@/lib/db";
 import { formatPrice } from "@/lib/utils";
 
 // Force dynamic rendering to prevent build-time database queries
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 // تخصصات المكياج للعرض
 const specialties = [

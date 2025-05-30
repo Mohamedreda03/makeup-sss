@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { format } from "date-fns";
 import { Loader2 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import {
@@ -65,7 +64,10 @@ interface ArtistBookingProps {
   services: Service[];
   selectedService: Service | null;
   isUserLoggedIn: boolean;
-  artistData?: any;
+  artistData?: {
+    name?: string;
+    [key: string]: unknown;
+  };
   availabilitySettings: {
     isAvailable: boolean;
     workingHours: {
@@ -86,11 +88,6 @@ export default function ArtistBooking({
   artistData,
 }: ArtistBookingProps) {
   const router = useRouter();
-
-  // Early return for non-authenticated users
-  if (!isUserLoggedIn) {
-    return <AuthRequired isUserLoggedIn={isUserLoggedIn} />;
-  }
 
   // State management
   const [availability, setAvailability] = useState<ArtistAvailability | null>(
@@ -142,28 +139,10 @@ export default function ArtistBooking({
         setIsLoadingServices(false);
       }
     };
-
     if (!availableServices.length) {
       fetchServices();
     }
   }, [artistId, availableServices.length, selectedService]);
-
-  // Generate time slots based on artist's actual settings from database
-  const generateTimeSlots = (date: string) => {
-    if (!date) return [];
-
-    if (availability?.availability) {
-      const dayAvailability = availability.availability.find(
-        (day) => day.date === date
-      );
-      return dayAvailability?.timeSlots || [];
-    }
-
-    return [];
-  };
-
-  // Get time slots for the selected date
-  const timeSlots = selectedDate ? generateTimeSlots(selectedDate) : [];
 
   // Fetch availability data from the API
   useEffect(() => {
@@ -172,7 +151,11 @@ export default function ArtistBooking({
 
       try {
         setIsLoading(true);
-        const url = `/api/artists/${artistId}/availability?days=14`;
+        // Include serviceId in the URL if a service is selected
+        let url = `/api/artists/${artistId}/availability?days=14`;
+        if (selectedService?.id) {
+          url += `&serviceId=${selectedService.id}`;
+        }
 
         const response = await fetch(url);
         if (!response.ok) {
@@ -210,15 +193,38 @@ export default function ArtistBooking({
         setIsLoading(false);
       }
     };
-
     if (artistId) {
       fetchAvailability();
     }
-  }, [artistId, availabilitySettings, selectedDate]);
+  }, [artistId, availabilitySettings, selectedService?.id, selectedDate]);
+
+  // Early return for non-authenticated users
+  if (!isUserLoggedIn) {
+    return <AuthRequired isUserLoggedIn={isUserLoggedIn} />;
+  }
+
+  // Generate time slots based on artist's actual settings from database
+  const generateTimeSlots = (date: string) => {
+    if (!date) return [];
+
+    if (availability?.availability) {
+      const dayAvailability = availability.availability.find(
+        (day) => day.date === date
+      );
+      return dayAvailability?.timeSlots || [];
+    }
+
+    return [];
+  };
+  // Get time slots for the selected date
+  const timeSlots = selectedDate ? generateTimeSlots(selectedDate) : [];
 
   // Event handlers
   const handleServiceSelect = (service: Service) => {
     setSelectedService(service);
+    // Clear selected date and time when service changes to force re-selection with new intervals
+    setSelectedDate(null);
+    setSelectedTime(null);
   };
 
   const handleDateSelect = (date: string) => {

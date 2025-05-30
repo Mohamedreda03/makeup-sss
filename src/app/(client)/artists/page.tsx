@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { ArtistsGrid } from "./components/ArtistsGrid";
 
 // Force dynamic rendering to prevent build-time database queries
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 async function getArtists() {
   try {

@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { addDays, format, parseISO, startOfDay, getDay } from "date-fns";
-
-// Default working hours if none are set
 const DEFAULT_BUSINESS_HOURS = {
   start: 10, // 10 AM
   end: 24, // 12 AM (midnight)
@@ -26,6 +24,7 @@ export async function GET(
     const url = new URL(req.url);
     const dateParam = url.searchParams.get("date");
     const daysParam = url.searchParams.get("days") || "7"; // Default to 7 days
+    const serviceId = url.searchParams.get("serviceId"); // Optional service ID for duration-specific availability
 
     // Validate artist exists
     const artist = await db.user.findUnique({
@@ -41,6 +40,24 @@ export async function GET(
         { message: "Artist not found" },
         { status: 404 }
       );
+    }
+
+    // Fetch service duration if serviceId is provided
+    let serviceDuration = 60; // Default duration in minutes
+    if (serviceId) {
+      const service = await db.artistService.findUnique({
+        where: {
+          id: serviceId,
+          artistId: artistId,
+        },
+        select: {
+          duration: true,
+        },
+      });
+
+      if (service) {
+        serviceDuration = service.duration;
+      }
     }
 
     // Fetch artist's availability settings from makeup_artist table
@@ -173,6 +190,24 @@ export async function GET(
       },
     });
 
+    // Fetch all artist services to map service names to durations
+    const artistServices = await db.artistService.findMany({
+      where: {
+        artistId: artistId,
+      },
+      select: {
+        id: true,
+        name: true,
+        duration: true,
+      },
+    });
+
+    // Create a mapping of service names to durations
+    const serviceNameToDuration = new Map<string, number>();
+    artistServices.forEach((service) => {
+      serviceNameToDuration.set(service.name, service.duration);
+    });
+
     console.log(
       `Found ${appointments.length} appointments for makeup artist ID: ${makeupArtistRecord.id}`
     );
@@ -200,7 +235,7 @@ export async function GET(
     const businessHours = {
       start: workingHours.start,
       end: workingHours.end,
-      interval: workingHours.interval,
+      interval: serviceId ? serviceDuration : workingHours.interval, // Use service duration for intervals when specific service is selected
     };
 
     // Loop through each day in the range
@@ -251,42 +286,133 @@ export async function GET(
             // Check if this slot conflicts with any booking
             let isBooked = false;
 
+            // Debug logging for specific times
+            const slotTimeStr = format(slotTime, "HH:mm");
+            const shouldLog =
+              slotTimeStr === "12:30" || slotTimeStr === "13:00";
+
+            if (shouldLog) {
+              console.log(
+                `\n=== Checking slot ${slotTimeStr} on ${dayString} ===`
+              );
+              console.log(
+                `Total appointments to check: ${appointments.length}`
+              );
+            }
+
             for (const appointment of appointments) {
               const appointmentStart = new Date(appointment.date_time);
               const appointmentEnd = new Date(appointmentStart);
-              // Assume default duration of 60 minutes if not specified
-              appointmentEnd.setMinutes(appointmentEnd.getMinutes() + 60);
+              // Use the actual service duration instead of hardcoded 60 minutes
+              const appointmentDuration =
+                serviceNameToDuration.get(appointment.service_type) ||
+                serviceDuration ||
+                60;
+              appointmentEnd.setMinutes(
+                appointmentEnd.getMinutes() + appointmentDuration
+              );
 
               // Create date objects for the current slot
               const slotStart = new Date(slotTime);
               const slotEnd = new Date(slotTime);
               slotEnd.setMinutes(slotEnd.getMinutes() + businessHours.interval);
 
-              // Check for any overlap between the slot and the appointment
-              // A slot is booked if:
-              // 1. The slot starts during an appointment, OR
-              // 2. The slot ends during an appointment, OR
-              // 3. The slot completely contains an appointment
-              if (
-                // Slot starts during an appointment
-                (slotStart >= appointmentStart && slotStart < appointmentEnd) ||
-                // Slot ends during an appointment
-                (slotEnd > appointmentStart && slotEnd <= appointmentEnd) ||
-                // Slot completely contains an appointment
-                (slotStart <= appointmentStart && slotEnd >= appointmentEnd)
-              ) {
+              // Convert times to minutes for easier comparison
+              const appointmentStartMinutes =
+                appointmentStart.getHours() * 60 +
+                appointmentStart.getMinutes();
+              const appointmentEndMinutes =
+                appointmentEnd.getHours() * 60 + appointmentEnd.getMinutes();
+              const slotStartMinutes =
+                slotStart.getHours() * 60 + slotStart.getMinutes();
+              const slotEndMinutes =
+                slotEnd.getHours() * 60 + slotEnd.getMinutes();
+
+              if (shouldLog) {
                 console.log(
-                  `CONFLICT FOUND! Slot ${format(
-                    slotTime,
+                  `Appointment: ${format(appointmentStart, "HH:mm")}-${format(
+                    appointmentEnd,
                     "HH:mm"
-                  )} on ${dayString} conflicts with appointment at ${format(
+                  )} (${appointmentStartMinutes}-${appointmentEndMinutes} minutes), Status: ${
+                    appointment.booking_status
+                  }`
+                );
+                console.log(
+                  `Slot: ${format(slotStart, "HH:mm")}-${format(
+                    slotEnd,
+                    "HH:mm"
+                  )} (${slotStartMinutes}-${slotEndMinutes} minutes)`
+                );
+              }
+
+              // Check if the appointment is on the same day
+              const appointmentDate = format(appointmentStart, "yyyy-MM-dd");
+              if (appointmentDate !== dayString) {
+                if (shouldLog) {
+                  console.log(
+                    `Different date: ${appointmentDate} vs ${dayString}`
+                  );
+                }
+                continue;
+              }
+
+              // Only consider PENDING and CONFIRMED appointments
+              if (
+                appointment.booking_status !== "PENDING" &&
+                appointment.booking_status !== "CONFIRMED"
+              ) {
+                if (shouldLog) {
+                  console.log(
+                    `Skipping appointment with status: ${appointment.booking_status}`
+                  );
+                }
+                continue;
+              }
+
+              // Check for any overlap between the slot and the appointment
+              // Improved overlap logic using minutes
+              const hasOverlap =
+                // Slot starts during an appointment
+                (slotStartMinutes >= appointmentStartMinutes &&
+                  slotStartMinutes < appointmentEndMinutes) ||
+                // Slot ends during an appointment
+                (slotEndMinutes > appointmentStartMinutes &&
+                  slotEndMinutes <= appointmentEndMinutes) ||
+                // Slot completely contains an appointment
+                (slotStartMinutes <= appointmentStartMinutes &&
+                  slotEndMinutes >= appointmentEndMinutes) ||
+                // Appointment completely contains the slot
+                (appointmentStartMinutes <= slotStartMinutes &&
+                  appointmentEndMinutes >= slotEndMinutes);
+
+              if (hasOverlap) {
+                if (shouldLog) {
+                  console.log(
+                    `CONFLICT FOUND! Slot ${slotTimeStr} overlaps with appointment at ${format(
+                      appointmentStart,
+                      "HH:mm"
+                    )}`
+                  );
+                }
+                isBooked = true;
+                break;
+              } else if (shouldLog) {
+                console.log(
+                  `No conflict with appointment at ${format(
                     appointmentStart,
                     "HH:mm"
                   )}`
                 );
-                isBooked = true;
-                break;
               }
+            }
+
+            if (shouldLog) {
+              console.log(
+                `Final result for slot ${slotTimeStr}: ${
+                  isBooked ? "BOOKED" : "AVAILABLE"
+                }`
+              );
+              console.log(`=== End check for slot ${slotTimeStr} ===\n`);
             }
 
             // Log slot status for debugging
