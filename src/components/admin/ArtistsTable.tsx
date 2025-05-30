@@ -409,13 +409,31 @@ export default function ArtistsTable({
                     <div className="flex items-center gap-2">
                       <div className="w-6 h-6 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center">
                         <Calendar className="h-3 w-3 text-purple-600 dark:text-purple-400" />
-                      </div>
+                      </div>{" "}
                       <div className="text-sm">
                         <div className="font-medium text-gray-900 dark:text-white">
-                          {format(new Date(artist.createdAt), "MMM d, yyyy")}
+                          {(() => {
+                            try {
+                              const date = new Date(artist.createdAt);
+                              if (isNaN(date.getTime()))
+                                return "Date not available";
+                              return format(date, "MMM d, yyyy");
+                            } catch {
+                              return "Date not available";
+                            }
+                          })()}
                         </div>
                         <div className="text-xs text-gray-500">
-                          {format(new Date(artist.createdAt), "h:mm a")}
+                          {(() => {
+                            try {
+                              const date = new Date(artist.createdAt);
+                              if (isNaN(date.getTime()))
+                                return "Time not available";
+                              return format(date, "h:mm a");
+                            } catch {
+                              return "Time not available";
+                            }
+                          })()}
                         </div>
                       </div>
                     </div>

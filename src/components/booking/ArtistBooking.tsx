@@ -20,7 +20,6 @@ import ServiceSelector from "./ServiceSelector";
 import { BookingStep } from "./BookingSteps";
 import { DateSelector } from "./DateSelector";
 import { TimeSelector } from "./TimeSelector";
-import { NotesField } from "./NotesField";
 import { BookingSummary } from "./BookingSummary";
 import { BookingActions } from "./BookingActions";
 import { AuthRequired } from "./AuthRequired";
@@ -98,7 +97,6 @@ export default function ArtistBooking({
   const [isBooking, setIsBooking] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
-  const [notes, setNotes] = useState("");
   const [showLoginDialog, setShowLoginDialog] = useState(false);
 
   // Service state
@@ -144,19 +142,42 @@ export default function ArtistBooking({
       fetchServices();
     }
   }, [artistId, availableServices.length, selectedService]);
+  // Cache for availability data to avoid re-fetching
+  const [availabilityCache, setAvailabilityCache] = useState<
+    Map<string, ArtistAvailability>
+  >(new Map());
 
-  // Fetch availability data from the API
+  // Fetch availability data from the API - only once per artist
   useEffect(() => {
     const fetchAvailability = async () => {
       if (!artistId) return;
 
+      // Check cache first
+      const cacheKey = `${artistId}`;
+      if (availabilityCache.has(cacheKey)) {
+        const cachedData = availabilityCache.get(cacheKey)!;
+        setAvailability(cachedData);
+
+        // Pre-select the first available day if no date is selected
+        if (
+          cachedData.isAvailable &&
+          cachedData.availability?.length > 0 &&
+          !selectedDate
+        ) {
+          const availableDays = cachedData.availability.filter(
+            (day: DayAvailability) => !day.isDayOff && day.timeSlots?.length > 0
+          );
+          if (availableDays.length > 0) {
+            setSelectedDate(availableDays[0].date);
+          }
+        }
+        return;
+      }
+
       try {
         setIsLoading(true);
-        // Include serviceId in the URL if a service is selected
-        let url = `/api/artists/${artistId}/availability?days=14`;
-        if (selectedService?.id) {
-          url += `&serviceId=${selectedService.id}`;
-        }
+        // Load availability without serviceId to get all data at once
+        const url = `/api/artists/${artistId}/availability?days=14`;
 
         const response = await fetch(url);
         if (!response.ok) {
@@ -164,33 +185,15 @@ export default function ArtistBooking({
         }
         const data = await response.json();
 
-        console.log("=== Availability API Response ===");
+        console.log("=== Availability API Response (Cached) ===");
         console.log("Full response:", JSON.stringify(data, null, 2));
-
-        if (data.availability) {
-          data.availability.forEach(
-            (day: DayAvailability, dayIndex: number) => {
-              console.log(`Day ${dayIndex + 1}: ${day.date} (${day.dayLabel})`);
-              if (day.timeSlots) {
-                day.timeSlots.forEach((slot: TimeSlot, slotIndex: number) => {
-                  if (slot.time === "12:30" || slot.time === "13:00") {
-                    console.log(
-                      `  Slot ${slotIndex + 1}: ${slot.time} (${
-                        slot.label
-                      }) - isBooked: ${slot.isBooked}`
-                    );
-                  }
-                });
-              }
-            }
-          );
-        }
-        console.log("=== End Availability Response ===");
 
         if (!data.isAvailable && availabilitySettings) {
           data.isAvailable = availabilitySettings.isAvailable;
         }
 
+        // Cache the data
+        setAvailabilityCache((prev) => new Map(prev.set(cacheKey, data)));
         setAvailability(data);
 
         // Pre-select the first available day
@@ -198,8 +201,6 @@ export default function ArtistBooking({
           const availableDays = data.availability.filter(
             (day: DayAvailability) => !day.isDayOff && day.timeSlots?.length > 0
           );
-
-          data.availability = availableDays;
 
           if (availableDays.length > 0 && !selectedDate) {
             setSelectedDate(availableDays[0].date);
@@ -216,10 +217,11 @@ export default function ArtistBooking({
         setIsLoading(false);
       }
     };
+
     if (artistId) {
       fetchAvailability();
     }
-  }, [artistId, availabilitySettings, selectedService?.id, selectedDate]);
+  }, [artistId, availabilitySettings]); // Removed selectedService?.id and selectedDate dependencies
 
   // Early return for non-authenticated users
   if (!isUserLoggedIn) {
@@ -240,21 +242,29 @@ export default function ArtistBooking({
 
   // Get time slots for the selected date
   const timeSlots = selectedDate ? generateTimeSlots(selectedDate) : [];
-
-  // Event handlers
+  // Event handlers - optimized to avoid re-fetching
   const handleServiceSelect = (service: Service) => {
+    console.log("Service selected:", service.name);
     setSelectedService(service);
-    // Clear selected date and time when service changes to force re-selection with new intervals
-    setSelectedDate(null);
+    // Only clear selected time, keep the selected date to improve UX
     setSelectedTime(null);
+
+    // No need to clear date or refetch availability since all data is already loaded
+    toast({
+      title: "Service Updated",
+      description: `Selected service: ${service.name}`,
+      variant: "default",
+    });
   };
 
   const handleDateSelect = (date: string) => {
+    console.log("Date selected:", date);
     setSelectedDate(date);
-    setSelectedTime(null);
+    setSelectedTime(null); // Clear time when date changes
   };
 
   const handleTimeSelect = (time: string) => {
+    console.log("Time selected:", time);
     setSelectedTime(time);
   };
   // Book appointment handler
@@ -303,7 +313,6 @@ export default function ArtistBooking({
       console.log("Selected time:", selectedTime);
       console.log("Selected date:", selectedDate);
       console.log("Formatted time (24h):", formattedTime);
-
       const appointmentData = {
         artistId,
         serviceId: selectedService.id,
@@ -312,7 +321,7 @@ export default function ArtistBooking({
         appointmentTime: formattedTime, // HH:MM format (24-hour)
         duration: selectedService.duration || 60,
         totalPrice: selectedService.price,
-        notes: notes || "",
+        notes: "", // Empty notes since field is removed
       };
 
       const response = await fetch("/api/appointment-requests", {
@@ -389,7 +398,6 @@ export default function ArtistBooking({
               selectedServiceId={selectedService?.id || null}
             />
           </BookingStep>
-
           {/* Date Selection - Only show if service is selected */}
           {selectedService && (
             <BookingStep
@@ -405,7 +413,6 @@ export default function ArtistBooking({
               />
             </BookingStep>
           )}
-
           {/* Time Selection - Only show if date is selected */}
           {selectedService && selectedDate && (
             <BookingStep
@@ -419,14 +426,8 @@ export default function ArtistBooking({
                 onTimeSelect={handleTimeSelect}
               />
             </BookingStep>
-          )}
-
+          )}{" "}
           <div className="max-w-2xl mx-auto mt-8">
-            {/* Notes Field */}
-            {selectedService && selectedDate && selectedTime && (
-              <NotesField notes={notes} onNotesChange={setNotes} />
-            )}
-
             {/* Booking Summary */}
             {selectedService && selectedDate && selectedTime && (
               <BookingSummary

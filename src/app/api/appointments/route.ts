@@ -288,12 +288,13 @@ export async function POST(req: Request) {
           { message: "Selected time is outside the artist's working hours" },
           { status: 400 }
         );
-      }
-
-      // Check if appointment end time is within working hours
+      } // Check if appointment end time is within working hours
+      // Allow appointments that start within working hours, even if they extend slightly beyond
+      // This fixes the issue where last available time slots couldn't be booked
       if (
-        appointmentEndHour > workingHours.end ||
-        (appointmentEndHour === workingHours.end && appointmentEndMinute > 0)
+        appointmentEndHour > workingHours.end + 1 || // Allow up to 1 hour past working hours
+        (appointmentEndHour === workingHours.end + 1 &&
+          appointmentEndMinute > 30) // Allow max 30 min extension at end+1 hour
       ) {
         console.log("Appointment end time exceeds working hours");
         return NextResponse.json(

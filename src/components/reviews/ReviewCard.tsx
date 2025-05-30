@@ -10,14 +10,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { StarRating } from "@/components/reviews/StarRating";
-import {
-  Calendar,
-  Clock,
-  Tag,
-  CheckCircle,
-  XCircle,
-  Quote,
-} from "lucide-react";
+import { Calendar, Clock, CheckCircle, XCircle, Quote } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export interface ReviewData {
@@ -99,9 +92,19 @@ export function ReviewCard({
                       rating={review.rating}
                       size="sm"
                       color="amber"
-                    />
+                    />{" "}
                     <span className="ml-2 text-gray-500 text-sm">
-                      {format(new Date(review.createdAt), "MMMM d, yyyy")}
+                      {(() => {
+                        try {
+                          const reviewDate = new Date(review.createdAt);
+                          if (isNaN(reviewDate.getTime())) {
+                            return "Date not available";
+                          }
+                          return format(reviewDate, "MMMM d, yyyy");
+                        } catch {
+                          return "Date not available";
+                        }
+                      })()}
                     </span>
                   </div>
                 </div>
@@ -147,15 +150,35 @@ export function ReviewCard({
             <div>
               <h3 className="font-semibold text-purple-800">
                 {review.user.name || "Anonymous User"}
-              </h3>
+              </h3>{" "}
               <div className="flex items-center gap-2 text-xs text-gray-600 mt-1">
                 <span className="flex items-center">
                   <Calendar className="h-3 w-3 mr-1" />
-                  {format(new Date(review.createdAt), "MMM d, yyyy")}
+                  {(() => {
+                    try {
+                      const reviewDate = new Date(review.createdAt);
+                      if (isNaN(reviewDate.getTime())) {
+                        return "Date not available";
+                      }
+                      return format(reviewDate, "MMM d, yyyy");
+                    } catch {
+                      return "Date not available";
+                    }
+                  })()}
                 </span>
                 <span className="flex items-center">
                   <Clock className="h-3 w-3 mr-1" />
-                  {format(new Date(review.createdAt), "h:mm a")}
+                  {(() => {
+                    try {
+                      const reviewDate = new Date(review.createdAt);
+                      if (isNaN(reviewDate.getTime())) {
+                        return "Time not available";
+                      }
+                      return format(reviewDate, "h:mm a");
+                    } catch {
+                      return "Time not available";
+                    }
+                  })()}
                 </span>
               </div>
             </div>

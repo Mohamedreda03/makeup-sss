@@ -378,8 +378,10 @@ export default function PaymentRequestPage() {
                           try {
                             // Create a proper date string in ISO format
                             const dateTimeString = `${appointmentRequest.appointmentDate}T${appointmentRequest.appointmentTime}:00`;
-                            const appointmentDateTime = new Date(dateTimeString);
-                            
+                            const appointmentDateTime = new Date(
+                              dateTimeString
+                            );
+
                             // Check if the date is valid
                             if (isNaN(appointmentDateTime.getTime())) {
                               return `${appointmentRequest.appointmentDate} at ${appointmentRequest.appointmentTime}`;
@@ -387,18 +389,26 @@ export default function PaymentRequestPage() {
 
                             // Format the date/time for display with better error handling
                             try {
-                              const formattedDate = appointmentDateTime.toLocaleDateString("en-US", {
-                                weekday: "long",
-                                year: "numeric",
-                                month: "long",
-                                day: "numeric",
-                              });
+                              const formattedDate =
+                                appointmentDateTime.toLocaleDateString(
+                                  "en-US",
+                                  {
+                                    weekday: "long",
+                                    year: "numeric",
+                                    month: "long",
+                                    day: "numeric",
+                                  }
+                                );
 
-                              const formattedTime = appointmentDateTime.toLocaleTimeString("en-US", {
-                                hour: "numeric",
-                                minute: "2-digit",
-                                hour12: true,
-                              });
+                              const formattedTime =
+                                appointmentDateTime.toLocaleTimeString(
+                                  "en-US",
+                                  {
+                                    hour: "numeric",
+                                    minute: "2-digit",
+                                    hour12: true,
+                                  }
+                                );
 
                               return `${formattedDate} at ${formattedTime}`;
                             } catch {

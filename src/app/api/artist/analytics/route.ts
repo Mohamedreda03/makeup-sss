@@ -45,16 +45,14 @@ export async function GET() {
         artist_id: artistId,
         booking_status: BookingStatus.COMPLETED,
       },
-    });
-
-    // Get total earnings
+    }); // Get total earnings
     const totalEarnings = await db.booking.aggregate({
       where: {
         artist_id: artistId,
         booking_status: BookingStatus.COMPLETED,
       },
       _sum: {
-        service_price: true,
+        total_price: true,
       },
     });
 
@@ -73,11 +71,10 @@ export async function GET() {
         id: true,
       },
     });
-
     const analytics = {
       totalBookings,
       completedBookings,
-      totalEarnings: totalEarnings._sum.service_price || 0,
+      totalEarnings: totalEarnings._sum.total_price || 0,
       monthlyBookings: monthlyBookings.length,
       conversionRate:
         totalBookings > 0

@@ -365,7 +365,9 @@ export default function PaymentPage() {
           <CardTitle className="text-rose-700">Appointment Summary</CardTitle>
         </CardHeader>
         <CardContent className="p-6">
-          <div className="space-y-4">            <div className="flex justify-between items-center p-3 bg-gray-50 rounded-md">
+          <div className="space-y-4">
+            {" "}
+            <div className="flex justify-between items-center p-3 bg-gray-50 rounded-md">
               <span className="font-medium flex items-center text-gray-700">
                 <Calendar className="mr-2 h-4 w-4 text-rose-500" />
                 Date & Time
@@ -374,15 +376,18 @@ export default function PaymentPage() {
                 {(() => {
                   try {
                     const appointmentDate = new Date(appointment.datetime);
-                    
+
                     // Check if the date is valid
                     if (isNaN(appointmentDate.getTime())) {
                       return "Invalid date";
                     }
 
-                    const formattedDate = format(appointmentDate, "MMMM d, yyyy");
+                    const formattedDate = format(
+                      appointmentDate,
+                      "MMMM d, yyyy"
+                    );
                     const formattedTime = format(appointmentDate, "h:mm a");
-                    
+
                     return `${formattedDate} at ${formattedTime}`;
                   } catch {
                     return "Date not available";
@@ -390,7 +395,6 @@ export default function PaymentPage() {
                 })()}
               </span>
             </div>
-
             <div className="flex justify-between items-center p-3 bg-gray-50 rounded-md">
               <span className="font-medium flex items-center text-gray-700">
                 <User className="mr-2 h-4 w-4 text-rose-500" />
@@ -400,7 +404,6 @@ export default function PaymentPage() {
                 {appointment.artistName || "Not specified"}
               </span>
             </div>
-
             <div className="flex justify-between font-bold text-lg border-t border-rose-100 pt-4 mt-4 text-rose-700">
               <span>Total Amount</span>
               <span>${appointment.totalPrice.toFixed(2)}</span>

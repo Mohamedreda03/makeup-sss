@@ -73,15 +73,28 @@ export default async function AppointmentPage({
         <CardHeader>
           <div className="flex items-center justify-between">
             <AppointmentStatusBadge status={appointment.booking_status} />
-          </div>
+          </div>{" "}
           <CardDescription>
-            Booked on {format(new Date(appointment.createdAt), "PPP")}
+            Booked on{" "}
+            {(() => {
+              try {
+                const createdDate = new Date(appointment.createdAt);
+                if (isNaN(createdDate.getTime())) {
+                  return "Unknown date";
+                }
+                return format(createdDate, "PPP");
+              } catch {
+                return "Date not available";
+              }
+            })()}
           </CardDescription>
         </CardHeader>
 
         <CardContent className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">              <div>
+            <div className="space-y-4">
+              {" "}
+              <div>
                 <h3 className="text-sm font-medium text-gray-500">
                   Date & Time
                 </h3>
@@ -92,7 +105,7 @@ export default async function AppointmentPage({
                       try {
                         // Handle the date/time properly to avoid timezone issues
                         const appointmentDate = new Date(appointment.date_time);
-                        
+
                         // Check if the date is valid
                         if (isNaN(appointmentDate.getTime())) {
                           return "Invalid Date";
@@ -112,7 +125,7 @@ export default async function AppointmentPage({
                       try {
                         // Handle the time properly to avoid timezone issues
                         const appointmentDate = new Date(appointment.date_time);
-                        
+
                         // Check if the date is valid
                         if (isNaN(appointmentDate.getTime())) {
                           return "Invalid Time";
@@ -150,7 +163,8 @@ export default async function AppointmentPage({
 
             <div className="space-y-4">
               <div>
-                <h3 className="text-sm font-medium text-gray-500">Artist</h3>                <div className="flex items-start space-x-3 mt-2">
+                <h3 className="text-sm font-medium text-gray-500">Artist</h3>{" "}
+                <div className="flex items-start space-x-3 mt-2">
                   <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
                     {appointment.artist?.user?.image ? (
                       <Image

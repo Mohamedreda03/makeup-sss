@@ -8,6 +8,7 @@ export interface Booking {
   artist_id: string;
   service_type: string;
   service_price: number | null;
+  total_price: number | null;
   date_time: Date | string;
   booking_status: BookingStatus;
   createdAt: Date | string;

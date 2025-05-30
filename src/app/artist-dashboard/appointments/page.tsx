@@ -64,6 +64,7 @@ interface Booking {
   date_time: string;
   service_type: string;
   service_price: number | null;
+  total_price: number | null;
   booking_status: BookingStatus;
   user_id: string;
   artist_id: string;
@@ -91,7 +92,7 @@ export default function AppointmentsPage() {
   // State for appointment list and selected appointment
   const [appointments, setAppointments] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState<string>("PENDING");
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [pagination, setPagination] = useState<PaginationInfo>({
     total: 0,
     pages: 0,
@@ -210,7 +211,6 @@ export default function AppointmentsPage() {
       toast({
         title: "Success",
         description: `Booking status updated to ${getStatusText(newStatus)}`,
-        
       });
 
       // Update local state with the data returned from the API
@@ -306,7 +306,6 @@ export default function AppointmentsPage() {
           description: `Appointment status updated to ${getStatusText(
             newStatus
           )}`,
-          
         }); // Update local state
         setAppointments((prev) =>
           prev.map((app) =>
@@ -510,16 +509,37 @@ export default function AppointmentsPage() {
                         <TableCell>
                           <div className="flex flex-col">
                             <span className="font-medium">
-                              {format(
-                                new Date(appointment.date_time),
-                                "MMM dd, yyyy"
-                              )}
+                              {(() => {
+                                try {
+                                  const appointmentDate = new Date(
+                                    appointment.date_time
+                                  );
+                                  if (isNaN(appointmentDate.getTime())) {
+                                    return "Invalid Date";
+                                  }
+                                  return format(
+                                    appointmentDate,
+                                    "MMM dd, yyyy"
+                                  );
+                                } catch {
+                                  return "Date not available";
+                                }
+                              })()}
                             </span>
                             <span className="text-xs text-muted-foreground">
-                              {format(
-                                new Date(appointment.date_time),
-                                "h:mm a"
-                              )}
+                              {(() => {
+                                try {
+                                  const appointmentDate = new Date(
+                                    appointment.date_time
+                                  );
+                                  if (isNaN(appointmentDate.getTime())) {
+                                    return "Invalid Time";
+                                  }
+                                  return format(appointmentDate, "h:mm a");
+                                } catch {
+                                  return "Time not available";
+                                }
+                              })()}
                             </span>
                           </div>
                         </TableCell>
@@ -527,12 +547,12 @@ export default function AppointmentsPage() {
                           <div className="font-medium">
                             {appointment.service_type}
                           </div>
-                        </TableCell>
+                        </TableCell>{" "}
                         <TableCell>
                           <div className="mt-1">
                             <span className="text-gray-700 font-medium">
                               EGP{" "}
-                              {appointment.service_price?.toFixed(2) || "0.00"}
+                              {appointment.total_price?.toFixed(2) || "0.00"}
                             </span>
                           </div>
                         </TableCell>
@@ -673,15 +693,25 @@ export default function AppointmentsPage() {
           <div className="space-y-4 py-4">
             {" "}
             <div className="space-y-2">
+              {" "}
               <div className="flex items-center">
                 <Calendar className="h-4 w-4 mr-2 text-gray-500" />
                 <span className="font-semibold">Date:</span>
                 <span className="ml-2">
                   {selectedAppointment &&
-                    format(
-                      new Date(selectedAppointment.date_time),
-                      "MMMM d, yyyy"
-                    )}
+                    (() => {
+                      try {
+                        const appointmentDate = new Date(
+                          selectedAppointment.date_time
+                        );
+                        if (isNaN(appointmentDate.getTime())) {
+                          return "Invalid Date";
+                        }
+                        return format(appointmentDate, "MMMM d, yyyy");
+                      } catch {
+                        return "Date not available";
+                      }
+                    })()}
                 </span>
               </div>
               <div className="flex items-center">
@@ -689,7 +719,19 @@ export default function AppointmentsPage() {
                 <span className="font-semibold">Time:</span>
                 <span className="ml-2">
                   {selectedAppointment &&
-                    format(new Date(selectedAppointment.date_time), "h:mm a")}
+                    (() => {
+                      try {
+                        const appointmentDate = new Date(
+                          selectedAppointment.date_time
+                        );
+                        if (isNaN(appointmentDate.getTime())) {
+                          return "Invalid Time";
+                        }
+                        return format(appointmentDate, "h:mm a");
+                      } catch {
+                        return "Time not available";
+                      }
+                    })()}
                 </span>
               </div>
               <div className="flex items-center">
@@ -699,16 +741,14 @@ export default function AppointmentsPage() {
                   {selectedAppointment?.user.name || "Unknown"}
                 </span>
               </div>
-
               <div className="flex items-start">
                 <span className="font-semibold mr-2">Service:</span>
                 <span>{selectedAppointment?.service_type}</span>
-              </div>
-
+              </div>{" "}
               <div className="flex items-start">
                 <span className="font-semibold mr-2">Price:</span>
                 <span>
-                  EGP {selectedAppointment?.service_price?.toFixed(2) || "0.00"}
+                  EGP {selectedAppointment?.total_price?.toFixed(2) || "0.00"}
                 </span>
               </div>
             </div>{" "}

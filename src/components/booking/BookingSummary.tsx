@@ -43,11 +43,21 @@ export function BookingSummary({
             <div className="flex justify-between">
               <span className="text-gray-500">Service:</span>
               <span className="font-medium">{selectedService.name}</span>
-            </div>
+            </div>{" "}
             <div className="flex justify-between">
               <span className="text-gray-500">Date:</span>
               <span className="font-medium">
-                {format(new Date(selectedDate), "MMMM d, yyyy")}
+                {(() => {
+                  try {
+                    const appointmentDate = new Date(selectedDate);
+                    if (isNaN(appointmentDate.getTime())) {
+                      return "Invalid Date";
+                    }
+                    return format(appointmentDate, "MMMM d, yyyy");
+                  } catch {
+                    return "Date not available";
+                  }
+                })()}
               </span>
             </div>{" "}
             <div className="flex justify-between">

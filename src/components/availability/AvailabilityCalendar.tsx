@@ -303,9 +303,19 @@ export default function AvailabilityCalendar({
                       variant={slot.isAvailable ? "default" : "destructive"}
                     >
                       {slot.isAvailable ? "Available" : "Busy"}
-                    </Badge>
+                    </Badge>{" "}
                     <span className="font-medium">
-                      {format(new Date(slot.date), "PPP")}
+                      {(() => {
+                        try {
+                          const slotDate = new Date(slot.date);
+                          if (isNaN(slotDate.getTime())) {
+                            return "Invalid Date";
+                          }
+                          return format(slotDate, "PPP");
+                        } catch {
+                          return "Date not available";
+                        }
+                      })()}
                     </span>
                     <span className="text-muted-foreground">
                       {slot.startTime} - {slot.endTime}

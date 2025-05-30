@@ -170,9 +170,17 @@ async function OrdersList({ status }: { status: OrderStatus | "ALL" }) {
                         0
                       )
                     )}
-                  </TableCell>
+                  </TableCell>{" "}
                   <TableCell>
-                    {format(new Date(order.createdAt), "MMM d, yyyy")}
+                    {(() => {
+                      try {
+                        const date = new Date(order.createdAt);
+                        if (isNaN(date.getTime())) return "Date not available";
+                        return format(date, "MMM d, yyyy");
+                      } catch {
+                        return "Date not available";
+                      }
+                    })()}
                   </TableCell>
                   <TableCell>
                     <Button variant="ghost" size="icon" asChild>

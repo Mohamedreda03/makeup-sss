@@ -74,11 +74,10 @@ interface ExtendedUser {
 export default function ArtistDashboard() {
   const router = useRouter();
   const { data: session, status } = useSession();
-
   // State for booking list and selected booking
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState<string>("PENDING");
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [pagination, setPagination] = useState<PaginationInfo>({
     total: 0,
     pages: 0,
@@ -188,12 +187,10 @@ export default function ArtistDashboard() {
 
     // Count unique customers
     const uniqueCustomerIds = new Set(bookings.map((b) => b.user_id));
-    const customerCount = uniqueCustomerIds.size;
-
-    // Calculate total earnings from completed bookings
+    const customerCount = uniqueCustomerIds.size; // Calculate total earnings from completed bookings
     const totalEarnings = bookings
       .filter((b) => b.booking_status === "COMPLETED")
-      .reduce((sum, b) => sum + (b.service_price || 0), 0);
+      .reduce((sum, b) => sum + (b.total_price || 0), 0);
 
     setStats({
       totalBookings: bookings.length,
@@ -257,11 +254,9 @@ export default function ArtistDashboard() {
                 }
               : booking
           )
-        );
-
-        // If booking is completed, update artist earnings
-        if (newStatus === "COMPLETED" && selectedBooking.service_price) {
-          await updateArtistEarnings(selectedBooking.service_price);
+        ); // If booking is completed, update artist earnings
+        if (newStatus === "COMPLETED" && selectedBooking.total_price) {
+          await updateArtistEarnings(selectedBooking.total_price);
         }
 
         setIsModalOpen(false);
@@ -338,11 +333,9 @@ export default function ArtistDashboard() {
           bookings.map((b) =>
             b.id === booking.id ? { ...b, booking_status: newStatus } : b
           )
-        );
-
-        // If booking is completed, update artist earnings
-        if (newStatus === "COMPLETED" && booking.service_price) {
-          await updateArtistEarnings(booking.service_price);
+        ); // If booking is completed, update artist earnings
+        if (newStatus === "COMPLETED" && booking.total_price) {
+          await updateArtistEarnings(booking.total_price);
         }
       } else {
         throw new Error(data.message || "Failed to update booking status");
@@ -533,12 +526,36 @@ export default function ArtistDashboard() {
                             </div>
                           </div>
                         </div>
-                      </TableCell>
+                      </TableCell>{" "}
                       <TableCell>
                         <div>
-                          {format(new Date(booking.date_time), "MMM d, yyyy")}
+                          {(() => {
+                            try {
+                              const appointmentDate = new Date(
+                                booking.date_time
+                              );
+                              if (isNaN(appointmentDate.getTime())) {
+                                return "Invalid Date";
+                              }
+                              return format(appointmentDate, "MMM d, yyyy");
+                            } catch {
+                              return "Date not available";
+                            }
+                          })()}
                           <div className="text-xs text-gray-500">
-                            {format(new Date(booking.date_time), "h:mm a")}
+                            {(() => {
+                              try {
+                                const appointmentDate = new Date(
+                                  booking.date_time
+                                );
+                                if (isNaN(appointmentDate.getTime())) {
+                                  return "Invalid Time";
+                                }
+                                return format(appointmentDate, "h:mm a");
+                              } catch {
+                                return "Time not available";
+                              }
+                            })()}
                           </div>
                         </div>
                       </TableCell>
@@ -546,10 +563,10 @@ export default function ArtistDashboard() {
                         <div className="font-medium">
                           {booking.service_type}
                         </div>
-                      </TableCell>
+                      </TableCell>{" "}
                       <TableCell>
                         <div className="font-medium text-green-600">
-                          EGP {(booking.service_price || 0).toFixed(2)}
+                          EGP {(booking.total_price || 0).toFixed(2)}
                         </div>
                       </TableCell>
                       <TableCell>
@@ -670,19 +687,43 @@ export default function ArtistDashboard() {
                   <div className="text-gray-900 font-medium">
                     {selectedBooking.service_type}
                   </div>
-                </div>
+                </div>{" "}
                 <div className="space-y-1">
                   <div className="text-sm font-medium">Price</div>
                   <div className="text-gray-900 font-medium">
-                    EGP {(selectedBooking.service_price || 0).toFixed(2)}
+                    EGP {(selectedBooking.total_price || 0).toFixed(2)}
                   </div>
-                </div>
+                </div>{" "}
                 <div className="space-y-1">
                   <div className="text-sm font-medium">Date & Time</div>
                   <div>
-                    {format(new Date(selectedBooking.date_time), "PPP")}
+                    {(() => {
+                      try {
+                        const appointmentDate = new Date(
+                          selectedBooking.date_time
+                        );
+                        if (isNaN(appointmentDate.getTime())) {
+                          return "Invalid Date";
+                        }
+                        return format(appointmentDate, "PPP");
+                      } catch {
+                        return "Date not available";
+                      }
+                    })()}
                     <div className="text-sm text-gray-500">
-                      {format(new Date(selectedBooking.date_time), "p")}
+                      {(() => {
+                        try {
+                          const appointmentDate = new Date(
+                            selectedBooking.date_time
+                          );
+                          if (isNaN(appointmentDate.getTime())) {
+                            return "Invalid Time";
+                          }
+                          return format(appointmentDate, "p");
+                        } catch {
+                          return "Time not available";
+                        }
+                      })()}
                     </div>
                   </div>
                 </div>

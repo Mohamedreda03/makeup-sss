@@ -298,16 +298,41 @@ export default function AppointmentsPage() {
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 text-xs bg-gray-50 p-2 rounded-md mb-3">
+                    {" "}
                     <div className="flex items-center">
                       <Calendar className="h-3 w-3 mr-1 text-gray-500" />
                       <span>
-                        {format(new Date(appointment.datetime), "MMM d, yyyy")}
+                        {(() => {
+                          try {
+                            const appointmentDate = new Date(
+                              appointment.datetime
+                            );
+                            if (isNaN(appointmentDate.getTime())) {
+                              return "Invalid Date";
+                            }
+                            return format(appointmentDate, "MMM d, yyyy");
+                          } catch {
+                            return "Date not available";
+                          }
+                        })()}
                       </span>
                     </div>
                     <div className="flex items-center">
                       <Clock className="h-3 w-3 mr-1 text-gray-500" />
                       <span>
-                        {format(new Date(appointment.datetime), "h:mm a")}
+                        {(() => {
+                          try {
+                            const appointmentDate = new Date(
+                              appointment.datetime
+                            );
+                            if (isNaN(appointmentDate.getTime())) {
+                              return "Invalid Time";
+                            }
+                            return format(appointmentDate, "h:mm a");
+                          } catch {
+                            return "Time not available";
+                          }
+                        })()}
                       </span>
                     </div>
                     <div className="flex items-center">
@@ -364,20 +389,43 @@ export default function AppointmentsPage() {
                     <Badge variant="success" className="px-3 py-1">
                       Completed
                     </Badge>
-                  </div>
-
+                  </div>{" "}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm bg-gray-50 p-3 rounded-md mt-4">
                     <div className="flex items-center">
                       <Calendar className="h-4 w-4 mr-2 text-gray-500" />
                       <span>
-                        {format(new Date(appointment.datetime), "MMMM d, yyyy")}
+                        {(() => {
+                          try {
+                            const appointmentDate = new Date(
+                              appointment.datetime
+                            );
+                            if (isNaN(appointmentDate.getTime())) {
+                              return "Invalid Date";
+                            }
+                            return format(appointmentDate, "MMMM d, yyyy");
+                          } catch {
+                            return "Date not available";
+                          }
+                        })()}
                       </span>
                     </div>
 
                     <div className="flex items-center">
                       <Clock className="h-4 w-4 mr-2 text-gray-500" />
                       <span>
-                        {format(new Date(appointment.datetime), "h:mm a")}
+                        {(() => {
+                          try {
+                            const appointmentDate = new Date(
+                              appointment.datetime
+                            );
+                            if (isNaN(appointmentDate.getTime())) {
+                              return "Invalid Time";
+                            }
+                            return format(appointmentDate, "h:mm a");
+                          } catch {
+                            return "Time not available";
+                          }
+                        })()}
                       </span>
                     </div>
 
@@ -386,7 +434,6 @@ export default function AppointmentsPage() {
                       <span>EGP {appointment.totalPrice}</span>
                     </div>
                   </div>
-
                   <div className="mt-3 text-sm">
                     <span className="font-medium">Service:</span>{" "}
                     {appointment.serviceType}
@@ -431,19 +478,42 @@ export default function AppointmentsPage() {
                     <Badge variant="destructive" className="px-3 py-1">
                       Cancelled
                     </Badge>
-                  </div>
-
+                  </div>{" "}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm bg-gray-50 p-3 rounded-md">
                     <div className="flex items-center">
                       <Calendar className="h-4 w-4 mr-2 text-gray-500" />
                       <span>
-                        {format(new Date(appointment.datetime), "MMMM d, yyyy")}
+                        {(() => {
+                          try {
+                            const appointmentDate = new Date(
+                              appointment.datetime
+                            );
+                            if (isNaN(appointmentDate.getTime())) {
+                              return "Invalid Date";
+                            }
+                            return format(appointmentDate, "MMMM d, yyyy");
+                          } catch {
+                            return "Date not available";
+                          }
+                        })()}
                       </span>
                     </div>
                     <div className="flex items-center">
                       <Clock className="h-4 w-4 mr-2 text-gray-500" />
                       <span>
-                        {format(new Date(appointment.datetime), "h:mm a")}
+                        {(() => {
+                          try {
+                            const appointmentDate = new Date(
+                              appointment.datetime
+                            );
+                            if (isNaN(appointmentDate.getTime())) {
+                              return "Invalid Time";
+                            }
+                            return format(appointmentDate, "h:mm a");
+                          } catch {
+                            return "Time not available";
+                          }
+                        })()}
                       </span>
                     </div>
                     <div className="flex items-center">
@@ -451,7 +521,6 @@ export default function AppointmentsPage() {
                       <span>EGP {appointment.totalPrice}</span>
                     </div>
                   </div>
-
                   <div className="mt-3 text-sm">
                     <span className="font-medium">Service:</span>{" "}
                     {appointment.serviceType}

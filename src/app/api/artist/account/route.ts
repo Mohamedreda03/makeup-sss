@@ -35,20 +35,17 @@ export async function GET() {
         booking_status: "COMPLETED",
       },
     });
-
     const totalEarningsFromBookings = completedBookings.reduce(
-      (sum, booking) => sum + (booking.service_price || 0),
+      (sum, booking) => sum + (booking.total_price || 0),
       0
     );
 
     // Use the earnings field from the artist model, fallback to calculated earnings
     const totalEarnings =
-      user.makeup_artist.earnings || totalEarningsFromBookings;
-
-    // Create mock transactions based on completed bookings for now
+      user.makeup_artist.earnings || totalEarningsFromBookings; // Create mock transactions based on completed bookings for now
     const mockTransactions = completedBookings.slice(0, 10).map((booking) => ({
       id: `booking-${booking.id}`,
-      amount: booking.service_price || 0,
+      amount: booking.total_price || 0,
       type: "BOOKING_PAYMENT",
       status: "COMPLETED",
       createdAt: booking.updatedAt.toISOString(),

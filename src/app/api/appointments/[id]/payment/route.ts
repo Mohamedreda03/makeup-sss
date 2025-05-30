@@ -23,9 +23,7 @@ export async function POST(
 
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // 1. Find the booking
+    } // 1. Find the booking
     const booking = await db.booking.findUnique({
       where: { id },
       include: { artist: true },
@@ -33,7 +31,9 @@ export async function POST(
 
     if (!booking) {
       return NextResponse.json({ error: "Booking not found" }, { status: 404 });
-    } // 2. Update booking status to CONFIRMED (indicating payment was processed)
+    }
+
+    // 2. Update booking status to CONFIRMED (indicating payment was processed)
     const updatedBooking = await db.booking.update({
       where: { id },
       data: {
@@ -41,7 +41,27 @@ export async function POST(
       },
     });
 
-    console.log("Updated booking status to CONFIRMED");
+    // 3. If booking has a total_price, update artist earnings
+    if (booking.total_price && booking.total_price > 0) {
+      try {
+        await db.makeUpArtist.update({
+          where: { id: booking.artist_id },
+          data: {
+            earnings: {
+              increment: booking.total_price,
+            },
+          },
+        });
+        console.log(
+          `Updated artist ${booking.artist_id} earnings by ${booking.total_price}`
+        );
+      } catch (earningsError) {
+        console.error("Error updating artist earnings:", earningsError);
+        // Don't fail the main operation if earnings update fails
+      }
+    }
+
+    console.log("Updated booking status to CONFIRMED and processed earnings");
 
     return NextResponse.json({
       success: true,

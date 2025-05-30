@@ -346,12 +346,36 @@ export default async function AdminPage() {
                     <TableCell>
                       {appointment.artist?.user?.name || "Unknown Artist"}
                     </TableCell>
-                    <TableCell>{appointment.service_type}</TableCell>
+                    <TableCell>{appointment.service_type}</TableCell>{" "}
                     <TableCell className="text-slate-500 text-sm">
-                      {format(new Date(appointment.date_time), "MMM dd, yyyy")}
+                      {(() => {
+                        try {
+                          const appointmentDate = new Date(
+                            appointment.date_time
+                          );
+                          if (isNaN(appointmentDate.getTime())) {
+                            return "Invalid Date";
+                          }
+                          return format(appointmentDate, "MMM dd, yyyy");
+                        } catch {
+                          return "Date not available";
+                        }
+                      })()}
                       <br />
                       <span className="text-xs">
-                        {format(new Date(appointment.date_time), "HH:mm")}
+                        {(() => {
+                          try {
+                            const appointmentDate = new Date(
+                              appointment.date_time
+                            );
+                            if (isNaN(appointmentDate.getTime())) {
+                              return "Invalid Time";
+                            }
+                            return format(appointmentDate, "HH:mm");
+                          } catch {
+                            return "Time not available";
+                          }
+                        })()}
                       </span>
                     </TableCell>
                     <TableCell>
@@ -368,10 +392,10 @@ export default async function AdminPage() {
                       >
                         {appointment.booking_status}
                       </Badge>
-                    </TableCell>
+                    </TableCell>{" "}
                     <TableCell>
-                      {appointment.service_price
-                        ? `EGP ${appointment.service_price.toFixed(2)}`
+                      {appointment.total_price
+                        ? `EGP ${appointment.total_price.toFixed(2)}`
                         : "N/A"}
                     </TableCell>
                   </TableRow>

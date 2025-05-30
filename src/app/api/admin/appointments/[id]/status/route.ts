@@ -38,11 +38,12 @@ export async function PUT(
     }
 
     // Get booking ID from URL params
-    const bookingId = params.id;
-
-    // Check if booking exists
+    const bookingId = params.id; // Check if booking exists
     const booking = await db.booking.findUnique({
       where: { id: bookingId },
+      include: {
+        artist: true,
+      },
     });
 
     if (!booking) {
@@ -71,6 +72,30 @@ export async function PUT(
         booking_status: status,
       },
     });
+
+    // If booking is completed and has a price, update artist earnings
+    if (
+      status === "COMPLETED" &&
+      booking.total_price &&
+      booking.total_price > 0
+    ) {
+      try {
+        await db.makeUpArtist.update({
+          where: { id: booking.artist_id },
+          data: {
+            earnings: {
+              increment: booking.total_price,
+            },
+          },
+        });
+        console.log(
+          `Updated artist ${booking.artist_id} earnings by ${booking.total_price}`
+        );
+      } catch (earningsError) {
+        console.error("Error updating artist earnings:", earningsError);
+        // Don't fail the main operation if earnings update fails
+      }
+    }
 
     return NextResponse.json({
       message: "Booking status updated successfully",

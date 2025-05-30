@@ -75,6 +75,7 @@ interface Booking {
   artist_id: string;
   service_type: string;
   service_price: number | null;
+  total_price: number | null;
   date_time: Date;
   booking_status: BookingStatus;
   createdAt: Date;
@@ -544,12 +545,36 @@ function AdminAppointmentsPage() {
                         <div className="font-medium">
                           {booking.artist.user.name || "Unassigned"}
                         </div>
-                      </TableCell>
+                      </TableCell>{" "}
                       <TableCell>
                         <div>
-                          {format(new Date(booking.date_time), "MMM dd, yyyy")}
+                          {(() => {
+                            try {
+                              const appointmentDate = new Date(
+                                booking.date_time
+                              );
+                              if (isNaN(appointmentDate.getTime())) {
+                                return "Invalid Date";
+                              }
+                              return format(appointmentDate, "MMM dd, yyyy");
+                            } catch {
+                              return "Date not available";
+                            }
+                          })()}
                           <div className="text-sm text-muted-foreground">
-                            {format(new Date(booking.date_time), "h:mm a")}
+                            {(() => {
+                              try {
+                                const appointmentDate = new Date(
+                                  booking.date_time
+                                );
+                                if (isNaN(appointmentDate.getTime())) {
+                                  return "Invalid Time";
+                                }
+                                return format(appointmentDate, "h:mm a");
+                              } catch {
+                                return "Time not available";
+                              }
+                            })()}
                           </div>
                         </div>
                       </TableCell>
@@ -567,12 +592,12 @@ function AdminAppointmentsPage() {
                             {getStatusText(booking.booking_status)}
                           </span>
                         </Badge>
-                      </TableCell>
+                      </TableCell>{" "}
                       <TableCell>
                         <p className="mt-1">
                           {" "}
                           <span className="text-gray-500">Total:</span> EGP{" "}
-                          {booking.service_price?.toFixed(2) || "0.00"}
+                          {booking.total_price?.toFixed(2) || "0.00"}
                         </p>
                       </TableCell>{" "}
                       <TableCell>
@@ -783,27 +808,44 @@ function AdminAppointmentsPage() {
               </div>
               {/* Service & Booking Time */}
               <div className="grid grid-cols-2 gap-4 mb-4">
+                {" "}
                 <div className="space-y-2">
                   <h3 className="text-sm font-medium text-gray-500">
                     Date & Time
                   </h3>
                   <p className="font-medium">
-                    {format(
-                      new Date(
-                        bookings.find((b) => b.id === bookingToUpdate)
-                          ?.date_time || new Date()
-                      ),
-                      "MMMM d, yyyy"
-                    )}
+                    {(() => {
+                      try {
+                        const booking = bookings.find(
+                          (b) => b.id === bookingToUpdate
+                        );
+                        if (!booking) return "Booking not found";
+                        const appointmentDate = new Date(booking.date_time);
+                        if (isNaN(appointmentDate.getTime())) {
+                          return "Invalid Date";
+                        }
+                        return format(appointmentDate, "MMMM d, yyyy");
+                      } catch {
+                        return "Date not available";
+                      }
+                    })()}
                   </p>
                   <p className="text-sm text-gray-500">
-                    {format(
-                      new Date(
-                        bookings.find((b) => b.id === bookingToUpdate)
-                          ?.date_time || new Date()
-                      ),
-                      "h:mm a"
-                    )}
+                    {(() => {
+                      try {
+                        const booking = bookings.find(
+                          (b) => b.id === bookingToUpdate
+                        );
+                        if (!booking) return "Booking not found";
+                        const appointmentDate = new Date(booking.date_time);
+                        if (isNaN(appointmentDate.getTime())) {
+                          return "Invalid Time";
+                        }
+                        return format(appointmentDate, "h:mm a");
+                      } catch {
+                        return "Time not available";
+                      }
+                    })()}
                   </p>
                 </div>
                 <div className="space-y-2">
@@ -815,13 +857,13 @@ function AdminAppointmentsPage() {
                       bookings.find((b) => b.id === bookingToUpdate)
                         ?.service_type
                     }
-                  </p>
+                  </p>{" "}
                   <p className="text-sm text-gray-500">
                     {" "}
                     EGP{" "}
                     {bookings
                       .find((b) => b.id === bookingToUpdate)
-                      ?.service_price?.toFixed(2) || "0.00"}
+                      ?.total_price?.toFixed(2) || "0.00"}
                   </p>
                 </div>
               </div>
