@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { addDays, format, parseISO, startOfDay, getDay } from "date-fns";
-import { fromZonedTime, toZonedTime } from 'date-fns-tz';
+import { fromZonedTime, toZonedTime } from "date-fns-tz";
 const DEFAULT_BUSINESS_HOURS = {
   start: 10, // 10 AM
   end: 24, // 12 AM (midnight)
@@ -12,7 +12,7 @@ const DEFAULT_BUSINESS_HOURS = {
 const DEFAULT_REGULAR_DAYS_OFF = [0, 6]; // Sunday and Saturday
 
 // Target timezone - change this to your local timezone
-const TIMEZONE = 'Africa/Cairo'; // المنطقة الزمنية الأساسية
+const TIMEZONE = "Africa/Cairo"; // المنطقة الزمنية الأساسية
 
 // GET /api/artists/[id]/availability
 // This endpoint returns the available and booked time slots for an artist on specific dates
