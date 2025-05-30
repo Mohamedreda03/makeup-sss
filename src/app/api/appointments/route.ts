@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { z } from "zod";
 import { getDay, format, parseISO, addMinutes } from "date-fns";
-import { toZonedTime } from "date-fns-tz";
+import { toZonedTime, fromZonedTime } from "date-fns-tz";
 import { BookingStatus } from "@/generated/prisma";
 
 // Extended user interface
@@ -181,26 +181,20 @@ export async function POST(req: Request) {
           { status: 404 }
         );
       }
-      console.log(`Artist verified: ${artist.name || artist.id}`); // Parse the datetime with timezone handling - same as appointment-requests API
+      console.log(`Artist verified: ${artist.name || artist.id}`);      // Parse the datetime with timezone handling - same as appointment-requests API
       console.log("=== TIMEZONE PROCESSING ===");
-      console.log(
-        "Server timezone:",
-        Intl.DateTimeFormat().resolvedOptions().timeZone
-      );
+      console.log("Server timezone:", Intl.DateTimeFormat().resolvedOptions().timeZone);
       console.log("Target timezone:", TIMEZONE);
       console.log("Received datetime:", validatedData.datetime);
 
-      // Parse the ISO string directly - it should already be in the correct timezone
+      // The datetime comes without timezone info (YYYY-MM-DDTHH:mm:ss)
+      // We need to treat it as Cairo local time
       const appointmentDateTime = parseISO(validatedData.datetime);
-      console.log("Parsed datetime (ISO):", appointmentDateTime.toISOString());
-
-      // The datetime is already in the correct timezone, so we use it directly
-      // No need for additional timezone conversion since the frontend sends it correctly formatted
-      const appointmentDateTimeUTC = appointmentDateTime;
-      console.log(
-        "Using datetime as UTC:",
-        appointmentDateTimeUTC.toISOString()
-      );
+      console.log("Parsed datetime (assuming local):", appointmentDateTime.toISOString());
+      
+      // Convert Cairo local time to UTC for storage
+      const appointmentDateTimeUTC = fromZonedTime(appointmentDateTime, TIMEZONE);
+      console.log("Converted to UTC for storage:", appointmentDateTimeUTC.toISOString());
 
       // Use target timezone for local calculations
       const localDateTime = toZonedTime(appointmentDateTimeUTC, TIMEZONE);

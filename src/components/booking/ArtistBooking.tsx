@@ -284,9 +284,8 @@ export default function ArtistBooking({
       return;
     }
 
-    setIsBooking(true);
-    try {
-      // Parse time and create datetime in the target timezone (Africa/Cairo)
+    setIsBooking(true);    try {
+      // Parse time and create datetime in Cairo timezone
       const [timeStr, period] = selectedTime.split(" ");
       const [hoursStr, minutesStr] = timeStr.split(":");
       let hours = parseInt(hoursStr);
@@ -296,27 +295,27 @@ export default function ArtistBooking({
       else if (period === "AM" && hours === 12) hours = 0;
 
       const [year, month, day] = selectedDate.split("-");
-      // Create datetime string directly in the target timezone format
-      // Format: YYYY-MM-DDTHH:mm:ss+02:00 (Africa/Cairo timezone)
-      const localDatetimeString = `${year}-${month.padStart(
-        2,
-        "0"
-      )}-${day.padStart(2, "0")}T${hours.toString().padStart(2, "0")}:${minutes
-        .toString()
-        .padStart(2, "0")}:00+02:00`;
+      
+      // Create a date object in local time (Cairo timezone)
+      // We'll send this as ISO string without timezone offset to avoid confusion
+      const localDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), hours, minutes, 0);
+      
+      // Format as ISO string without timezone (YYYY-MM-DDTHH:mm:ss)
+      // This represents the exact time in Cairo timezone
+      const localDatetimeString = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}T${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:00`;
 
-      console.log("Sending appointment data:", {
-        selectedDate,
-        selectedTime,
-        sentDatetime: localDatetimeString,
-        timezone: "Africa/Cairo",
-      });
+      console.log("=== BOOKING TIME DEBUG ===");
+      console.log("Selected time:", selectedTime);
+      console.log("Selected date:", selectedDate);
+      console.log("Parsed hours:", hours, "minutes:", minutes);
+      console.log("Local date object:", localDate.toLocaleString());
+      console.log("Sending datetime string:", localDatetimeString);
 
       const appointmentData = {
         artistId,
         serviceId: selectedService.id,
         serviceType: selectedService.name,
-        datetime: localDatetimeString, // Send local time without timezone conversion
+        datetime: localDatetimeString, // Send without timezone offset
         duration: selectedService.duration || 60,
         totalPrice: selectedService.price,
         notes: notes || "",

@@ -117,28 +117,22 @@ export async function POST(req: Request) {
           { status: 404 }
         );
       }
-      console.log(`Makeup artist ID found: ${makeupArtistRecord.id}`); // Parse the datetime with timezone handling
+      console.log(`Makeup artist ID found: ${makeupArtistRecord.id}`);      // Parse the datetime with timezone handling
       console.log("=== TIMEZONE PROCESSING ===");
-      console.log(
-        "Server timezone:",
-        Intl.DateTimeFormat().resolvedOptions().timeZone
-      );
+      console.log("Server timezone:", Intl.DateTimeFormat().resolvedOptions().timeZone);
       console.log("Target timezone:", TIMEZONE);
       console.log("Received datetime:", validatedData.datetime);
 
-      // Parse the ISO string directly - it should already be in the correct timezone
+      // The datetime comes without timezone info (YYYY-MM-DDTHH:mm:ss)
+      // We need to treat it as Cairo local time
       const appointmentDateTime = parseISO(validatedData.datetime);
-      console.log("Parsed datetime (ISO):", appointmentDateTime.toISOString());
+      console.log("Parsed datetime (assuming local):", appointmentDateTime.toISOString());
+      
+      // Convert Cairo local time to UTC for storage
+      const appointmentDateTimeUTC = fromZonedTime(appointmentDateTime, TIMEZONE);
+      console.log("Converted to UTC for storage:", appointmentDateTimeUTC.toISOString());
 
-      // The datetime is already in the correct timezone, so we use it directly
-      // No need for additional timezone conversion since the frontend sends it correctly formatted
-      const appointmentDateTimeUTC = appointmentDateTime;
-      console.log(
-        "Using datetime as UTC:",
-        appointmentDateTimeUTC.toISOString()
-      );
-
-      // Convert to target timezone for local calculations and validation
+      // Convert back to Cairo time for validation
       const localDateTime = toZonedTime(appointmentDateTimeUTC, TIMEZONE);
       console.log("Local time for validation:", localDateTime.toLocaleString());
 

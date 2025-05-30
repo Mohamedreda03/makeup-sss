@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { format } from "date-fns";
 import {
   Card,
   CardContent,
@@ -398,12 +397,23 @@ export default function PaymentRequestPage() {
                   <p className="text-gray-600">
                     {appointmentRequest.datetime
                       ? (() => {
-                          // Since we now preserve the original datetime with timezone,
-                          // we can parse it directly
-                          const date = new Date(appointmentRequest.datetime);
-                          console.log("Original datetime:", appointmentRequest.datetime);
-                          console.log("Parsed date:", date.toISOString());
-                          console.log("Local display:", date.toLocaleString('en-US', {
+                          // Parse the datetime string and display in Cairo timezone
+                          console.log("Original datetime from appointment request:", appointmentRequest.datetime);
+                          
+                          // Check if the datetime has timezone info
+                          const hasTimezone = /[+-]\d{2}:\d{2}$|Z$/.test(appointmentRequest.datetime);
+                          let dateTimeString = appointmentRequest.datetime;
+                          
+                          // If no timezone info, assume it's Cairo local time
+                          if (!hasTimezone) {
+                            dateTimeString = appointmentRequest.datetime + "+02:00";
+                          }
+                          
+                          const date = new Date(dateTimeString);
+                          console.log("Parsed date UTC:", date.toISOString());
+                          
+                          // Display in Cairo timezone using toLocaleString
+                          const displayString = date.toLocaleString('en-US', {
                             timeZone: 'Africa/Cairo',
                             year: 'numeric',
                             month: 'long',
@@ -411,9 +421,10 @@ export default function PaymentRequestPage() {
                             hour: 'numeric',
                             minute: '2-digit',
                             hour12: true
-                          }));
+                          });
                           
-                          return format(date, "MMMM d, yyyy 'at' h:mm a");
+                          console.log("Cairo timezone display:", displayString);
+                          return displayString;
                         })()
                       : "Not specified"}
                   </p>
