@@ -375,48 +375,35 @@ export default function PaymentRequestPage() {
                     {appointmentRequest.appointmentDate &&
                     appointmentRequest.appointmentTime
                       ? (() => {
-                          // Create date from separate date and time fields
-                          console.log(
-                            "Appointment date:",
-                            appointmentRequest.appointmentDate
-                          );
-                          console.log(
-                            "Appointment time:",
-                            appointmentRequest.appointmentTime
-                          );
+                          try {
+                            // Create a proper date string in ISO format
+                            const dateTimeString = `${appointmentRequest.appointmentDate}T${appointmentRequest.appointmentTime}:00`;
+                            const appointmentDateTime = new Date(dateTimeString);
+                            
+                            // Check if the date is valid
+                            if (isNaN(appointmentDateTime.getTime())) {
+                              return `${appointmentRequest.appointmentDate} at ${appointmentRequest.appointmentTime}`;
+                            }
 
-                          // Parse date (YYYY-MM-DD) and time (HH:MM)
-                          const [year, month, day] =
-                            appointmentRequest.appointmentDate
-                              .split("-")
-                              .map(Number);
-                          const [hours, minutes] =
-                            appointmentRequest.appointmentTime
-                              .split(":")
-                              .map(Number);
-
-                          // Create date object in local time (Cairo)
-                          const appointmentDateTime = new Date(
-                            year,
-                            month - 1,
-                            day,
-                            hours,
-                            minutes
-                          );
-
-                          // Display the date/time in a user-friendly format
-                          const displayString =
-                            appointmentDateTime.toLocaleString("en-US", {
+                            // Format the date/time for display
+                            const formattedDate = appointmentDateTime.toLocaleDateString("en-US", {
+                              weekday: "long",
                               year: "numeric",
                               month: "long",
                               day: "numeric",
+                            });
+
+                            const formattedTime = appointmentDateTime.toLocaleTimeString("en-US", {
                               hour: "numeric",
                               minute: "2-digit",
                               hour12: true,
                             });
 
-                          console.log("Display string:", displayString);
-                          return displayString;
+                            return `${formattedDate} at ${formattedTime}`;
+                          } catch {
+                            // Fallback to simple string concatenation if parsing fails
+                            return `${appointmentRequest.appointmentDate} at ${appointmentRequest.appointmentTime}`;
+                          }
                         })()
                       : "Not specified"}
                   </p>
