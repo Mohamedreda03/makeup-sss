@@ -284,7 +284,8 @@ export default function ArtistBooking({
       return;
     }
 
-    setIsBooking(true);    try {
+    setIsBooking(true);
+    try {
       // Parse time and create datetime in the target timezone (Africa/Cairo)
       const [timeStr, period] = selectedTime.split(" ");
       const [hoursStr, minutesStr] = timeStr.split(":");
@@ -295,15 +296,20 @@ export default function ArtistBooking({
       else if (period === "AM" && hours === 12) hours = 0;
 
       const [year, month, day] = selectedDate.split("-");
-        // Create datetime string directly in the target timezone format
+      // Create datetime string directly in the target timezone format
       // Format: YYYY-MM-DDTHH:mm:ss+02:00 (Africa/Cairo timezone)
-      const localDatetimeString = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:00+02:00`;
+      const localDatetimeString = `${year}-${month.padStart(
+        2,
+        "0"
+      )}-${day.padStart(2, "0")}T${hours.toString().padStart(2, "0")}:${minutes
+        .toString()
+        .padStart(2, "0")}:00+02:00`;
 
       console.log("Sending appointment data:", {
         selectedDate,
         selectedTime,
         sentDatetime: localDatetimeString,
-        timezone: "Africa/Cairo"
+        timezone: "Africa/Cairo",
       });
 
       const appointmentData = {

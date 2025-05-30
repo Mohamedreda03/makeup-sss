@@ -2,7 +2,14 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { z } from "zod";
-import { getDay, format, addMinutes, startOfDay, addDays, parseISO } from "date-fns";
+import {
+  getDay,
+  format,
+  addMinutes,
+  startOfDay,
+  addDays,
+  parseISO,
+} from "date-fns";
 import { toZonedTime, fromZonedTime } from "date-fns-tz";
 import { v4 as uuidv4 } from "uuid";
 
@@ -36,7 +43,9 @@ const appointmentRequestSchema = z.object({
   artistId: z.string(),
   serviceId: z.string().optional(),
   serviceType: z.string(),
-  datetime: z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}([+-]\d{2}:\d{2}|Z)?$/), // Accept timezone offset or Z suffix
+  datetime: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}([+-]\d{2}:\d{2}|Z)?$/), // Accept timezone offset or Z suffix
   duration: z.number().min(15).max(240),
   totalPrice: z.number().nonnegative(),
   notes: z.string().optional(),
@@ -107,7 +116,8 @@ export async function POST(req: Request) {
           { message: "Artist profile not found" },
           { status: 404 }
         );
-      }      console.log(`Makeup artist ID found: ${makeupArtistRecord.id}`);      // Parse the datetime with timezone handling
+      }
+      console.log(`Makeup artist ID found: ${makeupArtistRecord.id}`); // Parse the datetime with timezone handling
       console.log("=== TIMEZONE PROCESSING ===");
       console.log(
         "Server timezone:",
@@ -118,20 +128,20 @@ export async function POST(req: Request) {
 
       // Parse the ISO string directly - it should already be in the correct timezone
       const appointmentDateTime = parseISO(validatedData.datetime);
-      console.log(
-        "Parsed datetime (ISO):",
-        appointmentDateTime.toISOString()
-      );
-      
+      console.log("Parsed datetime (ISO):", appointmentDateTime.toISOString());
+
       // The datetime is already in the correct timezone, so we use it directly
       // No need for additional timezone conversion since the frontend sends it correctly formatted
       const appointmentDateTimeUTC = appointmentDateTime;
-      console.log("Using datetime as UTC:", appointmentDateTimeUTC.toISOString());
+      console.log(
+        "Using datetime as UTC:",
+        appointmentDateTimeUTC.toISOString()
+      );
 
       // Convert to target timezone for local calculations and validation
       const localDateTime = toZonedTime(appointmentDateTimeUTC, TIMEZONE);
       console.log("Local time for validation:", localDateTime.toLocaleString());
-      
+
       const dayOfWeek = getDay(localDateTime);
       const dateString = format(localDateTime, "yyyy-MM-dd");
       const timeHour = localDateTime.getHours();
@@ -140,7 +150,8 @@ export async function POST(req: Request) {
       const appointmentEndTime = addMinutes(
         localDateTime,
         validatedData.duration
-      );console.log(
+      );
+      console.log(
         `Appointment time: ${format(
           localDateTime,
           "yyyy-MM-dd HH:mm"
@@ -206,15 +217,25 @@ export async function POST(req: Request) {
           { message: "This artist is not currently accepting bookings" },
           { status: 400 }
         );
-      }      // Check if appointment is during working hours
+      } // Check if appointment is during working hours
       const appointmentEndHour = appointmentEndTime.getHours();
       const appointmentEndMinute = appointmentEndTime.getMinutes();
-      
+
       console.log("=== WORKING HOURS CHECK ===");
-      console.log(`Working hours: ${workingHours.start}:00 - ${workingHours.end}:00`);
-      console.log(`Appointment start: ${timeHour}:${timeMinute.toString().padStart(2, '0')}`);
-      console.log(`Appointment end: ${appointmentEndHour}:${appointmentEndMinute.toString().padStart(2, '0')}`);
-      
+      console.log(
+        `Working hours: ${workingHours.start}:00 - ${workingHours.end}:00`
+      );
+      console.log(
+        `Appointment start: ${timeHour}:${timeMinute
+          .toString()
+          .padStart(2, "0")}`
+      );
+      console.log(
+        `Appointment end: ${appointmentEndHour}:${appointmentEndMinute
+          .toString()
+          .padStart(2, "0")}`
+      );
+
       // Check if appointment start time is within working hours
       if (timeHour < workingHours.start || timeHour >= workingHours.end) {
         console.log("Appointment start time is outside working hours");
@@ -223,13 +244,18 @@ export async function POST(req: Request) {
           { status: 400 }
         );
       }
-      
+
       // Check if appointment end time is within working hours
-      if (appointmentEndHour > workingHours.end || 
-          (appointmentEndHour === workingHours.end && appointmentEndMinute > 0)) {
+      if (
+        appointmentEndHour > workingHours.end ||
+        (appointmentEndHour === workingHours.end && appointmentEndMinute > 0)
+      ) {
         console.log("Appointment end time exceeds working hours");
         return NextResponse.json(
-          { message: "Selected appointment duration exceeds the artist's working hours" },
+          {
+            message:
+              "Selected appointment duration exceeds the artist's working hours",
+          },
           { status: 400 }
         );
       }
@@ -405,11 +431,11 @@ export async function POST(req: Request) {
       console.log("=== NO CONFLICTS FOUND - PROCEEDING WITH BOOKING ===");
 
       // Generate a temporary request ID
-      const tempRequestId = uuidv4(); // Prepare appointment data with UTC time for database
+      const tempRequestId = uuidv4();      // Prepare appointment data with UTC time for database
       const appointmentRequestData = {
         userId,
         artistId: validatedData.artistId,
-        datetime: appointmentDateTimeUTC, // Use UTC time for database
+        datetime: validatedData.datetime, // Keep original datetime string with timezone info
         serviceType: validatedData.serviceType,
         duration: validatedData.duration,
         totalPrice: validatedData.totalPrice,
@@ -421,9 +447,9 @@ export async function POST(req: Request) {
         artistName: artist.name || "Artist",
       };
 
-      console.log("Prepared appointment request (with UTC datetime):", {
+      console.log("Prepared appointment request (preserving original datetime):", {
         ...appointmentRequestData,
-        datetime: appointmentRequestData.datetime.toISOString(),
+        utcDatetime: appointmentDateTimeUTC.toISOString(),
         localDatetime: localDateTime.toLocaleString(),
       });
 

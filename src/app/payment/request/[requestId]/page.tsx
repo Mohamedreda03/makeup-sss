@@ -234,26 +234,29 @@ export default function PaymentRequestPage() {
       // Use the datetime exactly as it comes from the appointment request
       // It should already be properly formatted with Cairo timezone (+02:00)
       let datetimeValue = appointmentRequest.datetime;
-      
+
       console.log("=== PAYMENT PAGE DATETIME DEBUG ===");
       console.log("Original datetime from request:", datetimeValue);
       console.log("Type of datetime:", typeof datetimeValue);
-      
+
       // Validate that we have a proper datetime string
       if (!datetimeValue || typeof datetimeValue !== "string") {
         throw new Error("Invalid datetime format");
       }
-      
+
       // Check if datetime already has timezone info (+02:00 or Z)
       const hasTimezone = /[+-]\d{2}:\d{2}$|Z$/.test(datetimeValue);
-      
+
       if (!hasTimezone) {
         // If no timezone info, assume it's in Cairo time and add +02:00
-        datetimeValue = datetimeValue.replace(/(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})/, '$1+02:00');
+        datetimeValue = datetimeValue.replace(
+          /(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})/,
+          "$1+02:00"
+        );
       }
-      
+
       console.log("Final datetime for API:", datetimeValue);
-      
+
       // Validate that the datetime can be parsed
       const testDate = new Date(datetimeValue);
       if (isNaN(testDate.getTime())) {
@@ -394,10 +397,24 @@ export default function PaymentRequestPage() {
                   <p className="font-medium">Date & Time</p>
                   <p className="text-gray-600">
                     {appointmentRequest.datetime
-                      ? format(
-                          new Date(appointmentRequest.datetime),
-                          "MMMM d, yyyy 'at' h:mm a"
-                        )
+                      ? (() => {
+                          // Since we now preserve the original datetime with timezone,
+                          // we can parse it directly
+                          const date = new Date(appointmentRequest.datetime);
+                          console.log("Original datetime:", appointmentRequest.datetime);
+                          console.log("Parsed date:", date.toISOString());
+                          console.log("Local display:", date.toLocaleString('en-US', {
+                            timeZone: 'Africa/Cairo',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                            hour: 'numeric',
+                            minute: '2-digit',
+                            hour12: true
+                          }));
+                          
+                          return format(date, "MMMM d, yyyy 'at' h:mm a");
+                        })()
                       : "Not specified"}
                   </p>
                 </div>
