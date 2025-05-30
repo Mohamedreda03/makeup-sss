@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { z } from "zod";
 import { getDay, format, parseISO, addMinutes } from "date-fns";
-import { fromZonedTime, toZonedTime } from "date-fns-tz";
+import { toZonedTime } from "date-fns-tz";
 import { BookingStatus } from "@/generated/prisma";
 
 // Extended user interface
@@ -184,23 +184,17 @@ export async function POST(req: Request) {
       console.log("Target timezone:", TIMEZONE);
       console.log("Received datetime:", validatedData.datetime);
 
-      // Parse the ISO string with timezone information
+      // Parse the ISO string directly - it should already be in the correct timezone
       const appointmentDateTime = parseISO(validatedData.datetime);
       console.log(
-        "Parsed datetime (original):",
+        "Parsed datetime (ISO):",
         appointmentDateTime.toISOString()
       );
       
-      // If the datetime doesn't have timezone info, treat it as target timezone
-      let appointmentDateTimeUTC: Date;
-      if (validatedData.datetime.includes('+') || validatedData.datetime.includes('Z')) {
-        // Already has timezone info, use as is
-        appointmentDateTimeUTC = appointmentDateTime;
-      } else {
-        // No timezone info, treat as target timezone
-        appointmentDateTimeUTC = fromZonedTime(appointmentDateTime, TIMEZONE);
-      }
-      console.log("Converted to UTC:", appointmentDateTimeUTC.toISOString());
+      // The datetime is already in the correct timezone, so we use it directly
+      // No need for additional timezone conversion since the frontend sends it correctly formatted
+      const appointmentDateTimeUTC = appointmentDateTime;
+      console.log("Using datetime as UTC:", appointmentDateTimeUTC.toISOString());
 
       // Use target timezone for local calculations
       const localDateTime = toZonedTime(appointmentDateTimeUTC, TIMEZONE);

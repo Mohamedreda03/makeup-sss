@@ -231,48 +231,34 @@ export default function PaymentRequestPage() {
     setIsProcessing(true);
 
     try {
-      // Make sure datetime is in the correct format for Africa/Cairo timezone
+      // Use the datetime exactly as it comes from the appointment request
+      // It should already be properly formatted with Cairo timezone (+02:00)
       let datetimeValue = appointmentRequest.datetime;
       
       console.log("=== PAYMENT PAGE DATETIME DEBUG ===");
       console.log("Original datetime from request:", datetimeValue);
       console.log("Type of datetime:", typeof datetimeValue);
       
-      // Parse the datetime properly
-      let appointmentDate: Date;
-      
-      if (typeof datetimeValue === "string") {
-        // If it's a string, parse it
-        appointmentDate = new Date(datetimeValue);
-      } else if (typeof datetimeValue === "object" && datetimeValue !== null) {
-        // If it's already a Date object
-        appointmentDate = new Date(datetimeValue);
-      } else {
+      // Validate that we have a proper datetime string
+      if (!datetimeValue || typeof datetimeValue !== "string") {
         throw new Error("Invalid datetime format");
       }
       
-      console.log("Parsed appointment date:", appointmentDate.toISOString());
-      console.log("Local time:", appointmentDate.toLocaleString());
+      // Check if datetime already has timezone info (+02:00 or Z)
+      const hasTimezone = /[+-]\d{2}:\d{2}$|Z$/.test(datetimeValue);
       
-      // Check if the date is valid
-      if (isNaN(appointmentDate.getTime())) {
-        throw new Error("Invalid date");
+      if (!hasTimezone) {
+        // If no timezone info, assume it's in Cairo time and add +02:00
+        datetimeValue = datetimeValue.replace(/(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})/, '$1+02:00');
       }
       
-      // Format the datetime for Cairo timezone (UTC+2)
-      // Create the datetime string in the format: YYYY-MM-DDTHH:mm:ss+02:00
-      const year = appointmentDate.getFullYear();
-      const month = String(appointmentDate.getMonth() + 1).padStart(2, '0');
-      const day = String(appointmentDate.getDate()).padStart(2, '0');
-      const hours = String(appointmentDate.getHours()).padStart(2, '0');
-      const minutes = String(appointmentDate.getMinutes()).padStart(2, '0');
-      const seconds = String(appointmentDate.getSeconds()).padStart(2, '0');
+      console.log("Final datetime for API:", datetimeValue);
       
-      // Always format as Cairo timezone
-      const formattedDatetime = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}+02:00`;
-      
-      console.log("Formatted datetime for API:", formattedDatetime);
-      datetimeValue = formattedDatetime;
+      // Validate that the datetime can be parsed
+      const testDate = new Date(datetimeValue);
+      if (isNaN(testDate.getTime())) {
+        throw new Error("Invalid date format");
+      }
 
       // Create the appointment using the validated appointment request
       const appointmentData = {
