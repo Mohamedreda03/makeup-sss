@@ -263,10 +263,8 @@ export default function ArtistBooking({
       return;
     }
 
-    setIsBooking(true);
-
-    try {
-      // Parse time and create datetime
+    setIsBooking(true);    try {
+      // Parse time and create datetime in the target timezone (Africa/Cairo)
       const [timeStr, period] = selectedTime.split(" ");
       const [hoursStr, minutesStr] = timeStr.split(":");
       let hours = parseInt(hoursStr);
@@ -276,6 +274,8 @@ export default function ArtistBooking({
       else if (period === "AM" && hours === 12) hours = 0;
 
       const [year, month, day] = selectedDate.split("-");
+      
+      // Create date object in local time (this will be interpreted as Africa/Cairo on the server)
       const datetime = new Date(
         parseInt(year),
         parseInt(month) - 1,
@@ -284,11 +284,27 @@ export default function ArtistBooking({
         minutes
       );
 
+      // Send the datetime in ISO format but without converting to UTC
+      // Format: YYYY-MM-DDTHH:mm:ss (without Z suffix to indicate local time)
+      const localDatetimeString = datetime.getFullYear() + '-' +
+        String(datetime.getMonth() + 1).padStart(2, '0') + '-' +
+        String(datetime.getDate()).padStart(2, '0') + 'T' +
+        String(datetime.getHours()).padStart(2, '0') + ':' +
+        String(datetime.getMinutes()).padStart(2, '0') + ':' +
+        String(datetime.getSeconds()).padStart(2, '0');
+
+      console.log("Sending appointment data:", {
+        selectedDate,
+        selectedTime,
+        localDateTime: datetime.toLocaleString(),
+        sentDatetime: localDatetimeString
+      });
+
       const appointmentData = {
         artistId,
         serviceId: selectedService.id,
         serviceType: selectedService.name,
-        datetime: datetime.toISOString(),
+        datetime: localDatetimeString, // Send local time without timezone conversion
         duration: selectedService.duration || 60,
         totalPrice: selectedService.price,
         notes: notes || "",

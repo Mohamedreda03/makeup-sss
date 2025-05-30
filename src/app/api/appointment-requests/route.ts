@@ -36,7 +36,7 @@ const appointmentRequestSchema = z.object({
   artistId: z.string(),
   serviceId: z.string().optional(),
   serviceType: z.string(),
-  datetime: z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(.\d{3}Z)?$/),
+  datetime: z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(.\d{3}Z?)?$/), // Accept both with and without Z suffix
   duration: z.number().min(15).max(240),
   totalPrice: z.number().nonnegative(),
   notes: z.string().optional(),
