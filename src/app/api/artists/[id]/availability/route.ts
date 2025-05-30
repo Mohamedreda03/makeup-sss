@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { addDays, format, parseISO, startOfDay, getDay } from "date-fns";
+import { fromZonedTime, toZonedTime } from 'date-fns-tz';
 const DEFAULT_BUSINESS_HOURS = {
   start: 10, // 10 AM
   end: 24, // 12 AM (midnight)
@@ -9,6 +10,9 @@ const DEFAULT_BUSINESS_HOURS = {
 
 // Default regular days off
 const DEFAULT_REGULAR_DAYS_OFF = [0, 6]; // Sunday and Saturday
+
+// Target timezone - change this to your local timezone
+const TIMEZONE = 'Africa/Cairo'; // المنطقة الزمنية الأساسية
 
 // GET /api/artists/[id]/availability
 // This endpoint returns the available and booked time slots for an artist on specific dates
@@ -20,7 +24,14 @@ export async function GET(
     console.log("=== AVAILABILITY API START ===");
     console.log("Environment:", process.env.NODE_ENV);
     console.log("Database URL exists:", !!process.env.DATABASE_URL);
-    
+    console.log(
+      "Server timezone:",
+      Intl.DateTimeFormat().resolvedOptions().timeZone
+    );
+    console.log("Target timezone:", TIMEZONE);
+    console.log("Server UTC time:", new Date().toISOString());
+    console.log("Server local time:", new Date().toLocaleString());
+
     // Get artist ID from params
     const artistId = params.id;
     console.log("Artist ID:", artistId);
@@ -30,7 +41,7 @@ export async function GET(
     const dateParam = url.searchParams.get("date");
     const daysParam = url.searchParams.get("days") || "7"; // Default to 7 days
     const serviceId = url.searchParams.get("serviceId"); // Optional service ID for duration-specific availability
-    
+
     console.log("Request params:", { dateParam, daysParam, serviceId });
 
     // Validate artist exists
@@ -149,15 +160,38 @@ export async function GET(
       });
     }
 
-    // Set date range
+    // Set date range with proper timezone handling
     let startDate: Date;
     if (dateParam) {
-      startDate = startOfDay(parseISO(dateParam));
+      // Convert provided date to UTC properly
+      const localStartDate = startOfDay(parseISO(dateParam));
+      startDate = fromZonedTime(localStartDate, TIMEZONE);
     } else {
-      startDate = startOfDay(new Date());
+      // Use current date in target timezone, then convert to UTC
+      const now = new Date();
+      const localNow = toZonedTime(now, TIMEZONE);
+      const localStartDate = startOfDay(localNow);
+      startDate = fromZonedTime(localStartDate, TIMEZONE);
     }
 
-    const endDate = addDays(startDate, parseInt(daysParam, 10));
+    // End date in UTC
+    const localEndDate = toZonedTime(
+      addDays(startDate, parseInt(daysParam, 10)),
+      TIMEZONE
+    );
+    const endDate = fromZonedTime(localEndDate, TIMEZONE);
+
+    console.log("=== DATE CONVERSION DEBUG ===");
+    console.log("UTC start date:", startDate.toISOString());
+    console.log("UTC end date:", endDate.toISOString());
+    console.log(
+      "Local start date:",
+      toZonedTime(startDate, TIMEZONE).toLocaleString()
+    );
+    console.log(
+      "Local end date:",
+      toZonedTime(endDate, TIMEZONE).toLocaleString()
+    );
 
     // Get the makeup artist ID first
     console.log("Looking for makeup artist record...");
@@ -187,9 +221,10 @@ export async function GET(
     console.log("Fetching bookings for date range:", {
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString(),
-      makeupArtistId: makeupArtistRecord.id
+      makeupArtistId: makeupArtistRecord.id,
+      timezone: TIMEZONE,
     });
-    
+
     const appointments = await db.booking.findMany({
       where: {
         artist_id: makeupArtistRecord.id, // Use makeup artist ID, not user ID
@@ -212,20 +247,23 @@ export async function GET(
 
     console.log(`=== DATABASE QUERY RESULTS ===`);
     console.log(`Query artist_id: ${makeupArtistRecord.id}`);
-    console.log(`Query date range: ${startDate.toISOString()} to ${endDate.toISOString()}`);
+    console.log(
+      `Query date range: ${startDate.toISOString()} to ${endDate.toISOString()}`
+    );
     console.log(`Found ${appointments.length} total appointments`);
-    
-    // Log each appointment in detail
+
+    // Log each appointment in detail with timezone conversion
     appointments.forEach((apt, index) => {
+      const localDateTime = toZonedTime(new Date(apt.date_time), TIMEZONE);
       console.log(`Appointment ${index + 1}:`, {
         id: apt.id,
-        date_time: apt.date_time.toISOString(),
-        local_date_time: apt.date_time.toString(),
+        utc_date_time: apt.date_time.toISOString(),
+        local_date_time: localDateTime.toLocaleString(),
+        local_date: format(localDateTime, "yyyy-MM-dd"),
+        local_time: format(localDateTime, "HH:mm"),
         service_type: apt.service_type,
         booking_status: apt.booking_status,
-        day_of_week: apt.date_time.getDay(),
-        formatted_date: format(apt.date_time, "yyyy-MM-dd"),
-        formatted_time: format(apt.date_time, "HH:mm")
+        day_of_week: localDateTime.getDay(),
       });
     });
     console.log(`=== END DATABASE RESULTS ===`);
@@ -246,16 +284,18 @@ export async function GET(
       },
       take: 10, // Limit to 10 for debugging
     });
-    
+
     console.log(`=== ALL BOOKINGS FOR ARTIST (sample) ===`);
-    console.log(`Total bookings for artist ${makeupArtistRecord.id}: ${allBookings.length} (showing max 10)`);
+    console.log(
+      `Total bookings for artist ${makeupArtistRecord.id}: ${allBookings.length} (showing max 10)`
+    );
     allBookings.forEach((booking, index) => {
       console.log(`All Booking ${index + 1}:`, {
         id: booking.id,
         date_time: booking.date_time.toISOString(),
         local_date_time: booking.date_time.toString(),
         service_type: booking.service_type,
-        booking_status: booking.booking_status
+        booking_status: booking.booking_status,
       });
     });
     console.log(`=== END ALL BOOKINGS ===`);
@@ -299,7 +339,10 @@ export async function GET(
 
     // Generate available time slots for each day
     const availabilityByDay = [];
-    let currentDate = startDate;
+
+    // Start with local date in target timezone
+    let currentLocalDate = toZonedTime(startDate, TIMEZONE);
+    const endLocalDate = toZonedTime(endDate, TIMEZONE);
 
     // Define business hours from settings
     const businessHours = {
@@ -308,13 +351,21 @@ export async function GET(
       interval: serviceId ? serviceDuration : workingHours.interval, // Use service duration for intervals when specific service is selected
     };
 
-    // Loop through each day in the range
-    while (currentDate < endDate) {
-      const dayString = format(currentDate, "yyyy-MM-dd");
-      const dayLabel = format(currentDate, "EEE");
-      const dayNumber = format(currentDate, "d");
-      const monthName = format(currentDate, "MMM");
-      const dayOfWeek = getDay(currentDate); // 0 = Sunday, 6 = Saturday
+    console.log("=== TIME SLOT GENERATION WITH TIMEZONE ===");
+    console.log("Business hours:", businessHours);
+    console.log("Target timezone:", TIMEZONE);
+    console.log("Local date range:", {
+      start: currentLocalDate.toLocaleString(),
+      end: endLocalDate.toLocaleString(),
+    });
+
+    // Loop through each day in the range (in local time)
+    while (currentLocalDate < endLocalDate) {
+      const dayString = format(currentLocalDate, "yyyy-MM-dd");
+      const dayLabel = format(currentLocalDate, "EEE");
+      const dayNumber = format(currentLocalDate, "d");
+      const monthName = format(currentLocalDate, "MMM");
+      const dayOfWeek = getDay(currentLocalDate); // 0 = Sunday, 6 = Saturday
 
       // Log for debugging
       console.log(
@@ -332,7 +383,7 @@ export async function GET(
       const isDayOff = regularDaysOff.includes(dayOfWeek);
 
       console.log(
-        `Day ${dayString} (${dayLabel}): Regular day off: ${isDayOff}, Day of week: ${dayOfWeek}`
+        `Day ${dayString} (${dayLabel}): Regular day off: ${isDayOff}, Day of week: ${dayOfWeek}, Timezone: ${TIMEZONE}`
       );
       console.log(`Regular days off array: ${JSON.stringify(regularDaysOff)}`);
 
@@ -345,62 +396,91 @@ export async function GET(
         for (let hour = businessHours.start; hour < businessHours.end; hour++) {
           // Use the artist's interval setting for appointments
           for (let minute = 0; minute < 60; minute += businessHours.interval) {
-            const slotTime = new Date(currentDate);
-            slotTime.setHours(hour, minute, 0, 0);
+            const slotLocalTime = new Date(currentLocalDate);
+            slotLocalTime.setHours(hour, minute, 0, 0);
 
-            // Skip slots in the past
-            if (slotTime < new Date()) {
+            // Skip slots in the past (compare in local time)
+            const nowLocal = toZonedTime(new Date(), TIMEZONE);
+            if (slotLocalTime < nowLocal) {
               continue;
             }
 
             // Check if this slot conflicts with any booking
             let isBooked = false;
-            const slotTimeStr = format(slotTime, "HH:mm");
-            const slotDateStr = format(currentDate, "yyyy-MM-dd");
+            const slotTimeStr = format(slotLocalTime, "HH:mm");
+            const slotDateStr = format(currentLocalDate, "yyyy-MM-dd");
 
             // Enhanced debugging - log every slot check
-            console.log(`\n--- Checking slot ${slotTimeStr} on ${slotDateStr} ---`);
-            console.log(`Slot datetime: ${slotTime.toISOString()}`);
-            console.log(`Current appointments to check: ${appointments.length}`);
+            console.log(
+              `\n--- Checking slot ${slotTimeStr} on ${slotDateStr} (${TIMEZONE}) ---`
+            );
+            console.log(
+              `Local slot datetime: ${slotLocalTime.toLocaleString()}`
+            );
+            console.log(
+              `Current appointments to check: ${appointments.length}`
+            );
 
             for (const appointment of appointments) {
-              const appointmentStart = new Date(appointment.date_time);
-              const appointmentEnd = new Date(appointmentStart);
+              // Convert appointment time from UTC to local timezone
+              const appointmentLocalTime = toZonedTime(
+                new Date(appointment.date_time),
+                TIMEZONE
+              );
+              const appointmentLocalEnd = new Date(appointmentLocalTime);
+
               // Use the actual service duration instead of hardcoded 60 minutes
               const appointmentDuration =
                 serviceNameToDuration.get(appointment.service_type) ||
                 serviceDuration ||
                 60;
-              appointmentEnd.setMinutes(
-                appointmentEnd.getMinutes() + appointmentDuration
+              appointmentLocalEnd.setMinutes(
+                appointmentLocalEnd.getMinutes() + appointmentDuration
               );
 
-              // Create date objects for the current slot
-              const slotStart = new Date(slotTime);
-              const slotEnd = new Date(slotTime);
+              // Create date objects for the current slot (in local time)
+              const slotStart = new Date(slotLocalTime);
+              const slotEnd = new Date(slotLocalTime);
               slotEnd.setMinutes(slotEnd.getMinutes() + businessHours.interval);
 
               // Convert times to minutes for easier comparison
               const appointmentStartMinutes =
-                appointmentStart.getHours() * 60 +
-                appointmentStart.getMinutes();
+                appointmentLocalTime.getHours() * 60 +
+                appointmentLocalTime.getMinutes();
               const appointmentEndMinutes =
-                appointmentEnd.getHours() * 60 + appointmentEnd.getMinutes();
+                appointmentLocalEnd.getHours() * 60 +
+                appointmentLocalEnd.getMinutes();
               const slotStartMinutes =
                 slotStart.getHours() * 60 + slotStart.getMinutes();
               const slotEndMinutes =
                 slotEnd.getHours() * 60 + slotEnd.getMinutes();
 
-              // Check if the appointment is on the same day
-              const appointmentDate = format(appointmentStart, "yyyy-MM-dd");
-              
+              // Check if the appointment is on the same day (in local time)
+              const appointmentDateLocal = format(
+                appointmentLocalTime,
+                "yyyy-MM-dd"
+              );
+
               console.log(`  Checking appointment ${appointment.id}:`);
-              console.log(`    Date: ${appointmentDate} (slot: ${slotDateStr})`);
-              console.log(`    Time: ${format(appointmentStart, "HH:mm")}-${format(appointmentEnd, "HH:mm")}`);
+              console.log(`    UTC: ${appointment.date_time.toISOString()}`);
+              console.log(
+                `    Local: ${appointmentLocalTime.toLocaleString()}`
+              );
+              console.log(
+                `    Date: ${appointmentDateLocal} (slot: ${slotDateStr})`
+              );
+              console.log(
+                `    Time: ${format(appointmentLocalTime, "HH:mm")}-${format(
+                  appointmentLocalEnd,
+                  "HH:mm"
+                )}`
+              );
               console.log(`    Status: ${appointment.booking_status}`);
-              console.log(`    Service: ${appointment.service_type} (${appointmentDuration}min)`);
-              
-              if (appointmentDate !== slotDateStr) {
+              console.log(
+                `    Service: ${appointment.service_type} (${appointmentDuration}min)`
+              );
+
+              if (appointmentDateLocal !== slotDateStr) {
                 console.log(`    → SKIP: Different date`);
                 continue;
               }
@@ -415,7 +495,7 @@ export async function GET(
               }
 
               // Check for any overlap between the slot and the appointment
-              // Improved overlap logic using minutes
+              // Improved overlap logic using minutes (all in local time)
               const hasOverlap =
                 // Slot starts during an appointment
                 (slotStartMinutes >= appointmentStartMinutes &&
@@ -430,9 +510,13 @@ export async function GET(
                 (appointmentStartMinutes <= slotStartMinutes &&
                   appointmentEndMinutes >= slotEndMinutes);
 
-              console.log(`    Overlap check:`);
-              console.log(`      Slot: ${slotStartMinutes}-${slotEndMinutes} minutes`);
-              console.log(`      Appointment: ${appointmentStartMinutes}-${appointmentEndMinutes} minutes`);
+              console.log(`    Overlap check (local time):`);
+              console.log(
+                `      Slot: ${slotStartMinutes}-${slotEndMinutes} minutes`
+              );
+              console.log(
+                `      Appointment: ${appointmentStartMinutes}-${appointmentEndMinutes} minutes`
+              );
               console.log(`      Has overlap: ${hasOverlap}`);
 
               if (hasOverlap) {
@@ -444,15 +528,19 @@ export async function GET(
               }
             }
 
-            console.log(`Final result for ${slotTimeStr}: ${isBooked ? "BOOKED" : "AVAILABLE"}`);
+            console.log(
+              `Final result for ${slotTimeStr}: ${
+                isBooked ? "BOOKED" : "AVAILABLE"
+              }`
+            );
             console.log(`--- End slot check ---\n`);
 
             // Format the time display (e.g., "10:00 AM")
-            const timeLabel = format(slotTime, "h:mm a");
+            const timeLabel = format(slotLocalTime, "h:mm a");
 
             // Add both available and booked slots to the list
             allTimeSlots.push({
-              time: format(slotTime, "HH:mm"),
+              time: slotTimeStr,
               label: timeLabel,
               isBooked: isBooked,
             });
@@ -471,21 +559,21 @@ export async function GET(
       });
 
       // Move to next day
-      currentDate = addDays(currentDate, 1);
+      currentLocalDate = addDays(currentLocalDate, 1);
     }
 
     console.log(`=== FINAL AVAILABILITY SUMMARY ===`);
     console.log(`Total days processed: ${availabilityByDay.length}`);
     availabilityByDay.forEach((day, index) => {
-      const bookedSlots = day.timeSlots.filter(slot => slot.isBooked);
-      const availableSlots = day.timeSlots.filter(slot => !slot.isBooked);
+      const bookedSlots = day.timeSlots.filter((slot) => slot.isBooked);
+      const availableSlots = day.timeSlots.filter((slot) => !slot.isBooked);
       console.log(`Day ${index + 1} (${day.date}):`, {
         dayLabel: day.dayLabel,
         isDayOff: day.isDayOff,
         totalSlots: day.timeSlots.length,
         bookedSlots: bookedSlots.length,
         availableSlots: availableSlots.length,
-        bookedTimes: bookedSlots.map(s => s.time).join(', ') || 'none'
+        bookedTimes: bookedSlots.map((s) => s.time).join(", ") || "none",
       });
     });
     console.log(`=== END AVAILABILITY SUMMARY ===`);

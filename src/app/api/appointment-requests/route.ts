@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { z } from "zod";
-import { getDay, format, addMinutes } from "date-fns";
+import { getDay, format, addMinutes, startOfDay, addDays } from "date-fns";
+import { fromZonedTime, toZonedTime } from 'date-fns-tz';
 import { v4 as uuidv4 } from "uuid";
 
 // Define status type
@@ -26,6 +27,9 @@ const DEFAULT_BUSINESS_HOURS = {
 
 // Default regular days off
 const DEFAULT_REGULAR_DAYS_OFF = [0, 6]; // Sunday and Saturday
+
+// Target timezone - must match the availability API
+const TIMEZONE = 'Africa/Cairo'; // المنطقة الزمنية الأساسية
 
 // Appointment request schema for validation
 const appointmentRequestSchema = z.object({
@@ -101,12 +105,20 @@ export async function POST(req: Request) {
           { message: "Artist profile not found" },
           { status: 404 }
         );
-      }
+      }      console.log(`Makeup artist ID found: ${makeupArtistRecord.id}`);
 
-      console.log(`Makeup artist ID found: ${makeupArtistRecord.id}`);
-
-      // Parse the datetime
+      // Parse the datetime with timezone handling
+      console.log("=== TIMEZONE PROCESSING ===");
+      console.log("Server timezone:", Intl.DateTimeFormat().resolvedOptions().timeZone);
+      console.log("Target timezone:", TIMEZONE);
+      console.log("Received datetime:", validatedData.datetime);
+      
       const appointmentDateTime = new Date(validatedData.datetime);
+      console.log("Parsed datetime (local):", appointmentDateTime.toLocaleString());
+        // Convert to UTC for database storage and comparison
+      const appointmentDateTimeUTC = fromZonedTime(appointmentDateTime, TIMEZONE);
+      console.log("Converted to UTC:", appointmentDateTimeUTC.toISOString());
+      
       const appointmentEndTime = addMinutes(
         appointmentDateTime,
         validatedData.duration
@@ -116,13 +128,19 @@ export async function POST(req: Request) {
           appointmentDateTime,
           "yyyy-MM-dd HH:mm"
         )} to ${format(appointmentEndTime, "HH:mm")}`
-      );
+      );      // Get the day of week (0 = Sunday, 6 = Saturday) in local timezone
+      const localDateTime = toZonedTime(appointmentDateTimeUTC, TIMEZONE);
+      const dayOfWeek = getDay(localDateTime);
+      const dateString = format(localDateTime, "yyyy-MM-dd");
+      const timeHour = localDateTime.getHours();
+      const timeMinute = localDateTime.getMinutes();
 
-      // Get the day of week (0 = Sunday, 6 = Saturday)
-      const dayOfWeek = getDay(appointmentDateTime);
-      const dateString = format(appointmentDateTime, "yyyy-MM-dd");
-      const timeHour = appointmentDateTime.getHours();
-      const timeMinute = appointmentDateTime.getMinutes();
+      console.log("=== LOCAL TIME ANALYSIS ===");
+      console.log("Local date/time:", localDateTime.toLocaleString());
+      console.log("Day of week:", dayOfWeek);
+      console.log("Date string:", dateString);
+      console.log("Time hour:", timeHour);
+      console.log("Time minute:", timeMinute);
 
       // Parse availability settings or use defaults
       let workingHours = DEFAULT_BUSINESS_HOURS;
@@ -199,9 +217,7 @@ export async function POST(req: Request) {
           { message: "Selected day is the artist's day off" },
           { status: 400 }
         );
-      }
-
-      // Check if the time slot is properly aligned with the artist's interval settings
+      }      // Check if the time slot is properly aligned with the artist's interval settings
       if (timeMinute % workingHours.interval !== 0) {
         console.log("Time doesn't align with scheduling intervals");
         return NextResponse.json(
@@ -210,11 +226,24 @@ export async function POST(req: Request) {
               "Selected time does not align with the artist's scheduling intervals",
           },
           { status: 400 }
-        );      } // Check for conflicts with existing bookings
-      console.log("=== CHECKING FOR BOOKING CONFLICTS ===");
+        );
+      }
+      
+      // Check for conflicts with existing bookings
+      console.log("=== CHECKING FOR BOOKING CONFLICTS WITH TIMEZONE ===");
       console.log("Using makeup artist ID for conflict check:", makeupArtistRecord.id);
-      console.log("Requested appointment time:", appointmentDateTime.toISOString());
+      console.log("Requested appointment (UTC):", appointmentDateTimeUTC.toISOString());
+      console.log("Requested appointment (local):", localDateTime.toLocaleString());
       console.log("Requested appointment duration:", validatedData.duration, "minutes");
+      
+      // Query for bookings using UTC dates
+      const dayStartUTC = fromZonedTime(startOfDay(localDateTime), TIMEZONE);
+      const dayEndUTC = fromZonedTime(addDays(startOfDay(localDateTime), 1), TIMEZONE);
+      
+      console.log("Searching bookings in UTC range:", {
+        start: dayStartUTC.toISOString(),
+        end: dayEndUTC.toISOString()
+      });
       
       const existingBookings = await db.booking.findMany({
         where: {
@@ -223,8 +252,8 @@ export async function POST(req: Request) {
             in: ["PENDING", "CONFIRMED"],
           },
           date_time: {
-            gte: new Date(new Date(dateString).setHours(0, 0, 0, 0)),
-            lt: new Date(new Date(dateString).setHours(24, 0, 0, 0)),
+            gte: dayStartUTC,
+            lt: dayEndUTC,
           },
         },
         select: {
@@ -233,20 +262,23 @@ export async function POST(req: Request) {
           booking_status: true,
           service_type: true,
         },
-      });
-
-      console.log(`Found ${existingBookings.length} existing bookings for the day`);
+      });      console.log(`Found ${existingBookings.length} existing bookings for the day`);
       
-      // Log each existing booking for debugging
+      // Log each existing booking for debugging with timezone conversion
       existingBookings.forEach((booking, index) => {
+        const bookingLocalTime = toZonedTime(new Date(booking.date_time), TIMEZONE);
         console.log(`Existing booking ${index + 1}:`, {
           id: booking.id,
-          date_time: booking.date_time.toISOString(),
+          utc_date_time: booking.date_time.toISOString(),
+          local_date_time: bookingLocalTime.toLocaleString(),
+          local_time: format(bookingLocalTime, 'HH:mm'),
           status: booking.booking_status,
           service: booking.service_type
         });
-      });      // Check for overlapping bookings with improved logic
-      console.log("=== CHECKING FOR TIME CONFLICTS ===");
+      });
+      
+      // Check for overlapping bookings with improved logic and timezone handling
+      console.log("=== CHECKING FOR TIME CONFLICTS WITH TIMEZONE ===");
       
       // Fetch artist services to get accurate durations
       const artistServices = await db.artistService.findMany({
@@ -263,28 +295,28 @@ export async function POST(req: Request) {
       const serviceNameToDuration = new Map<string, number>();
       artistServices.forEach((service) => {
         serviceNameToDuration.set(service.name, service.duration);
-      });
-
-      const isOverlapping = existingBookings.some((booking) => {
-        const existingStart = new Date(booking.date_time);
+      });      const isOverlapping = existingBookings.some((booking) => {
+        // Convert existing booking to local time for comparison
+        const existingLocalStart = toZonedTime(new Date(booking.date_time), TIMEZONE);
         // Use actual service duration or default to 60 minutes
         const existingDuration = serviceNameToDuration.get(booking.service_type) || 60;
-        const existingEnd = addMinutes(existingStart, existingDuration);
+        const existingLocalEnd = addMinutes(existingLocalStart, existingDuration);
 
-        console.log(`Checking conflict with booking ${booking.id}:`);
-        console.log(`  Existing: ${existingStart.toISOString()} to ${existingEnd.toISOString()} (${existingDuration}min)`);
-        console.log(`  New: ${appointmentDateTime.toISOString()} to ${appointmentEndTime.toISOString()} (${validatedData.duration}min)`);
+        console.log(`Checking conflict with booking ${booking.id} (timezone-aware):`);
+        console.log(`  Existing (UTC): ${booking.date_time.toISOString()}`);
+        console.log(`  Existing (local): ${existingLocalStart.toLocaleString()} to ${existingLocalEnd.toLocaleString()} (${existingDuration}min)`);
+        console.log(`  New (local): ${localDateTime.toLocaleString()} to ${appointmentEndTime.toLocaleString()} (${validatedData.duration}min)`);
 
-        // Improved overlap detection
+        // Compare in local time
         const hasOverlap = (
           // New appointment starts during an existing appointment
-          (appointmentDateTime >= existingStart && appointmentDateTime < existingEnd) ||
+          (localDateTime >= existingLocalStart && localDateTime < existingLocalEnd) ||
           // New appointment ends during an existing appointment
-          (appointmentEndTime > existingStart && appointmentEndTime <= existingEnd) ||
+          (appointmentEndTime > existingLocalStart && appointmentEndTime <= existingLocalEnd) ||
           // New appointment completely contains an existing appointment
-          (appointmentDateTime <= existingStart && appointmentEndTime >= existingEnd) ||
+          (localDateTime <= existingLocalStart && appointmentEndTime >= existingLocalEnd) ||
           // Existing appointment completely contains the new appointment
-          (existingStart <= appointmentDateTime && existingEnd >= appointmentEndTime)
+          (existingLocalStart <= localDateTime && existingLocalEnd >= appointmentEndTime)
         );
 
         console.log(`  Overlap detected: ${hasOverlap}`);
@@ -307,13 +339,11 @@ export async function POST(req: Request) {
       console.log("=== NO CONFLICTS FOUND - PROCEEDING WITH BOOKING ===");
 
       // Generate a temporary request ID
-      const tempRequestId = uuidv4();
-
-      // Prepare appointment data
+      const tempRequestId = uuidv4();      // Prepare appointment data with UTC time for database
       const appointmentRequestData = {
         userId,
         artistId: validatedData.artistId,
-        datetime: appointmentDateTime,
+        datetime: appointmentDateTimeUTC, // Use UTC time for database
         serviceType: validatedData.serviceType,
         duration: validatedData.duration,
         totalPrice: validatedData.totalPrice,
@@ -325,7 +355,11 @@ export async function POST(req: Request) {
         artistName: artist.name || "Artist",
       };
 
-      console.log("Prepared appointment request:", appointmentRequestData);
+      console.log("Prepared appointment request (with UTC datetime):", {
+        ...appointmentRequestData,
+        datetime: appointmentRequestData.datetime.toISOString(),
+        localDatetime: localDateTime.toLocaleString()
+      });
 
       // Store this request data in a server-side session or temporary storage
       // For now, we'll simply return it with a temporary ID for the client to use
