@@ -2,13 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { z } from "zod";
-import {
-  getDay,
-  format,
-  addMinutes,
-  startOfDay,
-  addDays,
-} from "date-fns";
+import { getDay, format, addMinutes, startOfDay, addDays } from "date-fns";
 import { v4 as uuidv4 } from "uuid";
 
 // Define status type
@@ -110,7 +104,8 @@ export async function POST(req: Request) {
           { message: "Artist profile not found" },
           { status: 404 }
         );
-      }      console.log(`Makeup artist ID found: ${makeupArtistRecord.id}`);
+      }
+      console.log(`Makeup artist ID found: ${makeupArtistRecord.id}`);
 
       // Parse date and time - simplified approach
       console.log("=== PROCESSING DATE AND TIME (SIMPLIFIED) ===");
@@ -118,18 +113,34 @@ export async function POST(req: Request) {
       console.log("Received appointment time:", validatedData.appointmentTime);
 
       // Parse date and time components
-      const [year, month, day] = validatedData.appointmentDate.split('-').map(Number);
-      const [hours, minutes] = validatedData.appointmentTime.split(':').map(Number);
-      
+      const [year, month, day] = validatedData.appointmentDate
+        .split("-")
+        .map(Number);
+      const [hours, minutes] = validatedData.appointmentTime
+        .split(":")
+        .map(Number);
+
       // Create appointment datetime (treating as local time)
-      const appointmentDateTime = new Date(year, month - 1, day, hours, minutes);
-      console.log("Appointment datetime created:", appointmentDateTime.toLocaleString());
+      const appointmentDateTime = new Date(
+        year,
+        month - 1,
+        day,
+        hours,
+        minutes
+      );
+      console.log(
+        "Appointment datetime created:",
+        appointmentDateTime.toLocaleString()
+      );
 
       const dayOfWeek = getDay(appointmentDateTime);
       const timeHour = appointmentDateTime.getHours();
       const timeMinute = appointmentDateTime.getMinutes();
 
-      const appointmentEndTime = addMinutes(appointmentDateTime, validatedData.duration);
+      const appointmentEndTime = addMinutes(
+        appointmentDateTime,
+        validatedData.duration
+      );
       console.log(
         `Appointment time: ${format(
           appointmentDateTime,
@@ -138,7 +149,10 @@ export async function POST(req: Request) {
       );
 
       console.log("=== APPOINTMENT DETAILS ===");
-      console.log("Appointment date/time:", appointmentDateTime.toLocaleString());
+      console.log(
+        "Appointment date/time:",
+        appointmentDateTime.toLocaleString()
+      );
       console.log("Day of week:", dayOfWeek);
       console.log("Time hour:", timeHour);
       console.log("Time minute:", timeMinute);
@@ -255,7 +269,7 @@ export async function POST(req: Request) {
           },
           { status: 400 }
         );
-      }      // Check for conflicts with existing bookings
+      } // Check for conflicts with existing bookings
       console.log("=== CHECKING FOR BOOKING CONFLICTS (SIMPLIFIED) ===");
       console.log(
         "Using makeup artist ID for conflict check:",
@@ -272,7 +286,8 @@ export async function POST(req: Request) {
       );
 
       // Query for bookings on the same date
-      const dayStart = startOfDay(appointmentDateTime);      const dayEnd = addDays(dayStart, 1);
+      const dayStart = startOfDay(appointmentDateTime);
+      const dayEnd = addDays(dayStart, 1);
 
       console.log("Searching bookings in date range:", {
         start: dayStart.toLocaleString(),
@@ -329,7 +344,8 @@ export async function POST(req: Request) {
       const serviceNameToDuration = new Map<string, number>();
       artistServices.forEach((service) => {
         serviceNameToDuration.set(service.name, service.duration);
-      });      const isOverlapping = existingBookings.some((booking) => {
+      });
+      const isOverlapping = existingBookings.some((booking) => {
         // Use existing booking datetime directly (simplified)
         const existingStart = new Date(booking.date_time);
         // Use actual service duration or default to 60 minutes
@@ -380,7 +396,8 @@ export async function POST(req: Request) {
           },
           { status: 409 } // 409 Conflict status code
         );
-      }      console.log("=== NO CONFLICTS FOUND - PROCEEDING WITH BOOKING ===");
+      }
+      console.log("=== NO CONFLICTS FOUND - PROCEEDING WITH BOOKING ===");
 
       // Generate a temporary request ID
       const tempRequestId = uuidv4();

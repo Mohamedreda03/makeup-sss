@@ -30,6 +30,11 @@ interface AvailabilitySettings {
   }[];
 }
 
+interface ArtistData {
+  name?: string;
+  [key: string]: unknown; // Allow for additional properties
+}
+
 interface ArtistBookingWrapperProps {
   artistId: string;
   services: Service[];
@@ -43,7 +48,7 @@ export default function ArtistBookingWrapper({
   isUserLoggedIn,
   availabilitySettings,
 }: ArtistBookingWrapperProps) {
-  const [artistData, setArtistData] = useState<any>(null);
+  const [artistData, setArtistData] = useState<ArtistData | null>(null);
   const [loading, setLoading] = useState(true);
   const [hasLoadedServices, setHasLoadedServices] = useState(false);
 
@@ -87,7 +92,12 @@ export default function ArtistBookingWrapper({
       ? `Standard Session with ${artistData.name}`
       : "Standard Session",
     description: "Book a standard appointment with the artist",
-    price: artistData?.defaultPrice || 0, // Use artist's default price if available
+    price:
+      artistData &&
+      "defaultPrice" in artistData &&
+      typeof artistData.defaultPrice === "number"
+        ? artistData.defaultPrice
+        : 0, // Use artist's default price if available
     duration: 60, // Duration can be adjusted as needed
     isActive: true,
     artistId: artistId,
@@ -111,7 +121,12 @@ export default function ArtistBookingWrapper({
         description: `Book a standard appointment with ${
           artistData.name || "the artist"
         }`,
-        price: artistData.defaultPrice,
+        price:
+          artistData &&
+          "defaultPrice" in artistData &&
+          typeof artistData.defaultPrice === "number"
+            ? artistData.defaultPrice
+            : 0,
         isActive: true,
         artistId: artistId,
       });
@@ -136,11 +151,6 @@ export default function ArtistBookingWrapper({
     return <div className="text-center py-8">Loading...</div>;
   }
 
-  // Don't render booking component for non-logged-in users
-  if (!isUserLoggedIn) {
-    return null;
-  }
-
   // Only use the default service if there are no real services
   const availableServices =
     services.length > 0 ? services : selectedService ? [selectedService] : [];
@@ -152,7 +162,7 @@ export default function ArtistBookingWrapper({
       selectedService={selectedService}
       isUserLoggedIn={isUserLoggedIn}
       availabilitySettings={availabilitySettings}
-      artistData={artistData} // Pass the artist data to show more details in booking
+      artistData={artistData || undefined} // Pass the artist data to show more details in booking
     />
   );
 }

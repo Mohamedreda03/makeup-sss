@@ -49,15 +49,10 @@ export function BookingSummary({
               <span className="font-medium">
                 {format(new Date(selectedDate), "MMMM d, yyyy")}
               </span>
-            </div>
+            </div>{" "}
             <div className="flex justify-between">
               <span className="text-gray-500">Time:</span>
-              <span className="font-medium">
-                {format(
-                  new Date(`${selectedDate}T${selectedTime}:00`),
-                  "h:mm a"
-                )}
-              </span>
+              <span className="font-medium">{selectedTime}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-500">Artist:</span>

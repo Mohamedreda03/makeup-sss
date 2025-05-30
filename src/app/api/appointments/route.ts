@@ -175,7 +175,8 @@ export async function POST(req: Request) {
           { message: "Artist not found" },
           { status: 404 }
         );
-      }      console.log(`Artist verified: ${artist.name || artist.id}`);
+      }
+      console.log(`Artist verified: ${artist.name || artist.id}`);
 
       // Simple datetime processing without timezone complications
       console.log("=== SIMPLE DATETIME PROCESSING ===");
@@ -183,17 +184,31 @@ export async function POST(req: Request) {
       console.log("Received appointmentTime:", validatedData.appointmentTime);
 
       // Parse date and time
-      const [year, month, day] = validatedData.appointmentDate.split('-').map(Number);
-      const [hours, minutes] = validatedData.appointmentTime.split(':').map(Number);
+      const [year, month, day] = validatedData.appointmentDate
+        .split("-")
+        .map(Number);
+      const [hours, minutes] = validatedData.appointmentTime
+        .split(":")
+        .map(Number);
 
       // Create appointment datetime - treat as local time
-      const appointmentDateTime = new Date(year, month - 1, day, hours, minutes);
-      
-      console.log("Created appointment datetime:", appointmentDateTime.toLocaleString());
+      const appointmentDateTime = new Date(
+        year,
+        month - 1,
+        day,
+        hours,
+        minutes
+      );
+
+      console.log(
+        "Created appointment datetime:",
+        appointmentDateTime.toLocaleString()
+      );
       console.log("Appointment time hour:", hours);
-      console.log("Appointment time minute:", minutes);      const dayOfWeek = appointmentDateTime.getDay();
+      console.log("Appointment time minute:", minutes);
+      const dayOfWeek = appointmentDateTime.getDay();
       const appointmentEndTime = addMinutes(appointmentDateTime, 60); // Default duration
-      
+
       console.log(
         `Appointment time: ${format(
           appointmentDateTime,
@@ -249,7 +264,7 @@ export async function POST(req: Request) {
           { message: "This artist is not currently accepting bookings" },
           { status: 400 }
         );
-      }      // Check if appointment is during working hours
+      } // Check if appointment is during working hours
       const appointmentEndHour = appointmentEndTime.getHours();
       const appointmentEndMinute = appointmentEndTime.getMinutes();
 
@@ -258,9 +273,7 @@ export async function POST(req: Request) {
         `Working hours: ${workingHours.start}:00 - ${workingHours.end}:00`
       );
       console.log(
-        `Appointment start: ${hours}:${minutes
-          .toString()
-          .padStart(2, "0")}`
+        `Appointment start: ${hours}:${minutes.toString().padStart(2, "0")}`
       );
       console.log(
         `Appointment end: ${appointmentEndHour}:${appointmentEndMinute
@@ -311,7 +324,7 @@ export async function POST(req: Request) {
           },
           { status: 400 }
         );
-      }      // Check for conflicts with existing bookings - simplified approach
+      } // Check for conflicts with existing bookings - simplified approach
       console.log("=== CHECKING FOR BOOKING CONFLICTS (SIMPLIFIED) ===");
       console.log(
         "Using makeup artist ID for conflict check:",
@@ -361,7 +374,11 @@ export async function POST(req: Request) {
         const existingMinute = existingDateTime.getMinutes();
 
         console.log(
-          `Comparing new ${hours}:${minutes.toString().padStart(2, '0')} with existing ${existingHour}:${existingMinute.toString().padStart(2, '0')}`
+          `Comparing new ${hours}:${minutes
+            .toString()
+            .padStart(2, "0")} with existing ${existingHour}:${existingMinute
+            .toString()
+            .padStart(2, "0")}`
         );
 
         return existingHour === hours && existingMinute === minutes;
@@ -377,7 +394,7 @@ export async function POST(req: Request) {
           },
           { status: 409 }
         );
-      }      // Create the booking
+      } // Create the booking
       const bookingData = {
         user_id: userId,
         artist_id: artist.makeup_artist.id, // Use makeup_artist.id instead of user.id
@@ -398,7 +415,7 @@ export async function POST(req: Request) {
         data: bookingData,
       });
 
-      console.log(`Booking created with ID: ${booking.id}`);// Return the created booking
+      console.log(`Booking created with ID: ${booking.id}`); // Return the created booking
       return NextResponse.json({
         message: "Appointment created successfully",
         appointment: {

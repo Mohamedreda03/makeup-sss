@@ -26,8 +26,7 @@ export function TimeSelector({
     if (!timeSlotContainerRef.current) return;
     const startX = e.clientX;
     const scrollLeft = timeSlotContainerRef.current.scrollLeft;
-
-    const handleMouseMove = (e: MouseEvent) => {
+    const handleMouseMove = (e: globalThis.MouseEvent) => {
       if (!timeSlotContainerRef.current) return;
       e.preventDefault();
       const x = e.clientX;
@@ -36,7 +35,7 @@ export function TimeSelector({
     };
 
     const handleMouseUp = () => {
-      document.removeEventListener("mousemove", handleMouseMove as any);
+      document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
       if (timeSlotContainerRef.current) {
         timeSlotContainerRef.current.style.cursor = "grab";
@@ -49,7 +48,7 @@ export function TimeSelector({
       timeSlotContainerRef.current.style.userSelect = "none";
     }
 
-    document.addEventListener("mousemove", handleMouseMove as any);
+    document.addEventListener("mousemove", handleMouseMove);
     document.addEventListener("mouseup", handleMouseUp);
   };
 
@@ -57,8 +56,7 @@ export function TimeSelector({
     if (!timeSlotContainerRef.current || !e.touches[0]) return;
     const startX = e.touches[0].clientX;
     const scrollLeft = timeSlotContainerRef.current.scrollLeft;
-
-    const handleTouchMove = (e: TouchEvent) => {
+    const handleTouchMove = (e: globalThis.TouchEvent) => {
       if (!timeSlotContainerRef.current || !e.touches[0]) return;
       const x = e.touches[0].clientX;
       const walk = (startX - x) * 2;
@@ -66,11 +64,11 @@ export function TimeSelector({
     };
 
     const handleTouchEnd = () => {
-      document.removeEventListener("touchmove", handleTouchMove as any);
+      document.removeEventListener("touchmove", handleTouchMove);
       document.removeEventListener("touchend", handleTouchEnd);
     };
 
-    document.addEventListener("touchmove", handleTouchMove as any);
+    document.addEventListener("touchmove", handleTouchMove);
     document.addEventListener("touchend", handleTouchEnd);
   };
 
@@ -99,14 +97,15 @@ export function TimeSelector({
       >
         {" "}
         <div className="flex space-x-4 min-w-max">
+          {" "}
           {timeSlots.map((slot) => {
             const isBooked = slot.isBooked === true;
-            const isSelected = selectedTime === slot.time && !isBooked;
+            const isSelected = selectedTime === slot.label && !isBooked;
 
             return (
               <button
                 key={slot.time}
-                onClick={() => !isBooked && onTimeSelect(slot.time)}
+                onClick={() => !isBooked && onTimeSelect(slot.label)}
                 disabled={isBooked}
                 className={`py-3 px-4 rounded-full border transition-colors ${
                   isSelected

@@ -42,7 +42,7 @@ interface AppointmentRequest {
 export default function PaymentRequestPage() {
   const router = useRouter();
   const { requestId } = useParams();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [appointmentRequest, setAppointmentRequest] =
     useState<AppointmentRequest | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -63,7 +63,12 @@ export default function PaymentRequestPage() {
   // Retrieve appointment request from localStorage or session storage
   useEffect(() => {
     const fetchAppointmentRequest = async () => {
-      if (!session?.user) {
+      // Wait for session to load before checking authentication
+      if (status === "loading") {
+        return; // Still loading, wait
+      }
+
+      if (status === "unauthenticated" || !session?.user) {
         toast({
           title: "Authentication Required",
           description: "Please sign in to continue with payment",
@@ -107,7 +112,7 @@ export default function PaymentRequestPage() {
     };
 
     fetchAppointmentRequest();
-  }, [requestId, session, router]);
+  }, [requestId, session, router, status]);
 
   // Format card number with spaces
   const formatCardNumber = (value: string) => {
@@ -367,28 +372,48 @@ export default function PaymentRequestPage() {
                 <div>
                   <p className="font-medium">Date & Time</p>
                   <p className="text-gray-600">
-                    {appointmentRequest.appointmentDate && appointmentRequest.appointmentTime
+                    {appointmentRequest.appointmentDate &&
+                    appointmentRequest.appointmentTime
                       ? (() => {
                           // Create date from separate date and time fields
-                          console.log("Appointment date:", appointmentRequest.appointmentDate);
-                          console.log("Appointment time:", appointmentRequest.appointmentTime);
-                          
+                          console.log(
+                            "Appointment date:",
+                            appointmentRequest.appointmentDate
+                          );
+                          console.log(
+                            "Appointment time:",
+                            appointmentRequest.appointmentTime
+                          );
+
                           // Parse date (YYYY-MM-DD) and time (HH:MM)
-                          const [year, month, day] = appointmentRequest.appointmentDate.split('-').map(Number);
-                          const [hours, minutes] = appointmentRequest.appointmentTime.split(':').map(Number);
-                          
+                          const [year, month, day] =
+                            appointmentRequest.appointmentDate
+                              .split("-")
+                              .map(Number);
+                          const [hours, minutes] =
+                            appointmentRequest.appointmentTime
+                              .split(":")
+                              .map(Number);
+
                           // Create date object in local time (Cairo)
-                          const appointmentDateTime = new Date(year, month - 1, day, hours, minutes);
-                          
+                          const appointmentDateTime = new Date(
+                            year,
+                            month - 1,
+                            day,
+                            hours,
+                            minutes
+                          );
+
                           // Display the date/time in a user-friendly format
-                          const displayString = appointmentDateTime.toLocaleString("en-US", {
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                            hour: "numeric",
-                            minute: "2-digit",
-                            hour12: true,
-                          });
+                          const displayString =
+                            appointmentDateTime.toLocaleString("en-US", {
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                              hour: "numeric",
+                              minute: "2-digit",
+                              hour12: true,
+                            });
 
                           console.log("Display string:", displayString);
                           return displayString;

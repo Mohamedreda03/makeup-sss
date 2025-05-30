@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { addDays, format, parseISO, startOfDay, getDay } from "date-fns";
-import { fromZonedTime, toZonedTime } from "date-fns-tz";
 const DEFAULT_BUSINESS_HOURS = {
   start: 10, // 10 AM
   end: 24, // 12 AM (midnight)
@@ -10,9 +9,6 @@ const DEFAULT_BUSINESS_HOURS = {
 
 // Default regular days off
 const DEFAULT_REGULAR_DAYS_OFF = [0, 6]; // Sunday and Saturday
-
-// Target timezone - change this to your local timezone
-const TIMEZONE = "Africa/Cairo"; // المنطقة الزمنية الأساسية
 
 // GET /api/artists/[id]/availability
 // This endpoint returns the available and booked time slots for an artist on specific dates
@@ -24,12 +20,6 @@ export async function GET(
     console.log("=== AVAILABILITY API START ===");
     console.log("Environment:", process.env.NODE_ENV);
     console.log("Database URL exists:", !!process.env.DATABASE_URL);
-    console.log(
-      "Server timezone:",
-      Intl.DateTimeFormat().resolvedOptions().timeZone
-    );
-    console.log("Target timezone:", TIMEZONE);
-    console.log("Server UTC time:", new Date().toISOString());
     console.log("Server local time:", new Date().toLocaleString());
 
     // Get artist ID from params
@@ -160,38 +150,24 @@ export async function GET(
       });
     }
 
-    // Set date range with proper timezone handling
+    // Set date range with simple local time handling
     let startDate: Date;
     if (dateParam) {
-      // Convert provided date to UTC properly
-      const localStartDate = startOfDay(parseISO(dateParam));
-      startDate = fromZonedTime(localStartDate, TIMEZONE);
+      // Parse provided date directly without timezone conversion
+      startDate = startOfDay(parseISO(dateParam));
     } else {
-      // Use current date in target timezone, then convert to UTC
-      const now = new Date();
-      const localNow = toZonedTime(now, TIMEZONE);
-      const localStartDate = startOfDay(localNow);
-      startDate = fromZonedTime(localStartDate, TIMEZONE);
+      // Use current date
+      startDate = startOfDay(new Date());
     }
 
-    // End date in UTC
-    const localEndDate = toZonedTime(
-      addDays(startDate, parseInt(daysParam, 10)),
-      TIMEZONE
-    );
-    const endDate = fromZonedTime(localEndDate, TIMEZONE);
+    // End date
+    const endDate = addDays(startDate, parseInt(daysParam, 10));
 
-    console.log("=== DATE CONVERSION DEBUG ===");
-    console.log("UTC start date:", startDate.toISOString());
-    console.log("UTC end date:", endDate.toISOString());
-    console.log(
-      "Local start date:",
-      toZonedTime(startDate, TIMEZONE).toLocaleString()
-    );
-    console.log(
-      "Local end date:",
-      toZonedTime(endDate, TIMEZONE).toLocaleString()
-    );
+    console.log("=== DATE RANGE DEBUG ===");
+    console.log("Start date:", startDate.toISOString());
+    console.log("End date:", endDate.toISOString());
+    console.log("Local start date:", startDate.toLocaleString());
+    console.log("Local end date:", endDate.toLocaleString());
 
     // Get the makeup artist ID first
     console.log("Looking for makeup artist record...");
@@ -222,7 +198,6 @@ export async function GET(
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString(),
       makeupArtistId: makeupArtistRecord.id,
-      timezone: TIMEZONE,
     });
 
     const appointments = await db.booking.findMany({
@@ -252,18 +227,17 @@ export async function GET(
     );
     console.log(`Found ${appointments.length} total appointments`);
 
-    // Log each appointment in detail with timezone conversion
+    // Log each appointment in detail
     appointments.forEach((apt, index) => {
-      const localDateTime = toZonedTime(new Date(apt.date_time), TIMEZONE);
       console.log(`Appointment ${index + 1}:`, {
         id: apt.id,
-        utc_date_time: apt.date_time.toISOString(),
-        local_date_time: localDateTime.toLocaleString(),
-        local_date: format(localDateTime, "yyyy-MM-dd"),
-        local_time: format(localDateTime, "HH:mm"),
+        date_time: apt.date_time.toISOString(),
+        local_date_time: apt.date_time.toLocaleString(),
+        local_date: format(apt.date_time, "yyyy-MM-dd"),
+        local_time: format(apt.date_time, "HH:mm"),
         service_type: apt.service_type,
         booking_status: apt.booking_status,
-        day_of_week: localDateTime.getDay(),
+        day_of_week: apt.date_time.getDay(),
       });
     });
     console.log(`=== END DATABASE RESULTS ===`);
@@ -340,9 +314,9 @@ export async function GET(
     // Generate available time slots for each day
     const availabilityByDay = [];
 
-    // Start with local date in target timezone
-    let currentLocalDate = toZonedTime(startDate, TIMEZONE);
-    const endLocalDate = toZonedTime(endDate, TIMEZONE);
+    // Start with local date
+    let currentDate = new Date(startDate);
+    const endLocalDate = new Date(endDate);
 
     // Define business hours from settings
     const businessHours = {
@@ -351,21 +325,20 @@ export async function GET(
       interval: serviceId ? serviceDuration : workingHours.interval, // Use service duration for intervals when specific service is selected
     };
 
-    console.log("=== TIME SLOT GENERATION WITH TIMEZONE ===");
+    console.log("=== TIME SLOT GENERATION (SIMPLIFIED) ===");
     console.log("Business hours:", businessHours);
-    console.log("Target timezone:", TIMEZONE);
-    console.log("Local date range:", {
-      start: currentLocalDate.toLocaleString(),
+    console.log("Date range:", {
+      start: currentDate.toLocaleString(),
       end: endLocalDate.toLocaleString(),
     });
 
-    // Loop through each day in the range (in local time)
-    while (currentLocalDate < endLocalDate) {
-      const dayString = format(currentLocalDate, "yyyy-MM-dd");
-      const dayLabel = format(currentLocalDate, "EEE");
-      const dayNumber = format(currentLocalDate, "d");
-      const monthName = format(currentLocalDate, "MMM");
-      const dayOfWeek = getDay(currentLocalDate); // 0 = Sunday, 6 = Saturday
+    // Loop through each day in the range
+    while (currentDate < endLocalDate) {
+      const dayString = format(currentDate, "yyyy-MM-dd");
+      const dayLabel = format(currentDate, "EEE");
+      const dayNumber = format(currentDate, "d");
+      const monthName = format(currentDate, "MMM");
+      const dayOfWeek = getDay(currentDate); // 0 = Sunday, 6 = Saturday
 
       // Log for debugging
       console.log(
@@ -383,7 +356,7 @@ export async function GET(
       const isDayOff = regularDaysOff.includes(dayOfWeek);
 
       console.log(
-        `Day ${dayString} (${dayLabel}): Regular day off: ${isDayOff}, Day of week: ${dayOfWeek}, Timezone: ${TIMEZONE}`
+        `Day ${dayString} (${dayLabel}): Regular day off: ${isDayOff}, Day of week: ${dayOfWeek}`
       );
       console.log(`Regular days off array: ${JSON.stringify(regularDaysOff)}`);
 
@@ -396,82 +369,73 @@ export async function GET(
         for (let hour = businessHours.start; hour < businessHours.end; hour++) {
           // Use the artist's interval setting for appointments
           for (let minute = 0; minute < 60; minute += businessHours.interval) {
-            const slotLocalTime = new Date(currentLocalDate);
-            slotLocalTime.setHours(hour, minute, 0, 0);
+            const slotTime = new Date(currentDate);
+            slotTime.setHours(hour, minute, 0, 0);
 
             // Skip slots in the past (compare in local time)
-            const nowLocal = toZonedTime(new Date(), TIMEZONE);
-            if (slotLocalTime < nowLocal) {
+            const now = new Date();
+            if (slotTime < now) {
               continue;
             }
 
             // Check if this slot conflicts with any booking
             let isBooked = false;
-            const slotTimeStr = format(slotLocalTime, "HH:mm");
-            const slotDateStr = format(currentLocalDate, "yyyy-MM-dd");
+            const slotTimeStr = format(slotTime, "HH:mm");
+            const slotDateStr = format(currentDate, "yyyy-MM-dd");
 
             // Enhanced debugging - log every slot check
             console.log(
-              `\n--- Checking slot ${slotTimeStr} on ${slotDateStr} (${TIMEZONE}) ---`
+              `\n--- Checking slot ${slotTimeStr} on ${slotDateStr} ---`
             );
-            console.log(
-              `Local slot datetime: ${slotLocalTime.toLocaleString()}`
-            );
+            console.log(`Slot datetime: ${slotTime.toLocaleString()}`);
             console.log(
               `Current appointments to check: ${appointments.length}`
             );
 
             for (const appointment of appointments) {
-              // Convert appointment time from UTC to local timezone
-              const appointmentLocalTime = toZonedTime(
-                new Date(appointment.date_time),
-                TIMEZONE
-              );
-              const appointmentLocalEnd = new Date(appointmentLocalTime);
+              // Use appointment time directly (already in local time due to simplified storage)
+              const appointmentDateTime = new Date(appointment.date_time);
+              const appointmentEnd = new Date(appointmentDateTime);
 
               // Use the actual service duration instead of hardcoded 60 minutes
               const appointmentDuration =
                 serviceNameToDuration.get(appointment.service_type) ||
                 serviceDuration ||
                 60;
-              appointmentLocalEnd.setMinutes(
-                appointmentLocalEnd.getMinutes() + appointmentDuration
+              appointmentEnd.setMinutes(
+                appointmentEnd.getMinutes() + appointmentDuration
               );
 
-              // Create date objects for the current slot (in local time)
-              const slotStart = new Date(slotLocalTime);
-              const slotEnd = new Date(slotLocalTime);
+              // Create date objects for the current slot
+              const slotStart = new Date(slotTime);
+              const slotEnd = new Date(slotTime);
               slotEnd.setMinutes(slotEnd.getMinutes() + businessHours.interval);
 
               // Convert times to minutes for easier comparison
               const appointmentStartMinutes =
-                appointmentLocalTime.getHours() * 60 +
-                appointmentLocalTime.getMinutes();
+                appointmentDateTime.getHours() * 60 +
+                appointmentDateTime.getMinutes();
               const appointmentEndMinutes =
-                appointmentLocalEnd.getHours() * 60 +
-                appointmentLocalEnd.getMinutes();
+                appointmentEnd.getHours() * 60 + appointmentEnd.getMinutes();
               const slotStartMinutes =
                 slotStart.getHours() * 60 + slotStart.getMinutes();
               const slotEndMinutes =
                 slotEnd.getHours() * 60 + slotEnd.getMinutes();
 
-              // Check if the appointment is on the same day (in local time)
-              const appointmentDateLocal = format(
-                appointmentLocalTime,
-                "yyyy-MM-dd"
-              );
+              // Check if the appointment is on the same day
+              const appointmentDate = format(appointmentDateTime, "yyyy-MM-dd");
 
               console.log(`  Checking appointment ${appointment.id}:`);
-              console.log(`    UTC: ${appointment.date_time.toISOString()}`);
               console.log(
-                `    Local: ${appointmentLocalTime.toLocaleString()}`
+                `    DateTime: ${appointment.date_time.toISOString()}`
+              );
+              console.log(`    Local: ${appointmentDateTime.toLocaleString()}`);
+              console.log(
+                `    Date: ${appointmentDate} (slot: ${slotDateStr})`
               );
               console.log(
-                `    Date: ${appointmentDateLocal} (slot: ${slotDateStr})`
-              );
-              console.log(
-                `    Time: ${format(appointmentLocalTime, "HH:mm")}-${format(
-                  appointmentLocalEnd,
+                `    Time: ${format(appointmentDateTime, "HH:mm")}-${format(
+                  appointmentEnd,
                   "HH:mm"
                 )}`
               );
@@ -480,7 +444,7 @@ export async function GET(
                 `    Service: ${appointment.service_type} (${appointmentDuration}min)`
               );
 
-              if (appointmentDateLocal !== slotDateStr) {
+              if (appointmentDate !== slotDateStr) {
                 console.log(`    → SKIP: Different date`);
                 continue;
               }
@@ -510,7 +474,7 @@ export async function GET(
                 (appointmentStartMinutes <= slotStartMinutes &&
                   appointmentEndMinutes >= slotEndMinutes);
 
-              console.log(`    Overlap check (local time):`);
+              console.log(`    Overlap check:`);
               console.log(
                 `      Slot: ${slotStartMinutes}-${slotEndMinutes} minutes`
               );
@@ -536,7 +500,7 @@ export async function GET(
             console.log(`--- End slot check ---\n`);
 
             // Format the time display (e.g., "10:00 AM")
-            const timeLabel = format(slotLocalTime, "h:mm a");
+            const timeLabel = format(slotTime, "h:mm a");
 
             // Add both available and booked slots to the list
             allTimeSlots.push({
@@ -559,7 +523,7 @@ export async function GET(
       });
 
       // Move to next day
-      currentLocalDate = addDays(currentLocalDate, 1);
+      currentDate = addDays(currentDate, 1);
     }
 
     console.log(`=== FINAL AVAILABILITY SUMMARY ===`);

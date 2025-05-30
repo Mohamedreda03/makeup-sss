@@ -282,7 +282,8 @@ export default function ArtistBooking({
     if (!isUserLoggedIn) {
       setShowLoginDialog(true);
       return;
-    }    setIsBooking(true);
+    }
+    setIsBooking(true);
     try {
       // Parse time - simple approach with separate date and time
       const [timeStr, period] = selectedTime.split(" ");
@@ -294,7 +295,9 @@ export default function ArtistBooking({
       else if (period === "AM" && hours === 12) hours = 0;
 
       // Format time as HH:MM (24-hour format)
-      const formattedTime = `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
+      const formattedTime = `${hours.toString().padStart(2, "0")}:${minutes
+        .toString()
+        .padStart(2, "0")}`;
 
       console.log("=== SIMPLIFIED BOOKING DEBUG ===");
       console.log("Selected time:", selectedTime);

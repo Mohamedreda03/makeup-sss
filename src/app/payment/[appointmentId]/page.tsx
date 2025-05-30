@@ -18,9 +18,7 @@ import { toast } from "@/components/ui/use-toast";
 import {
   CreditCard,
   Calendar,
-  Clock,
   User,
-  DollarSign,
   CheckCircle,
   Loader2,
   ShieldCheck,
@@ -41,7 +39,7 @@ interface Appointment {
 export default function PaymentPage() {
   const router = useRouter();
   const { appointmentId } = useParams();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [appointment, setAppointment] = useState<Appointment | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -61,7 +59,15 @@ export default function PaymentPage() {
   // Fetch appointment details
   useEffect(() => {
     const fetchAppointment = async () => {
-      if (!session?.user) return;
+      // Wait for session to load before proceeding
+      if (status === "loading") {
+        return; // Still loading, wait
+      }
+
+      if (status === "unauthenticated" || !session?.user) {
+        setIsLoading(false);
+        return;
+      }
 
       try {
         const response = await fetch(`/api/appointments/${appointmentId}`);
@@ -84,7 +90,7 @@ export default function PaymentPage() {
     };
 
     fetchAppointment();
-  }, [appointmentId, session]);
+  }, [appointmentId, session, status]);
 
   // Format card number with spaces
   const formatCardNumber = (value: string) => {
