@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { z } from "zod";
-import { getDay, format } from "date-fns";
+import { getDay, format, parseISO } from "date-fns";
+import { fromZonedTime, toZonedTime } from "date-fns-tz";
 import { BookingStatus } from "@/generated/prisma";
 
 // Extended user interface
