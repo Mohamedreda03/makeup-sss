@@ -6,13 +6,13 @@ import { Metadata } from "next";
 import { Calendar, Clock, MapPin, User } from "lucide-react";
 import { BookingStatus } from "@/generated/prisma";
 import { PaymentButton } from "@/components/appointment/PaymentButton";
+import Image from "next/image";
 import {
   Card,
   CardContent,
   CardDescription,
   CardFooter,
   CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -81,18 +81,49 @@ export default async function AppointmentPage({
 
         <CardContent className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div>
+            <div className="space-y-4">              <div>
                 <h3 className="text-sm font-medium text-gray-500">
                   Date & Time
                 </h3>
                 <div className="flex items-center mt-1">
-                  <Calendar className="h-4 w-4 mr-2 text-gray-500" />{" "}
-                  <span>{format(new Date(appointment.date_time), "PPPP")}</span>
+                  <Calendar className="h-4 w-4 mr-2 text-gray-500" />
+                  <span>
+                    {(() => {
+                      try {
+                        // Handle the date/time properly to avoid timezone issues
+                        const appointmentDate = new Date(appointment.date_time);
+                        
+                        // Check if the date is valid
+                        if (isNaN(appointmentDate.getTime())) {
+                          return "Invalid Date";
+                        }
+
+                        return format(appointmentDate, "EEEE, MMMM d, yyyy");
+                      } catch {
+                        return "Date not available";
+                      }
+                    })()}
+                  </span>
                 </div>
                 <div className="flex items-center mt-1">
                   <Clock className="h-4 w-4 mr-2 text-gray-500" />
-                  <span>{format(new Date(appointment.date_time), "p")}</span>
+                  <span>
+                    {(() => {
+                      try {
+                        // Handle the time properly to avoid timezone issues
+                        const appointmentDate = new Date(appointment.date_time);
+                        
+                        // Check if the date is valid
+                        if (isNaN(appointmentDate.getTime())) {
+                          return "Invalid Time";
+                        }
+
+                        return format(appointmentDate, "h:mm a");
+                      } catch {
+                        return "Time not available";
+                      }
+                    })()}
+                  </span>
                 </div>
               </div>
               {appointment.location && (
@@ -119,15 +150,15 @@ export default async function AppointmentPage({
 
             <div className="space-y-4">
               <div>
-                <h3 className="text-sm font-medium text-gray-500">Artist</h3>
-                <div className="flex items-start space-x-3 mt-2">
-                  <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
-                    {" "}
+                <h3 className="text-sm font-medium text-gray-500">Artist</h3>                <div className="flex items-start space-x-3 mt-2">
+                  <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
                     {appointment.artist?.user?.image ? (
-                      <img
+                      <Image
                         src={appointment.artist.user.image}
                         alt={appointment.artist?.user?.name || "Artist"}
-                        className="h-10 w-10 rounded-full"
+                        width={40}
+                        height={40}
+                        className="h-10 w-10 rounded-full object-cover"
                       />
                     ) : (
                       <User className="h-6 w-6 text-gray-500" />

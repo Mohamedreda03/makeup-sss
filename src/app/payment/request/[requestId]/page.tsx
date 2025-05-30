@@ -385,27 +385,32 @@ export default function PaymentRequestPage() {
                               return `${appointmentRequest.appointmentDate} at ${appointmentRequest.appointmentTime}`;
                             }
 
-                            // Format the date/time for display
-                            const formattedDate = appointmentDateTime.toLocaleDateString("en-US", {
-                              weekday: "long",
-                              year: "numeric",
-                              month: "long",
-                              day: "numeric",
-                            });
+                            // Format the date/time for display with better error handling
+                            try {
+                              const formattedDate = appointmentDateTime.toLocaleDateString("en-US", {
+                                weekday: "long",
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric",
+                              });
 
-                            const formattedTime = appointmentDateTime.toLocaleTimeString("en-US", {
-                              hour: "numeric",
-                              minute: "2-digit",
-                              hour12: true,
-                            });
+                              const formattedTime = appointmentDateTime.toLocaleTimeString("en-US", {
+                                hour: "numeric",
+                                minute: "2-digit",
+                                hour12: true,
+                              });
 
-                            return `${formattedDate} at ${formattedTime}`;
+                              return `${formattedDate} at ${formattedTime}`;
+                            } catch {
+                              // Fallback formatting if localeString methods fail
+                              return `${appointmentRequest.appointmentDate} at ${appointmentRequest.appointmentTime}`;
+                            }
                           } catch {
                             // Fallback to simple string concatenation if parsing fails
                             return `${appointmentRequest.appointmentDate} at ${appointmentRequest.appointmentTime}`;
                           }
                         })()
-                      : "Not specified"}
+                      : "Date and time not specified"}
                   </p>
                 </div>
               </div>
