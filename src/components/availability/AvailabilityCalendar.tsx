@@ -232,7 +232,8 @@ export default function AvailabilityCalendar({
         <CardContent>
           <div style={{ height: 600 }}>
             <Calendar
-              localizer={localizer}              events={events}
+              localizer={localizer}
+              events={events}
               startAccessor="start"
               endAccessor="end"
               style={{ height: "100%" }}

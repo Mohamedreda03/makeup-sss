@@ -17,16 +17,24 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    console.log("=== AVAILABILITY API START ===");
+    console.log("Environment:", process.env.NODE_ENV);
+    console.log("Database URL exists:", !!process.env.DATABASE_URL);
+    
     // Get artist ID from params
     const artistId = params.id;
+    console.log("Artist ID:", artistId);
 
     // Get URL parameters
     const url = new URL(req.url);
     const dateParam = url.searchParams.get("date");
     const daysParam = url.searchParams.get("days") || "7"; // Default to 7 days
     const serviceId = url.searchParams.get("serviceId"); // Optional service ID for duration-specific availability
+    
+    console.log("Request params:", { dateParam, daysParam, serviceId });
 
     // Validate artist exists
+    console.log("Checking if artist exists...");
     const artist = await db.user.findUnique({
       where: {
         id: artistId,
@@ -35,12 +43,15 @@ export async function GET(
       select: { id: true, name: true },
     });
 
+    console.log("Artist found:", !!artist);
     if (!artist) {
+      console.log("Artist not found, returning 404");
       return NextResponse.json(
         { message: "Artist not found" },
         { status: 404 }
       );
     }
+    console.log("Artist details:", { id: artist.id, name: artist.name });
 
     // Fetch service duration if serviceId is provided
     let serviceDuration = 60; // Default duration in minutes
@@ -149,6 +160,7 @@ export async function GET(
     const endDate = addDays(startDate, parseInt(daysParam, 10));
 
     // Get the makeup artist ID first
+    console.log("Looking for makeup artist record...");
     const makeupArtistRecord = await db.makeUpArtist.findFirst({
       where: {
         user_id: artistId,
@@ -158,6 +170,7 @@ export async function GET(
       },
     });
 
+    console.log("Makeup artist record found:", !!makeupArtistRecord);
     if (!makeupArtistRecord) {
       console.log(`No makeup artist record found for user ID: ${artistId}`);
       return NextResponse.json({
@@ -168,8 +181,15 @@ export async function GET(
         availability: [],
       });
     }
+    console.log("Makeup artist ID:", makeupArtistRecord.id);
 
     // Fetch all bookings for the artist in the date range
+    console.log("Fetching bookings for date range:", {
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+      makeupArtistId: makeupArtistRecord.id
+    });
+    
     const appointments = await db.booking.findMany({
       where: {
         artist_id: makeupArtistRecord.id, // Use makeup artist ID, not user ID
@@ -189,6 +209,56 @@ export async function GET(
         booking_status: true,
       },
     });
+
+    console.log(`=== DATABASE QUERY RESULTS ===`);
+    console.log(`Query artist_id: ${makeupArtistRecord.id}`);
+    console.log(`Query date range: ${startDate.toISOString()} to ${endDate.toISOString()}`);
+    console.log(`Found ${appointments.length} total appointments`);
+    
+    // Log each appointment in detail
+    appointments.forEach((apt, index) => {
+      console.log(`Appointment ${index + 1}:`, {
+        id: apt.id,
+        date_time: apt.date_time.toISOString(),
+        local_date_time: apt.date_time.toString(),
+        service_type: apt.service_type,
+        booking_status: apt.booking_status,
+        day_of_week: apt.date_time.getDay(),
+        formatted_date: format(apt.date_time, "yyyy-MM-dd"),
+        formatted_time: format(apt.date_time, "HH:mm")
+      });
+    });
+    console.log(`=== END DATABASE RESULTS ===`);
+
+    // Also check all bookings without date filter for debugging
+    const allBookings = await db.booking.findMany({
+      where: {
+        artist_id: makeupArtistRecord.id,
+        booking_status: {
+          in: ["PENDING", "CONFIRMED"],
+        },
+      },
+      select: {
+        id: true,
+        date_time: true,
+        service_type: true,
+        booking_status: true,
+      },
+      take: 10, // Limit to 10 for debugging
+    });
+    
+    console.log(`=== ALL BOOKINGS FOR ARTIST (sample) ===`);
+    console.log(`Total bookings for artist ${makeupArtistRecord.id}: ${allBookings.length} (showing max 10)`);
+    allBookings.forEach((booking, index) => {
+      console.log(`All Booking ${index + 1}:`, {
+        id: booking.id,
+        date_time: booking.date_time.toISOString(),
+        local_date_time: booking.date_time.toString(),
+        service_type: booking.service_type,
+        booking_status: booking.booking_status
+      });
+    });
+    console.log(`=== END ALL BOOKINGS ===`);
 
     // Fetch all artist services to map service names to durations
     const artistServices = await db.artistService.findMany({
@@ -285,20 +355,13 @@ export async function GET(
 
             // Check if this slot conflicts with any booking
             let isBooked = false;
-
-            // Debug logging for specific times
             const slotTimeStr = format(slotTime, "HH:mm");
-            const shouldLog =
-              slotTimeStr === "12:30" || slotTimeStr === "13:00";
+            const slotDateStr = format(currentDate, "yyyy-MM-dd");
 
-            if (shouldLog) {
-              console.log(
-                `\n=== Checking slot ${slotTimeStr} on ${dayString} ===`
-              );
-              console.log(
-                `Total appointments to check: ${appointments.length}`
-              );
-            }
+            // Enhanced debugging - log every slot check
+            console.log(`\n--- Checking slot ${slotTimeStr} on ${slotDateStr} ---`);
+            console.log(`Slot datetime: ${slotTime.toISOString()}`);
+            console.log(`Current appointments to check: ${appointments.length}`);
 
             for (const appointment of appointments) {
               const appointmentStart = new Date(appointment.date_time);
@@ -328,31 +391,17 @@ export async function GET(
               const slotEndMinutes =
                 slotEnd.getHours() * 60 + slotEnd.getMinutes();
 
-              if (shouldLog) {
-                console.log(
-                  `Appointment: ${format(appointmentStart, "HH:mm")}-${format(
-                    appointmentEnd,
-                    "HH:mm"
-                  )} (${appointmentStartMinutes}-${appointmentEndMinutes} minutes), Status: ${
-                    appointment.booking_status
-                  }`
-                );
-                console.log(
-                  `Slot: ${format(slotStart, "HH:mm")}-${format(
-                    slotEnd,
-                    "HH:mm"
-                  )} (${slotStartMinutes}-${slotEndMinutes} minutes)`
-                );
-              }
-
               // Check if the appointment is on the same day
               const appointmentDate = format(appointmentStart, "yyyy-MM-dd");
-              if (appointmentDate !== dayString) {
-                if (shouldLog) {
-                  console.log(
-                    `Different date: ${appointmentDate} vs ${dayString}`
-                  );
-                }
+              
+              console.log(`  Checking appointment ${appointment.id}:`);
+              console.log(`    Date: ${appointmentDate} (slot: ${slotDateStr})`);
+              console.log(`    Time: ${format(appointmentStart, "HH:mm")}-${format(appointmentEnd, "HH:mm")}`);
+              console.log(`    Status: ${appointment.booking_status}`);
+              console.log(`    Service: ${appointment.service_type} (${appointmentDuration}min)`);
+              
+              if (appointmentDate !== slotDateStr) {
+                console.log(`    → SKIP: Different date`);
                 continue;
               }
 
@@ -361,11 +410,7 @@ export async function GET(
                 appointment.booking_status !== "PENDING" &&
                 appointment.booking_status !== "CONFIRMED"
               ) {
-                if (shouldLog) {
-                  console.log(
-                    `Skipping appointment with status: ${appointment.booking_status}`
-                  );
-                }
+                console.log(`    → SKIP: Status not pending/confirmed`);
                 continue;
               }
 
@@ -385,48 +430,22 @@ export async function GET(
                 (appointmentStartMinutes <= slotStartMinutes &&
                   appointmentEndMinutes >= slotEndMinutes);
 
+              console.log(`    Overlap check:`);
+              console.log(`      Slot: ${slotStartMinutes}-${slotEndMinutes} minutes`);
+              console.log(`      Appointment: ${appointmentStartMinutes}-${appointmentEndMinutes} minutes`);
+              console.log(`      Has overlap: ${hasOverlap}`);
+
               if (hasOverlap) {
-                if (shouldLog) {
-                  console.log(
-                    `CONFLICT FOUND! Slot ${slotTimeStr} overlaps with appointment at ${format(
-                      appointmentStart,
-                      "HH:mm"
-                    )}`
-                  );
-                }
+                console.log(`    → CONFLICT! Slot marked as booked`);
                 isBooked = true;
                 break;
-              } else if (shouldLog) {
-                console.log(
-                  `No conflict with appointment at ${format(
-                    appointmentStart,
-                    "HH:mm"
-                  )}`
-                );
+              } else {
+                console.log(`    → No conflict`);
               }
             }
 
-            if (shouldLog) {
-              console.log(
-                `Final result for slot ${slotTimeStr}: ${
-                  isBooked ? "BOOKED" : "AVAILABLE"
-                }`
-              );
-              console.log(`=== End check for slot ${slotTimeStr} ===\n`);
-            }
-
-            // Log slot status for debugging
-            if (
-              format(slotTime, "HH:mm") === "10:00" ||
-              format(slotTime, "HH:mm") === "14:00"
-            ) {
-              console.log(
-                `Slot ${format(
-                  slotTime,
-                  "HH:mm"
-                )} on ${dayString}: isBooked = ${isBooked}`
-              );
-            }
+            console.log(`Final result for ${slotTimeStr}: ${isBooked ? "BOOKED" : "AVAILABLE"}`);
+            console.log(`--- End slot check ---\n`);
 
             // Format the time display (e.g., "10:00 AM")
             const timeLabel = format(slotTime, "h:mm a");
@@ -455,6 +474,23 @@ export async function GET(
       currentDate = addDays(currentDate, 1);
     }
 
+    console.log(`=== FINAL AVAILABILITY SUMMARY ===`);
+    console.log(`Total days processed: ${availabilityByDay.length}`);
+    availabilityByDay.forEach((day, index) => {
+      const bookedSlots = day.timeSlots.filter(slot => slot.isBooked);
+      const availableSlots = day.timeSlots.filter(slot => !slot.isBooked);
+      console.log(`Day ${index + 1} (${day.date}):`, {
+        dayLabel: day.dayLabel,
+        isDayOff: day.isDayOff,
+        totalSlots: day.timeSlots.length,
+        bookedSlots: bookedSlots.length,
+        availableSlots: availableSlots.length,
+        bookedTimes: bookedSlots.map(s => s.time).join(', ') || 'none'
+      });
+    });
+    console.log(`=== END AVAILABILITY SUMMARY ===`);
+    console.log("=== AVAILABILITY API END ===");
+
     return NextResponse.json({
       artistId,
       artistName: artist.name,
@@ -462,7 +498,12 @@ export async function GET(
       availability: availabilityByDay,
     });
   } catch (error) {
-    console.error("Error fetching artist availability:", error);
+    console.error("=== AVAILABILITY API ERROR ===");
+    console.error("Error details:", error);
+    console.error("Error stack:", (error as Error)?.stack);
+    console.error("Environment:", process.env.NODE_ENV);
+    console.error("Database URL exists:", !!process.env.DATABASE_URL);
+    console.error("=== END ERROR LOG ===");
     return NextResponse.json({ message: "Server error" }, { status: 500 });
   }
 }
