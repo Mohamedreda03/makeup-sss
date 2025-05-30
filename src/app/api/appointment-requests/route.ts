@@ -85,6 +85,26 @@ export async function POST(req: Request) {
       }
       console.log(`Artist verified: ${artist.name || artist.id}`);
 
+      // Get the makeup artist record for booking
+      const makeupArtistRecord = await db.makeUpArtist.findFirst({
+        where: {
+          user_id: validatedData.artistId,
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      if (!makeupArtistRecord) {
+        console.log(`No makeup artist record found for user ID: ${validatedData.artistId}`);
+        return NextResponse.json(
+          { message: "Artist profile not found" },
+          { status: 404 }
+        );
+      }
+
+      console.log(`Makeup artist ID found: ${makeupArtistRecord.id}`);
+
       // Parse the datetime
       const appointmentDateTime = new Date(validatedData.datetime);
       const appointmentEndTime = addMinutes(
@@ -190,11 +210,15 @@ export async function POST(req: Request) {
               "Selected time does not align with the artist's scheduling intervals",
           },
           { status: 400 }
-        );
-      } // Check for conflicts with existing bookings
+        );      } // Check for conflicts with existing bookings
+      console.log("=== CHECKING FOR BOOKING CONFLICTS ===");
+      console.log("Using makeup artist ID for conflict check:", makeupArtistRecord.id);
+      console.log("Requested appointment time:", appointmentDateTime.toISOString());
+      console.log("Requested appointment duration:", validatedData.duration, "minutes");
+      
       const existingBookings = await db.booking.findMany({
         where: {
-          artist_id: validatedData.artistId,
+          artist_id: makeupArtistRecord.id, // Use makeup artist ID, not user ID
           booking_status: {
             in: ["PENDING", "CONFIRMED"],
           },
@@ -203,36 +227,84 @@ export async function POST(req: Request) {
             lt: new Date(new Date(dateString).setHours(24, 0, 0, 0)),
           },
         },
+        select: {
+          id: true,
+          date_time: true,
+          booking_status: true,
+          service_type: true,
+        },
       });
 
-      console.log(
-        `Found ${existingBookings.length} existing bookings for the day`
-      );
+      console.log(`Found ${existingBookings.length} existing bookings for the day`);
+      
+      // Log each existing booking for debugging
+      existingBookings.forEach((booking, index) => {
+        console.log(`Existing booking ${index + 1}:`, {
+          id: booking.id,
+          date_time: booking.date_time.toISOString(),
+          status: booking.booking_status,
+          service: booking.service_type
+        });
+      });      // Check for overlapping bookings with improved logic
+      console.log("=== CHECKING FOR TIME CONFLICTS ===");
+      
+      // Fetch artist services to get accurate durations
+      const artistServices = await db.artistService.findMany({
+        where: {
+          artistId: validatedData.artistId,
+        },
+        select: {
+          name: true,
+          duration: true,
+        },
+      });
 
-      // Check for overlapping bookings
+      // Create mapping of service names to durations
+      const serviceNameToDuration = new Map<string, number>();
+      artistServices.forEach((service) => {
+        serviceNameToDuration.set(service.name, service.duration);
+      });
+
       const isOverlapping = existingBookings.some((booking) => {
         const existingStart = new Date(booking.date_time);
-        // Note: We need to estimate duration since booking model doesn't have duration field
-        // Using 60 minutes as default duration for existing bookings
-        const existingEnd = addMinutes(existingStart, 60);
+        // Use actual service duration or default to 60 minutes
+        const existingDuration = serviceNameToDuration.get(booking.service_type) || 60;
+        const existingEnd = addMinutes(existingStart, existingDuration);
 
-        return (
-          (appointmentDateTime >= existingStart &&
-            appointmentDateTime < existingEnd) ||
-          (appointmentEndTime > existingStart &&
-            appointmentEndTime <= existingEnd) ||
-          (appointmentDateTime <= existingStart &&
-            appointmentEndTime >= existingEnd)
+        console.log(`Checking conflict with booking ${booking.id}:`);
+        console.log(`  Existing: ${existingStart.toISOString()} to ${existingEnd.toISOString()} (${existingDuration}min)`);
+        console.log(`  New: ${appointmentDateTime.toISOString()} to ${appointmentEndTime.toISOString()} (${validatedData.duration}min)`);
+
+        // Improved overlap detection
+        const hasOverlap = (
+          // New appointment starts during an existing appointment
+          (appointmentDateTime >= existingStart && appointmentDateTime < existingEnd) ||
+          // New appointment ends during an existing appointment
+          (appointmentEndTime > existingStart && appointmentEndTime <= existingEnd) ||
+          // New appointment completely contains an existing appointment
+          (appointmentDateTime <= existingStart && appointmentEndTime >= existingEnd) ||
+          // Existing appointment completely contains the new appointment
+          (existingStart <= appointmentDateTime && existingEnd >= appointmentEndTime)
         );
+
+        console.log(`  Overlap detected: ${hasOverlap}`);
+        
+        return hasOverlap;
       });
 
       if (isOverlapping) {
-        console.log("Time slot is already booked");
+        console.log("=== TIME SLOT CONFLICT DETECTED ===");
+        console.log("Rejecting booking request due to time conflict");
         return NextResponse.json(
-          { message: "This time slot is already booked" },
-          { status: 400 }
+          { 
+            message: "This time slot is already booked. Please select a different time.",
+            error: "TIME_CONFLICT"
+          },
+          { status: 409 } // 409 Conflict status code
         );
       }
+
+      console.log("=== NO CONFLICTS FOUND - PROCEEDING WITH BOOKING ===");
 
       // Generate a temporary request ID
       const tempRequestId = uuidv4();
