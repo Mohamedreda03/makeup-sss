@@ -30,7 +30,8 @@ interface AppointmentRequest {
   userId: string;
   artistId: string;
   artistName: string;
-  datetime: string;
+  appointmentDate: string; // YYYY-MM-DD format
+  appointmentTime: string; // HH:MM format (24-hour)
   serviceType: string;
   totalPrice: number;
   location?: string;
@@ -230,43 +231,14 @@ export default function PaymentRequestPage() {
     setIsProcessing(true);
 
     try {
-      // Use the datetime exactly as it comes from the appointment request
-      // It should already be properly formatted with Cairo timezone (+02:00)
-      let datetimeValue = appointmentRequest.datetime;
+      console.log("Starting payment process...");
 
-      console.log("=== PAYMENT PAGE DATETIME DEBUG ===");
-      console.log("Original datetime from request:", datetimeValue);
-      console.log("Type of datetime:", typeof datetimeValue);
-
-      // Validate that we have a proper datetime string
-      if (!datetimeValue || typeof datetimeValue !== "string") {
-        throw new Error("Invalid datetime format");
-      }
-
-      // Check if datetime already has timezone info (+02:00 or Z)
-      const hasTimezone = /[+-]\d{2}:\d{2}$|Z$/.test(datetimeValue);
-
-      if (!hasTimezone) {
-        // If no timezone info, assume it's in Cairo time and add +02:00
-        datetimeValue = datetimeValue.replace(
-          /(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})/,
-          "$1+02:00"
-        );
-      }
-
-      console.log("Final datetime for API:", datetimeValue);
-
-      // Validate that the datetime can be parsed
-      const testDate = new Date(datetimeValue);
-      if (isNaN(testDate.getTime())) {
-        throw new Error("Invalid date format");
-      }
-
-      // Create the appointment using the validated appointment request
+      // Create the appointment using the new date/time format
       const appointmentData = {
         artistId: appointmentRequest.artistId,
         serviceType: appointmentRequest.serviceType,
-        datetime: datetimeValue,
+        appointmentDate: appointmentRequest.appointmentDate, // YYYY-MM-DD
+        appointmentTime: appointmentRequest.appointmentTime, // HH:MM
         totalPrice: appointmentRequest.totalPrice,
         // Handle location correctly - if it's null or undefined, don't include it
         ...(appointmentRequest.location
@@ -395,35 +367,30 @@ export default function PaymentRequestPage() {
                 <div>
                   <p className="font-medium">Date & Time</p>
                   <p className="text-gray-600">
-                    {appointmentRequest.datetime
+                    {appointmentRequest.appointmentDate && appointmentRequest.appointmentTime
                       ? (() => {
-                          // Parse the datetime string and display in Cairo timezone
-                          console.log("Original datetime from appointment request:", appointmentRequest.datetime);
+                          // Create date from separate date and time fields
+                          console.log("Appointment date:", appointmentRequest.appointmentDate);
+                          console.log("Appointment time:", appointmentRequest.appointmentTime);
                           
-                          // Check if the datetime has timezone info
-                          const hasTimezone = /[+-]\d{2}:\d{2}$|Z$/.test(appointmentRequest.datetime);
-                          let dateTimeString = appointmentRequest.datetime;
+                          // Parse date (YYYY-MM-DD) and time (HH:MM)
+                          const [year, month, day] = appointmentRequest.appointmentDate.split('-').map(Number);
+                          const [hours, minutes] = appointmentRequest.appointmentTime.split(':').map(Number);
                           
-                          // If no timezone info, assume it's Cairo local time
-                          if (!hasTimezone) {
-                            dateTimeString = appointmentRequest.datetime + "+02:00";
-                          }
+                          // Create date object in local time (Cairo)
+                          const appointmentDateTime = new Date(year, month - 1, day, hours, minutes);
                           
-                          const date = new Date(dateTimeString);
-                          console.log("Parsed date UTC:", date.toISOString());
-                          
-                          // Display in Cairo timezone using toLocaleString
-                          const displayString = date.toLocaleString('en-US', {
-                            timeZone: 'Africa/Cairo',
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                            hour: 'numeric',
-                            minute: '2-digit',
-                            hour12: true
+                          // Display the date/time in a user-friendly format
+                          const displayString = appointmentDateTime.toLocaleString("en-US", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                            hour: "numeric",
+                            minute: "2-digit",
+                            hour12: true,
                           });
-                          
-                          console.log("Cairo timezone display:", displayString);
+
+                          console.log("Display string:", displayString);
                           return displayString;
                         })()
                       : "Not specified"}

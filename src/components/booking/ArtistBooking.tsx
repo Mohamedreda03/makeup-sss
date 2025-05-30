@@ -282,10 +282,9 @@ export default function ArtistBooking({
     if (!isUserLoggedIn) {
       setShowLoginDialog(true);
       return;
-    }
-
-    setIsBooking(true);    try {
-      // Parse time and create datetime in Cairo timezone
+    }    setIsBooking(true);
+    try {
+      // Parse time - simple approach with separate date and time
       const [timeStr, period] = selectedTime.split(" ");
       const [hoursStr, minutesStr] = timeStr.split(":");
       let hours = parseInt(hoursStr);
@@ -294,28 +293,20 @@ export default function ArtistBooking({
       if (period === "PM" && hours !== 12) hours += 12;
       else if (period === "AM" && hours === 12) hours = 0;
 
-      const [year, month, day] = selectedDate.split("-");
-      
-      // Create a date object in local time (Cairo timezone)
-      // We'll send this as ISO string without timezone offset to avoid confusion
-      const localDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), hours, minutes, 0);
-      
-      // Format as ISO string without timezone (YYYY-MM-DDTHH:mm:ss)
-      // This represents the exact time in Cairo timezone
-      const localDatetimeString = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}T${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:00`;
+      // Format time as HH:MM (24-hour format)
+      const formattedTime = `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
 
-      console.log("=== BOOKING TIME DEBUG ===");
+      console.log("=== SIMPLIFIED BOOKING DEBUG ===");
       console.log("Selected time:", selectedTime);
       console.log("Selected date:", selectedDate);
-      console.log("Parsed hours:", hours, "minutes:", minutes);
-      console.log("Local date object:", localDate.toLocaleString());
-      console.log("Sending datetime string:", localDatetimeString);
+      console.log("Formatted time (24h):", formattedTime);
 
       const appointmentData = {
         artistId,
         serviceId: selectedService.id,
         serviceType: selectedService.name,
-        datetime: localDatetimeString, // Send without timezone offset
+        appointmentDate: selectedDate, // YYYY-MM-DD format
+        appointmentTime: formattedTime, // HH:MM format (24-hour)
         duration: selectedService.duration || 60,
         totalPrice: selectedService.price,
         notes: notes || "",
