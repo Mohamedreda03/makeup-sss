@@ -295,30 +295,15 @@ export default function ArtistBooking({
       else if (period === "AM" && hours === 12) hours = 0;
 
       const [year, month, day] = selectedDate.split("-");
-      
-      // Create date object in local time (this will be interpreted as Africa/Cairo on the server)
-      const datetime = new Date(
-        parseInt(year),
-        parseInt(month) - 1,
-        parseInt(day),
-        hours,
-        minutes
-      );
-
-      // Send the datetime in ISO format but without converting to UTC
-      // Format: YYYY-MM-DDTHH:mm:ss (without Z suffix to indicate local time)
-      const localDatetimeString = datetime.getFullYear() + '-' +
-        String(datetime.getMonth() + 1).padStart(2, '0') + '-' +
-        String(datetime.getDate()).padStart(2, '0') + 'T' +
-        String(datetime.getHours()).padStart(2, '0') + ':' +
-        String(datetime.getMinutes()).padStart(2, '0') + ':' +
-        String(datetime.getSeconds()).padStart(2, '0');
+        // Create datetime string directly in the target timezone format
+      // Format: YYYY-MM-DDTHH:mm:ss+02:00 (Africa/Cairo timezone)
+      const localDatetimeString = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:00+02:00`;
 
       console.log("Sending appointment data:", {
         selectedDate,
         selectedTime,
-        localDateTime: datetime.toLocaleString(),
-        sentDatetime: localDatetimeString
+        sentDatetime: localDatetimeString,
+        timezone: "Africa/Cairo"
       });
 
       const appointmentData = {

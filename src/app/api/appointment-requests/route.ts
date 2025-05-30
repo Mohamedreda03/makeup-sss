@@ -36,7 +36,7 @@ const appointmentRequestSchema = z.object({
   artistId: z.string(),
   serviceId: z.string().optional(),
   serviceType: z.string(),
-  datetime: z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(.\d{3}Z?)?$/), // Accept both with and without Z suffix
+  datetime: z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}([+-]\d{2}:\d{2}|Z)?$/), // Accept timezone offset or Z suffix
   duration: z.number().min(15).max(240),
   totalPrice: z.number().nonnegative(),
   notes: z.string().optional(),
@@ -107,8 +107,9 @@ export async function POST(req: Request) {
           { message: "Artist profile not found" },
           { status: 404 }
         );
-      }
-      console.log(`Makeup artist ID found: ${makeupArtistRecord.id}`);      // Parse the datetime with timezone handling - assume input is in target timezone
+      }      console.log(`Makeup artist ID found: ${makeupArtistRecord.id}`);
+
+      // Parse the datetime with timezone handling
       console.log("=== TIMEZONE PROCESSING ===");
       console.log(
         "Server timezone:",
@@ -117,21 +118,25 @@ export async function POST(req: Request) {
       console.log("Target timezone:", TIMEZONE);
       console.log("Received datetime:", validatedData.datetime);
 
-      // Parse as ISO string and treat as target timezone
+      // Parse the ISO string with timezone information
       const appointmentDateTime = parseISO(validatedData.datetime);
       console.log(
-        "Parsed datetime (target timezone):",
-        appointmentDateTime.toLocaleString()
+        "Parsed datetime (original):",
+        appointmentDateTime.toISOString()
       );
       
-      // Convert to UTC for database storage
-      const appointmentDateTimeUTC = fromZonedTime(
-        appointmentDateTime,
-        TIMEZONE
-      );
+      // If the datetime doesn't have timezone info, treat it as target timezone
+      let appointmentDateTimeUTC: Date;
+      if (validatedData.datetime.includes('+') || validatedData.datetime.includes('Z')) {
+        // Already has timezone info, use as is
+        appointmentDateTimeUTC = appointmentDateTime;
+      } else {
+        // No timezone info, treat as target timezone
+        appointmentDateTimeUTC = fromZonedTime(appointmentDateTime, TIMEZONE);
+      }
       console.log("Converted to UTC:", appointmentDateTimeUTC.toISOString());
 
-      // Use the parsed time converted to target timezone for local calculations
+      // Convert back to target timezone for local calculations
       const localDateTime = toZonedTime(appointmentDateTimeUTC, TIMEZONE);
       const dayOfWeek = getDay(localDateTime);
       const dateString = format(localDateTime, "yyyy-MM-dd");
@@ -141,7 +146,7 @@ export async function POST(req: Request) {
       const appointmentEndTime = addMinutes(
         localDateTime,
         validatedData.duration
-      );      console.log(
+      );console.log(
         `Appointment time: ${format(
           localDateTime,
           "yyyy-MM-dd HH:mm"
