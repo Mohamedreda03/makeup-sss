@@ -231,11 +231,33 @@ export default function PaymentRequestPage() {
     setIsProcessing(true);
 
     try {
-      // Make sure datetime is in the correct ISO format
+      // Make sure datetime is in the correct format for Africa/Cairo timezone
       let datetimeValue = appointmentRequest.datetime;
+      
+      console.log("Original datetime from request:", datetimeValue);
+      console.log("Type of datetime:", typeof datetimeValue);
+      
+      // If it's a Date object, convert it properly
       if (typeof datetimeValue === "object" && datetimeValue !== null) {
-        datetimeValue = new Date(datetimeValue).toISOString();
+        const dateObj = new Date(datetimeValue);
+        // Format as local time in Africa/Cairo timezone (YYYY-MM-DDTHH:mm:ss+02:00)
+        const year = dateObj.getFullYear();
+        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const day = String(dateObj.getDate()).padStart(2, '0');
+        const hours = String(dateObj.getHours()).padStart(2, '0');
+        const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+        const seconds = String(dateObj.getSeconds()).padStart(2, '0');
+        
+        datetimeValue = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}+02:00`;
+      } else if (typeof datetimeValue === "string") {
+        // If it's already a string, check if it has timezone info
+        if (!datetimeValue.includes('+') && !datetimeValue.includes('Z')) {
+          // Add Cairo timezone offset if no timezone info
+          datetimeValue = datetimeValue + '+02:00';
+        }
       }
+      
+      console.log("Processed datetime for API:", datetimeValue);
 
       // Create the appointment using the validated appointment request
       const appointmentData = {

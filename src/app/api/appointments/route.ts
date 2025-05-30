@@ -174,12 +174,36 @@ export async function POST(req: Request) {
           { message: "Artist not found" },
           { status: 404 }
         );
-      }
-      console.log(`Artist verified: ${artist.name || artist.id}`); // Parse the datetime
-      const appointmentDateTime = new Date(validatedData.datetime);
+      }      console.log(`Artist verified: ${artist.name || artist.id}`);
+
+      // Parse the datetime with timezone handling - same as appointment-requests API
+      console.log("=== TIMEZONE PROCESSING ===");
+      console.log("Target timezone: Africa/Cairo");
+      console.log("Received datetime:", validatedData.datetime);
+
+      // Parse the ISO string with timezone information
+      const appointmentDateTime = parseISO(validatedData.datetime);
       console.log(
-        `Appointment time: ${format(appointmentDateTime, "yyyy-MM-dd HH:mm")}`
-      ); // Get the day of week (0 = Sunday, 6 = Saturday)
+        "Parsed datetime (original):",
+        appointmentDateTime.toISOString()
+      );
+      
+      // If the datetime doesn't have timezone info, treat it as Africa/Cairo timezone
+      let appointmentDateTimeUTC: Date;
+      if (validatedData.datetime.includes('+') || validatedData.datetime.includes('Z')) {
+        // Already has timezone info, use as is
+        appointmentDateTimeUTC = appointmentDateTime;
+      } else {
+        // No timezone info, treat as Africa/Cairo timezone
+        appointmentDateTimeUTC = fromZonedTime(appointmentDateTime, "Africa/Cairo");
+      }
+      console.log("Converted to UTC:", appointmentDateTimeUTC.toISOString());
+
+      // Convert back to target timezone for local calculations
+      const localDateTime = toZonedTime(appointmentDateTimeUTC, "Africa/Cairo");
+      console.log(
+        `Appointment time: ${format(localDateTime, "yyyy-MM-dd HH:mm")}`
+      );// Get the day of week (0 = Sunday, 6 = Saturday)
       const dayOfWeek = getDay(appointmentDateTime);
       const timeHour = appointmentDateTime.getHours();
       const timeMinute = appointmentDateTime.getMinutes(); // Parse availability settings or use defaults
