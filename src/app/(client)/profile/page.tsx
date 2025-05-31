@@ -23,6 +23,7 @@ import axios from "axios";
 import { ProgressIndicator } from "@/components/ui/progress-indicator";
 import { uploadImageToCloudinary } from "@/lib/utils/cloudinary-upload";
 import { UserAvatar } from "@/components/user-avatar";
+import LoadingPage from "@/components/LoadingPage";
 
 // Definir la interfaz para los datos del usuario
 interface UserData {
@@ -36,21 +37,34 @@ interface UserData {
   createdAt: string;
 }
 
+// Interfaces for form data
+interface ProfileFormData {
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+}
+
+interface PasswordFormData {
+  newPassword: string;
+  confirmPassword: string;
+}
+
 // Definir el componente de la página de perfil
 function ProfilePage() {
-  const { data: session, update: updateSession } = useSession();
+  const { data: session, status, update: updateSession } = useSession();
   const [userData, setUserData] = useState<UserData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
+
   // Fetch user data on component mount
   useEffect(() => {
     const fetchUserData = async () => {
       try {
         const response = await axios.get("/api/user/profile");
-        console.log("Received user data:", response.data);
         setUserData(response.data);
       } catch (error) {
         console.error("Failed to fetch user data:", error);
@@ -64,19 +78,22 @@ function ProfilePage() {
       }
     };
 
-    if (session?.user) {
+    if (status === "loading") {
+      // Session is still loading, keep showing loading state
+      return;
+    }
+
+    if (status === "authenticated" && session?.user) {
       fetchUserData();
-    } else {
+    } else if (status === "unauthenticated") {
       setIsPageLoading(false);
     }
-  }, [session]);
-  const handleUpdateProfile = async (formData: any) => {
+  }, [session, status]);
+  const handleUpdateProfile = async (formData: ProfileFormData) => {
     setIsLoading(true);
     setSuccessMessage("");
 
     try {
-      console.log("Form data being submitted:", formData);
-
       // Create request data with proper typing
       const requestData = {
         name: formData.name,
@@ -85,12 +102,10 @@ function ProfilePage() {
         address: formData.address || "",
       };
 
-      console.log("Sending profile update with data:", requestData);
       const response = await axios.put("/api/user/profile", requestData);
 
       // Update local user data with response
       setUserData(response.data);
-      console.log("API Response with updated user data:", response.data);
 
       // Update session to reflect changes
       if (session) {
@@ -109,12 +124,12 @@ function ProfilePage() {
         title: "Profile Updated",
         description: "Your profile information has been updated successfully.",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to update profile:", error);
       toast({
         title: "Error",
         description:
-          error.response?.data?.message ||
+          (error instanceof Error && error.message) ||
           "Failed to update profile. Please try again.",
         variant: "destructive",
       });
@@ -122,16 +137,11 @@ function ProfilePage() {
       setIsLoading(false);
     }
   };
-
-  const handleUpdatePassword = async (formData: any) => {
+  const handleUpdatePassword = async (formData: PasswordFormData) => {
     setIsLoading(true);
     setSuccessMessage("");
 
     try {
-      console.log("Sending password update request with data:", {
-        newPasswordLength: formData.newPassword?.length,
-      });
-
       await axios.put("/api/user/password", {
         newPassword: formData.newPassword,
       });
@@ -142,14 +152,12 @@ function ProfilePage() {
         description: "Your password has been updated successfully.",
         variant: "default",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to update password:", error);
-      console.log("Error response:", error.response?.data);
-
       toast({
         title: "Error",
         description:
-          error.response?.data?.message ||
+          (error instanceof Error && error.message) ||
           "Failed to update password. Please try again.",
         variant: "destructive",
       });
@@ -157,21 +165,11 @@ function ProfilePage() {
       setIsLoading(false);
     }
   };
-
   const handleUpdateProfileImage = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     const file = event.target.files?.[0];
     if (!file) return;
-
-    console.log(
-      "Selected file:",
-      file.name,
-      "Type:",
-      file.type,
-      "Size:",
-      file.size
-    );
 
     // Check file type
     if (!file.type.includes("image")) {
@@ -193,39 +191,29 @@ function ProfilePage() {
       });
       return;
     }
-
     try {
       setIsLoading(true); // Set loading state to disable button
       setIsUploading(true); // Show progress bar
       setUploadProgress(0); // Reset progress bar
 
       // Create a local preview for immediate feedback
-      const localPreview = URL.createObjectURL(file);
-      console.log("Created local preview:", localPreview);
-
-      // Temporarily update UI with local preview for better UX
+      const localPreview = URL.createObjectURL(file); // Temporarily update UI with local preview for better UX
       setUserData((prev) => ({
         ...prev!,
         image: localPreview,
       }));
 
       // 1. Upload image to Cloudinary
-      console.log("Starting Cloudinary upload...");
       const imageUrl = await uploadImageToCloudinary(
         file,
         `profile-images/${userData?.id || "user"}`,
         (progress: number) => {
-          console.log("Upload progress:", progress);
           setUploadProgress(progress);
         }
-      );
-      console.log("Cloudinary upload complete, URL:", imageUrl);
-
-      // Revoke the local preview URL to avoid memory leaks
+      ); // Revoke the local preview URL to avoid memory leaks
       URL.revokeObjectURL(localPreview);
 
       // 2. Update image URL in database using fetch API
-      console.log("Updating database with new image URL...");
       const response = await fetch("/api/user/profile-image", {
         method: "POST",
         headers: {
@@ -236,19 +224,11 @@ function ProfilePage() {
           timestamp: Date.now(), // Add timestamp for cache busting
         }),
       });
-
-      console.log("API response status:", response.status);
-
       if (!response.ok) {
         const errorData = await response.json();
         console.error("API error:", errorData);
         throw new Error(errorData.message || "Failed to update profile image");
-      }
-
-      const data = await response.json();
-      console.log("API response data:", data);
-
-      // 3. Update user data locally with the permanent URL
+      } // 3. Update user data locally with the permanent URL
       setUserData((prev) => ({
         ...prev!,
         image: imageUrl,
@@ -256,7 +236,6 @@ function ProfilePage() {
 
       // 4. Update session to reflect changes
       if (session) {
-        console.log("Updating session with new image URL...");
         try {
           // Update session once
           await updateSession({
@@ -271,15 +250,11 @@ function ProfilePage() {
             title: "Image Updated",
             description:
               "Your profile image has been updated successfully. Refreshing page...",
-          });
-
-          // Simplest solution: reload the current page after a short delay
+          }); // Simplest solution: reload the current page after a short delay
           // This will fetch the updated data from the server and update the navbar
           setTimeout(() => {
             window.location.reload();
           }, 2000); // Short delay
-
-          console.log("Session updated successfully");
         } catch (sessionError) {
           console.error("Error updating session:", sessionError);
         }
@@ -297,7 +272,6 @@ function ProfilePage() {
 
       // Revert to original image if there was an error
       if (userData) {
-        console.log("Reverting to original image due to error");
         setUserData((prev) => ({
           ...prev!,
           image: userData.image,
@@ -314,14 +288,9 @@ function ProfilePage() {
   };
 
   if (isPageLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-rose-500"></div>
-      </div>
-    );
+    return <LoadingPage />;
   }
-
-  if (!userData) {
+  if (!userData && status === "unauthenticated") {
     return (
       <div className="container mx-auto px-4 py-8 max-w-5xl">
         <Alert variant="destructive">
@@ -331,6 +300,22 @@ function ProfilePage() {
             Unable to load profile data. Please sign in to access your profile.
           </AlertDescription>
         </Alert>
+      </div>
+    );
+  }
+  if (!userData && status === "authenticated") {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-rose-500"></div>
+      </div>
+    );
+  }
+
+  // Add additional check to ensure userData is not null before rendering
+  if (!userData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-rose-500"></div>
       </div>
     );
   }
@@ -490,7 +475,7 @@ function PersonalInfoForm({
   userData,
   isLoading,
 }: {
-  onSubmit: any;
+  onSubmit: (formData: ProfileFormData) => void;
   userData: UserData;
   isLoading: boolean;
 }) {
@@ -505,11 +490,8 @@ function PersonalInfoForm({
       phone: userData.phone || "",
       address: userData.address || "",
     },
-  });
-
-  // Create a wrapped submit handler
-  const handleFormSubmit = (formData: any) => {
-    console.log("Form submitted with data:", formData);
+  }); // Create a wrapped submit handler
+  const handleFormSubmit = (formData: ProfileFormData) => {
     onSubmit(formData);
   };
 
@@ -635,7 +617,7 @@ function PasswordForm({
   onSubmit,
   isLoading,
 }: {
-  onSubmit: any;
+  onSubmit: (formData: PasswordFormData) => void;
   isLoading: boolean;
 }) {
   const {

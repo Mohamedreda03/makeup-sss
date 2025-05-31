@@ -11,6 +11,8 @@ const nextConfig = {
         hostname: "**",
       },
     ],
+    domains: ["res.cloudinary.com", "placehold.co", "images.unsplash.com"],
+    dangerouslyAllowSVG: true,
   },
 };
 
