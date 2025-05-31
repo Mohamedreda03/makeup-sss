@@ -40,6 +40,12 @@ async function getArtist(id: string) {
             rating: true,
             availability: true,
             available_slots: true,
+            // Social media links
+            instagram_url: true,
+            facebook_url: true,
+            twitter_url: true,
+            tiktok_url: true,
+            youtube_url: true,
           },
         },
         // Count completed bookings
@@ -90,9 +96,6 @@ async function getArtist(id: string) {
 // Get artist services from database
 async function getArtistServices(id: string) {
   try {
-    console.log("Fetching services for artist:", id);
-
-    // Get services from the ArtistService database table
     const databaseServices = await db.artistService.findMany({
       where: {
         artistId: id,
@@ -102,10 +105,6 @@ async function getArtistServices(id: string) {
         price: "asc",
       },
     });
-
-    console.log(
-      `Found ${databaseServices.length} database services for artist ${id}`
-    );
 
     // Format database services with needed properties
     const formattedDatabaseServices = databaseServices.map((service) => ({
@@ -210,10 +209,6 @@ async function getArtistAvailabilitySettings(id: string) {
         })
       : [];
 
-    console.log(
-      `Found ${existingBookings.length} existing bookings for artist ${id}`
-    );
-
     // Default settings that match AvailabilitySettings interface
     const defaultAvailabilitySettings = {
       isAvailable: true,
@@ -246,8 +241,6 @@ async function getArtistAvailabilitySettings(id: string) {
         isAvailable?: boolean;
       };
 
-      console.log("Available slots data:", availableSlots);
-
       // Convert workingDays to regularDaysOff
       let regularDaysOff = [0, 6]; // Default to Sunday and Saturday off
       if (
@@ -258,8 +251,6 @@ async function getArtistAvailabilitySettings(id: string) {
         regularDaysOff = allDays.filter(
           (day) => !availableSlots.workingDays!.includes(day)
         );
-        console.log("Working days:", availableSlots.workingDays);
-        console.log("Regular days off:", regularDaysOff);
       }
 
       const settings = {
@@ -279,7 +270,6 @@ async function getArtistAvailabilitySettings(id: string) {
         })),
       };
 
-      console.log("Processed availability settings with bookings:", settings);
       return settings;
     } catch (error) {
       console.error("Error parsing artist availability settings:", error);
@@ -307,8 +297,6 @@ async function getArtistAvailabilitySettings(id: string) {
 // Get artist reviews
 async function getArtistReviews(id: string) {
   try {
-    console.log("Fetching reviews for artist ID:", id);
-
     // Get the makeup artist first
     const makeupArtist = await db.makeUpArtist.findFirst({
       where: {
@@ -320,7 +308,6 @@ async function getArtistReviews(id: string) {
     });
 
     if (!makeupArtist) {
-      console.log("No makeup artist profile found for user:", id);
       return [];
     }
 
@@ -344,7 +331,6 @@ async function getArtistReviews(id: string) {
       },
     });
 
-    console.log("Found approved reviews:", reviews.length);
     return reviews;
   } catch (error) {
     console.error(
@@ -387,7 +373,6 @@ export default async function ArtistPage({
 
   // Get artist reviews and calculate ratings
   const reviews = await getArtistReviews(params.id);
-  console.log("Reviews from database:", reviews.length);
 
   // Make sure we only include approved reviews
   const approvedReviews = reviews.filter(
@@ -429,17 +414,9 @@ export default async function ArtistPage({
     },
   }));
 
-  console.log("Formatted reviews:", formattedReviews.length);
-
   // Check if user is logged in
   const isUserLoggedIn = !!session?.user;
 
-  console.log(
-    "User login status:",
-    isUserLoggedIn ? "Logged in" : "Not logged in"
-  );
-
-  // Prepare data for our component
   const artistData = {
     id: artist.id,
     name: artist.name,
@@ -453,6 +430,14 @@ export default async function ArtistPage({
         ? parseInt(artist.makeup_artist.experience_years) || 0
         : artist.makeup_artist?.experience_years || 0,
     defaultPrice: artist.makeup_artist?.pricing || 100,
+    // Social media links
+    socialMedia: {
+      instagram: artist.makeup_artist?.instagram_url || null,
+      facebook: artist.makeup_artist?.facebook_url || null,
+      twitter: artist.makeup_artist?.twitter_url || null,
+      tiktok: artist.makeup_artist?.tiktok_url || null,
+      youtube: artist.makeup_artist?.youtube_url || null,
+    },
     _count: {
       artistAppointments: artist._count.bookings,
     },

@@ -20,6 +20,37 @@ const updateArtistSchema = z.object({
   portfolio: z.string().optional().nullable(),
   gender: z.string().optional(),
   availability: z.boolean().optional(),
+  // Social media fields
+  instagram_url: z
+    .string()
+    .url("Please enter a valid Instagram URL")
+    .optional()
+    .nullable()
+    .or(z.literal("")),
+  facebook_url: z
+    .string()
+    .url("Please enter a valid Facebook URL")
+    .optional()
+    .nullable()
+    .or(z.literal("")),
+  twitter_url: z
+    .string()
+    .url("Please enter a valid Twitter URL")
+    .optional()
+    .nullable()
+    .or(z.literal("")),
+  tiktok_url: z
+    .string()
+    .url("Please enter a valid TikTok URL")
+    .optional()
+    .nullable()
+    .or(z.literal("")),
+  youtube_url: z
+    .string()
+    .url("Please enter a valid YouTube URL")
+    .optional()
+    .nullable()
+    .or(z.literal("")),
 });
 
 export async function GET(
@@ -141,6 +172,11 @@ export async function PATCH(
       gender,
       availability,
       bio,
+      instagram_url,
+      facebook_url,
+      twitter_url,
+      tiktok_url,
+      youtube_url,
       ...updateData
     } = validation.data;
 
@@ -192,7 +228,12 @@ export async function PATCH(
           portfolio !== undefined ||
           gender !== undefined ||
           availability !== undefined ||
-          bio !== undefined
+          bio !== undefined ||
+          instagram_url !== undefined ||
+          facebook_url !== undefined ||
+          twitter_url !== undefined ||
+          tiktok_url !== undefined ||
+          youtube_url !== undefined
         ) {
           const makeupArtistData: {
             pricing?: number;
@@ -202,6 +243,11 @@ export async function PATCH(
             availability?: boolean;
             bio?: string | null;
             address?: string;
+            instagram_url?: string | null;
+            facebook_url?: string | null;
+            twitter_url?: string | null;
+            tiktok_url?: string | null;
+            youtube_url?: string | null;
           } = {};
 
           if (pricing !== undefined) makeupArtistData.pricing = pricing;
@@ -214,6 +260,16 @@ export async function PATCH(
           if (bio !== undefined) makeupArtistData.bio = bio;
           if (updateData.address !== undefined)
             makeupArtistData.address = updateData.address || "";
+          if (instagram_url !== undefined)
+            makeupArtistData.instagram_url = instagram_url || null;
+          if (facebook_url !== undefined)
+            makeupArtistData.facebook_url = facebook_url || null;
+          if (twitter_url !== undefined)
+            makeupArtistData.twitter_url = twitter_url || null;
+          if (tiktok_url !== undefined)
+            makeupArtistData.tiktok_url = tiktok_url || null;
+          if (youtube_url !== undefined)
+            makeupArtistData.youtube_url = youtube_url || null;
 
           await tx.makeUpArtist.upsert({
             where: { user_id: artistId },
@@ -228,6 +284,11 @@ export async function PATCH(
               address: updateData.address || "",
               bio: bio || null,
               availability: availability ?? false,
+              instagram_url: instagram_url || null,
+              facebook_url: facebook_url || null,
+              twitter_url: twitter_url || null,
+              tiktok_url: tiktok_url || null,
+              youtube_url: youtube_url || null,
             },
           });
         }

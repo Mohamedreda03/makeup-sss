@@ -22,7 +22,6 @@ export const artistSettingsSchema = z.object({
   phone: z.string().optional().nullable(),
   address: z.string().optional().nullable(),
   image: z.string().optional().nullable(),
-
   // MakeUpArtist fields
   bio: z
     .string()
@@ -34,6 +33,38 @@ export const artistSettingsSchema = z.object({
   gender: z.string().optional().nullable(),
   pricing: z.number().min(0).optional().nullable(),
   availability: z.boolean().default(false).optional(),
+
+  // Social media fields
+  instagram_url: z
+    .string()
+    .url("Please enter a valid Instagram URL")
+    .optional()
+    .nullable()
+    .or(z.literal("")),
+  facebook_url: z
+    .string()
+    .url("Please enter a valid Facebook URL")
+    .optional()
+    .nullable()
+    .or(z.literal("")),
+  twitter_url: z
+    .string()
+    .url("Please enter a valid Twitter URL")
+    .optional()
+    .nullable()
+    .or(z.literal("")),
+  tiktok_url: z
+    .string()
+    .url("Please enter a valid TikTok URL")
+    .optional()
+    .nullable()
+    .or(z.literal("")),
+  youtube_url: z
+    .string()
+    .url("Please enter a valid YouTube URL")
+    .optional()
+    .nullable()
+    .or(z.literal("")),
 
   // Services
   services: z.array(artistServiceSchema).optional().nullable().default([]),

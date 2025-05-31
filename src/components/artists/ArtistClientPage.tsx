@@ -2,36 +2,24 @@
 
 import React from "react";
 import Image from "next/image";
-import { format } from "date-fns";
+
 import {
   Star,
   Calendar,
-  Clock,
-  MapPin,
   CheckCircle,
-  Award,
   Globe,
   ExternalLink,
-  Share2,
-  DollarSign,
-  Sparkles,
-  Clock3,
-  Tag,
-  Medal,
-  Gem,
-  Brush,
-  Palette,
+  Instagram,
+  Facebook,
+  Twitter,
+  Youtube,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import BookingForm from "@/components/booking/BookingForm";
-import { ReviewList } from "@/components/reviews/ReviewList";
-import { ReviewData } from "@/components/reviews/ReviewCard";
-import { StarRating } from "@/components/reviews/StarRating";
 import dynamic from "next/dynamic";
 
 // Import the PublicReviewForm component
@@ -66,6 +54,13 @@ interface Artist {
   bio: string | null;
   yearsOfExperience?: number | null;
   defaultPrice?: number | null;
+  socialMedia?: {
+    instagram?: string | null;
+    facebook?: string | null;
+    twitter?: string | null;
+    tiktok?: string | null;
+    youtube?: string | null;
+  };
   _count: {
     artistAppointments: number;
   };
@@ -203,6 +198,117 @@ export default function ArtistClientPage({
                 )}
               </CardContent>
             </div>
+
+            {/* Social Media links */}
+            {artist.socialMedia &&
+              (artist.socialMedia.instagram ||
+                artist.socialMedia.facebook ||
+                artist.socialMedia.twitter ||
+                artist.socialMedia.tiktok ||
+                artist.socialMedia.youtube) && (
+                <div className="">
+                  <CardContent className="space-y-3">
+                    <h4 className="font-medium text-sm text-gray-900 mb-2">
+                      Follow on Social Media:
+                    </h4>
+                    <div className="flex flex-wrap gap-3">
+                      {artist.socialMedia.instagram && (
+                        <a
+                          href={
+                            artist.socialMedia.instagram.startsWith("http")
+                              ? artist.socialMedia.instagram
+                              : `https://instagram.com/${artist.socialMedia.instagram.replace(
+                                  "@",
+                                  ""
+                                )}`
+                          }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full text-xs hover:shadow-md transition-shadow"
+                        >
+                          <Instagram className="h-3 w-3" />
+                          Instagram
+                        </a>
+                      )}
+                      {artist.socialMedia.facebook && (
+                        <a
+                          href={
+                            artist.socialMedia.facebook.startsWith("http")
+                              ? artist.socialMedia.facebook
+                              : `https://facebook.com/${artist.socialMedia.facebook}`
+                          }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white rounded-full text-xs hover:shadow-md transition-shadow"
+                        >
+                          <Facebook className="h-3 w-3" />
+                          Facebook
+                        </a>
+                      )}
+                      {artist.socialMedia.twitter && (
+                        <a
+                          href={
+                            artist.socialMedia.twitter.startsWith("http")
+                              ? artist.socialMedia.twitter
+                              : `https://twitter.com/${artist.socialMedia.twitter.replace(
+                                  "@",
+                                  ""
+                                )}`
+                          }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 px-3 py-1.5 bg-sky-500 text-white rounded-full text-xs hover:shadow-md transition-shadow"
+                        >
+                          <Twitter className="h-3 w-3" />
+                          Twitter
+                        </a>
+                      )}
+                      {artist.socialMedia.tiktok && (
+                        <a
+                          href={
+                            artist.socialMedia.tiktok.startsWith("http")
+                              ? artist.socialMedia.tiktok
+                              : `https://tiktok.com/@${artist.socialMedia.tiktok.replace(
+                                  "@",
+                                  ""
+                                )}`
+                          }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 px-3 py-1.5 bg-black text-white rounded-full text-xs hover:shadow-md transition-shadow"
+                        >
+                          <svg
+                            className="h-3 w-3"
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                          >
+                            <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z" />
+                          </svg>
+                          TikTok
+                        </a>
+                      )}
+                      {artist.socialMedia.youtube && (
+                        <a
+                          href={
+                            artist.socialMedia.youtube.startsWith("http")
+                              ? artist.socialMedia.youtube
+                              : `https://youtube.com/@${artist.socialMedia.youtube.replace(
+                                  "@",
+                                  ""
+                                )}`
+                          }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 px-3 py-1.5 bg-red-600 text-white rounded-full text-xs hover:shadow-md transition-shadow"
+                        >
+                          <Youtube className="h-3 w-3" />
+                          YouTube
+                        </a>
+                      )}
+                    </div>
+                  </CardContent>
+                </div>
+              )}
           </div>
 
           {children}

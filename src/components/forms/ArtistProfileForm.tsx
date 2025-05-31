@@ -40,6 +40,11 @@ export function ArtistProfileForm({
       gender: "",
       pricing: undefined,
       availability: false,
+      instagram_url: "",
+      facebook_url: "",
+      twitter_url: "",
+      tiktok_url: "",
+      youtube_url: "",
       services: [],
     },
     mode: "onChange",
@@ -89,7 +94,6 @@ export function ArtistProfileForm({
             }}
           />
         </div>
-
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <FormField
             control={form.control}
@@ -131,7 +135,6 @@ export function ArtistProfileForm({
             }}
           />
         </div>
-
         <FormField
           control={form.control}
           name="address"
@@ -151,7 +154,6 @@ export function ArtistProfileForm({
             );
           }}
         />
-
         <FormField
           control={form.control}
           name="bio"
@@ -175,7 +177,6 @@ export function ArtistProfileForm({
             );
           }}
         />
-
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <FormField
             control={form.control}
@@ -222,8 +223,7 @@ export function ArtistProfileForm({
               </FormItem>
             )}
           />
-        </div>
-
+        </div>{" "}
         <FormField
           control={form.control}
           name="portfolio"
@@ -246,7 +246,126 @@ export function ArtistProfileForm({
             );
           }}
         />
+        {/* Social Media Section */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold">Social Media Links</h3>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <FormField
+              control={form.control}
+              name="instagram_url"
+              render={({ field }) => {
+                const modifiedField = {
+                  ...field,
+                  value: field.value ?? "",
+                };
+                return (
+                  <FormItem>
+                    <FormLabel>Instagram</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="https://instagram.com/username"
+                        {...modifiedField}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
+            />
 
+            <FormField
+              control={form.control}
+              name="facebook_url"
+              render={({ field }) => {
+                const modifiedField = {
+                  ...field,
+                  value: field.value ?? "",
+                };
+                return (
+                  <FormItem>
+                    <FormLabel>Facebook</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="https://facebook.com/username"
+                        {...modifiedField}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
+            />
+
+            <FormField
+              control={form.control}
+              name="twitter_url"
+              render={({ field }) => {
+                const modifiedField = {
+                  ...field,
+                  value: field.value ?? "",
+                };
+                return (
+                  <FormItem>
+                    <FormLabel>Twitter</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="https://twitter.com/username"
+                        {...modifiedField}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
+            />
+
+            <FormField
+              control={form.control}
+              name="tiktok_url"
+              render={({ field }) => {
+                const modifiedField = {
+                  ...field,
+                  value: field.value ?? "",
+                };
+                return (
+                  <FormItem>
+                    <FormLabel>TikTok</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="https://tiktok.com/@username"
+                        {...modifiedField}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
+            />
+
+            <FormField
+              control={form.control}
+              name="youtube_url"
+              render={({ field }) => {
+                const modifiedField = {
+                  ...field,
+                  value: field.value ?? "",
+                };
+                return (
+                  <FormItem>
+                    <FormLabel>YouTube</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="https://youtube.com/channel/..."
+                        {...modifiedField}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
+            />
+          </div>
+        </div>
         <Button
           type="submit"
           className="w-full md:w-auto"

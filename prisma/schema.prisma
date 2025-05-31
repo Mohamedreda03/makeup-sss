@@ -79,6 +79,13 @@ model MakeUpArtist {
   available_slots  Json? // JSON field to store available time slots
   earnings         Float   @default(0.0)
 
+  // Social media links
+  instagram_url String?
+  facebook_url  String?
+  twitter_url   String?
+  tiktok_url    String?
+  youtube_url   String?
+
   // Relationship to parent User
   user User @relation(fields: [user_id], references: [id])
 
@@ -114,14 +121,6 @@ model Session {
   userId       String
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-model VerificationToken {
-  identifier String
-  token      String   @unique
-  expires    DateTime
-
-  @@unique([identifier, token])
 }
 
 model PasswordReset {

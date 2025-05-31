@@ -44,9 +44,7 @@ export async function GET() {
 
     if (!artistUser) {
       return NextResponse.json({ error: "Artist not found" }, { status: 404 });
-    }
-
-    // Transform the artist data to match our schema
+    } // Transform the artist data to match our schema
     const artistSettings = {
       name: artistUser.name,
       email: artistUser.email,
@@ -61,6 +59,11 @@ export async function GET() {
       availability: artistUser.makeup_artist?.availability,
       earnings: artistUser.makeup_artist?.earnings || 0,
       rating: artistUser.makeup_artist?.rating,
+      instagram_url: artistUser.makeup_artist?.instagram_url,
+      facebook_url: artistUser.makeup_artist?.facebook_url,
+      twitter_url: artistUser.makeup_artist?.twitter_url,
+      tiktok_url: artistUser.makeup_artist?.tiktok_url,
+      youtube_url: artistUser.makeup_artist?.youtube_url,
       services: artistUser.services,
     };
 
@@ -196,6 +199,18 @@ export async function PUT(request: Request) {
         if (data.pricing !== undefined) artistUpdateData.pricing = data.pricing;
         if (data.availability !== undefined)
           artistUpdateData.availability = data.availability;
+
+        // Social media fields
+        if (data.instagram_url !== undefined)
+          artistUpdateData.instagram_url = data.instagram_url || null;
+        if (data.facebook_url !== undefined)
+          artistUpdateData.facebook_url = data.facebook_url || null;
+        if (data.twitter_url !== undefined)
+          artistUpdateData.twitter_url = data.twitter_url || null;
+        if (data.tiktok_url !== undefined)
+          artistUpdateData.tiktok_url = data.tiktok_url || null;
+        if (data.youtube_url !== undefined)
+          artistUpdateData.youtube_url = data.youtube_url || null;
 
         if (Object.keys(artistUpdateData).length > 0) {
           await tx.makeUpArtist.upsert({

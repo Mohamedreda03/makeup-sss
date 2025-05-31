@@ -75,6 +75,37 @@ const formSchema = z.object({
   portfolio: z.string().optional(),
   gender: z.string().optional(),
   availability: z.boolean().default(false),
+  // Social media fields
+  instagram_url: z
+    .string()
+    .url("Please enter a valid Instagram URL")
+    .optional()
+    .nullable()
+    .or(z.literal("")),
+  facebook_url: z
+    .string()
+    .url("Please enter a valid Facebook URL")
+    .optional()
+    .nullable()
+    .or(z.literal("")),
+  twitter_url: z
+    .string()
+    .url("Please enter a valid Twitter URL")
+    .optional()
+    .nullable()
+    .or(z.literal("")),
+  tiktok_url: z
+    .string()
+    .url("Please enter a valid TikTok URL")
+    .optional()
+    .nullable()
+    .or(z.literal("")),
+  youtube_url: z
+    .string()
+    .url("Please enter a valid YouTube URL")
+    .optional()
+    .nullable()
+    .or(z.literal("")),
 });
 
 // Service validation schema
@@ -152,6 +183,11 @@ export default function EditArtistPage({ params }: { params: { id: string } }) {
       portfolio: "",
       gender: "",
       availability: false,
+      instagram_url: "",
+      facebook_url: "",
+      twitter_url: "",
+      tiktok_url: "",
+      youtube_url: "",
     },
   });
   const { reset, setValue } = form;
@@ -165,8 +201,7 @@ export default function EditArtistPage({ params }: { params: { id: string } }) {
       }
       const servicesData = await response.json();
       setServices(servicesData);
-    } catch (error) {
-      console.error("Error fetching services:", error);
+    } catch {
       toast({
         title: "Error",
         description: "Failed to load services. Please try again.",
@@ -177,11 +212,6 @@ export default function EditArtistPage({ params }: { params: { id: string } }) {
 
   // Create or update service
   const handleSaveService = async () => {
-    // Show loading toast while saving service
-    const loadingToast = toast({
-      title: editingService?.id ? "Updating service..." : "Adding service...",
-      description: "Please wait",
-    });
     try {
       const validation = serviceSchema.safeParse(serviceForm);
       if (!validation.success) {
@@ -200,14 +230,12 @@ export default function EditArtistPage({ params }: { params: { id: string } }) {
 
       let response;
       if (editingService?.id) {
-        // Update existing service
         response = await fetch("/api/services", {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ ...serviceData, id: editingService.id }),
         });
       } else {
-        // Create new service
         response = await fetch("/api/services", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -219,7 +247,6 @@ export default function EditArtistPage({ params }: { params: { id: string } }) {
         throw new Error("Failed to save service");
       }
 
-      // Show success message
       toast({
         title: "Success",
         description: editingService?.id
@@ -236,11 +263,8 @@ export default function EditArtistPage({ params }: { params: { id: string } }) {
         duration: 60,
         isActive: true,
       });
-      fetchServices(); // Refresh services list
-    } catch (error) {
-      console.error("Error saving service:", error);
-      // Update loading toast to error state
-      // Show error message
+      fetchServices();
+    } catch {
       toast({
         title: "Error",
         description: "Failed to save service. Please try again.",
@@ -268,9 +292,8 @@ export default function EditArtistPage({ params }: { params: { id: string } }) {
         description: "Service deleted successfully",
       });
 
-      fetchServices(); // Refresh services list
-    } catch (error) {
-      console.error("Error deleting service:", error);
+      fetchServices();
+    } catch {
       toast({
         title: "Error",
         description: "Failed to delete service. Please try again.",
@@ -323,10 +346,8 @@ export default function EditArtistPage({ params }: { params: { id: string } }) {
         }
 
         const data = await response.json();
-        console.log("Artist data received:", data);
         setArtist(data);
 
-        // Set form values
         const formValues = {
           name: data.name || "",
           email: data.email || "",
@@ -339,14 +360,16 @@ export default function EditArtistPage({ params }: { params: { id: string } }) {
           portfolio: data.makeup_artist?.portfolio || "",
           gender: data.makeup_artist?.gender || "",
           availability: data.makeup_artist?.availability || false,
+          instagram_url: data.makeup_artist?.instagram_url || "",
+          facebook_url: data.makeup_artist?.facebook_url || "",
+          twitter_url: data.makeup_artist?.twitter_url || "",
+          tiktok_url: data.makeup_artist?.tiktok_url || "",
+          youtube_url: data.makeup_artist?.youtube_url || "",
         };
-        console.log("Setting form values:", formValues);
         reset(formValues);
 
-        // Fetch services for this artist
         await fetchServices();
-      } catch (error) {
-        console.error("Error fetching artist:", error);
+      } catch {
         toast({
           title: "Error",
           description: "Could not load artist data. Please try again.",
@@ -364,10 +387,7 @@ export default function EditArtistPage({ params }: { params: { id: string } }) {
 
   // Handle image update
   const handleImageUploaded = (imageUrl: string) => {
-    console.log("Image uploaded successfully, setting value:", imageUrl);
     setValue("image", imageUrl);
-
-    // Auto-save image update to make sure it's applied immediately
     updateArtistImage(imageUrl);
   };
 
@@ -377,9 +397,7 @@ export default function EditArtistPage({ params }: { params: { id: string } }) {
 
     try {
       setIsSaving(true);
-      console.log("Updating artist image directly:", imageUrl);
 
-      // Send only the image update to prevent overwriting other fields
       const response = await fetch(`/api/admin/artists/${params.id}`, {
         method: "PATCH",
         headers: {
@@ -394,11 +412,6 @@ export default function EditArtistPage({ params }: { params: { id: string } }) {
         throw new Error("Failed to update artist image");
       }
 
-      // Refresh the artist data
-      const updatedArtist = await response.json();
-      console.log("Artist image updated successfully:", updatedArtist.image);
-
-      // Update local state
       setArtist({
         ...artist,
         image: imageUrl,
@@ -408,8 +421,7 @@ export default function EditArtistPage({ params }: { params: { id: string } }) {
         title: "Success",
         description: "Artist image updated successfully.",
       });
-    } catch (error) {
-      console.error("Error updating artist image:", error);
+    } catch {
       toast({
         title: "Error",
         description: "Failed to update artist image. Please try again.",
@@ -425,23 +437,17 @@ export default function EditArtistPage({ params }: { params: { id: string } }) {
     setIsSaving(true);
 
     try {
-      // Format numeric values properly
       const formattedValues = {
         ...values,
         pricing:
           values.pricing !== undefined ? Number(values.pricing) : undefined,
       };
 
-      // Log values being sent to API
-      console.log("Updating artist with data:", formattedValues);
-
-      // Make sure image is included in the update
       const updateData = {
         ...formattedValues,
-        image: formattedValues.image || artist?.image || null, // Use existing image if no new one selected
+        image: formattedValues.image || artist?.image || null,
       };
 
-      // Validate that required fields are present
       if (!updateData.name || !updateData.email) {
         toast({
           title: "Error",
@@ -452,7 +458,6 @@ export default function EditArtistPage({ params }: { params: { id: string } }) {
         return;
       }
 
-      // Update basic artist information
       const response = await fetch(`/api/admin/artists/${params.id}`, {
         method: "PATCH",
         headers: {
@@ -463,17 +468,13 @@ export default function EditArtistPage({ params }: { params: { id: string } }) {
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error("API error response:", errorData);
         throw new Error(errorData.message || "Failed to update artist");
       }
 
       const updatedArtist = await response.json();
-      console.log("Artist updated successfully:", updatedArtist);
 
-      // Update local state with the new data
       setArtist(updatedArtist);
 
-      // Update form values with the returned data
       const formValues = {
         name: updatedArtist.name || "",
         email: updatedArtist.email || "",
@@ -486,6 +487,11 @@ export default function EditArtistPage({ params }: { params: { id: string } }) {
         portfolio: updatedArtist.makeup_artist?.portfolio || "",
         gender: updatedArtist.makeup_artist?.gender || "",
         availability: updatedArtist.makeup_artist?.availability || false,
+        instagram_url: updatedArtist.makeup_artist?.instagram_url || "",
+        facebook_url: updatedArtist.makeup_artist?.facebook_url || "",
+        twitter_url: updatedArtist.makeup_artist?.twitter_url || "",
+        tiktok_url: updatedArtist.makeup_artist?.tiktok_url || "",
+        youtube_url: updatedArtist.makeup_artist?.youtube_url || "",
       };
       reset(formValues);
 
@@ -494,10 +500,8 @@ export default function EditArtistPage({ params }: { params: { id: string } }) {
         description: "Artist information updated successfully.",
       });
 
-      // Refresh the current page data to reflect updates in the UI
       router.refresh();
     } catch (error) {
-      console.error("Error updating artist:", error);
       toast({
         title: "Error",
         description:
@@ -766,6 +770,118 @@ export default function EditArtistPage({ params }: { params: { id: string } }) {
                             bookings
                           </FormDescription>
                         </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Social Media</CardTitle>
+                  <CardDescription>
+                    Add social media links for the makeup artist's online
+                    presence.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="instagram_url"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Instagram URL</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="https://instagram.com/username"
+                            {...field}
+                            value={field.value || ""}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Link to the artist's Instagram profile
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="facebook_url"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Facebook URL</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="https://facebook.com/page"
+                            {...field}
+                            value={field.value || ""}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Link to the artist's Facebook page
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="twitter_url"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Twitter URL</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="https://twitter.com/username"
+                            {...field}
+                            value={field.value || ""}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Link to the artist's Twitter profile
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="tiktok_url"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>TikTok URL</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="https://tiktok.com/@username"
+                            {...field}
+                            value={field.value || ""}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Link to the artist's TikTok profile
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="youtube_url"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>YouTube URL</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="https://youtube.com/channel/..."
+                            {...field}
+                            value={field.value || ""}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Link to the artist's YouTube channel
+                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}

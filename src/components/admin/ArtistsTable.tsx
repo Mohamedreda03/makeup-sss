@@ -394,13 +394,6 @@ export default function ArtistsTable({
                             {artist.makeup_artist.experience_years}
                           </div>
                         )}
-                        {artist.makeup_artist?.rating && (
-                          <div className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-1">
-                            <span className="font-medium">Rating:</span>
-                            <span className="text-yellow-600">★</span>
-                            <span>{artist.makeup_artist.rating}/5</span>
-                          </div>
-                        )}
                       </div>
                     </div>
                   </TableCell>

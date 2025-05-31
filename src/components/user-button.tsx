@@ -77,7 +77,7 @@ export function UserButton({ session }: { session: any }) {
           </Avatar>
         </div>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
+      <DropdownMenuContent align="end" className="w-56 z-[200]">
         <div className="flex items-center justify-start gap-2 p-2">
           <Avatar className="h-8 w-8 border border-rose-200">
             <AvatarImage src={userData} alt={userData?.name || "User"} />

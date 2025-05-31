@@ -145,7 +145,12 @@ exports.Prisma.MakeUpArtistScalarFieldEnum = {
   bio: 'bio',
   availability: 'availability',
   available_slots: 'available_slots',
-  earnings: 'earnings'
+  earnings: 'earnings',
+  instagram_url: 'instagram_url',
+  facebook_url: 'facebook_url',
+  twitter_url: 'twitter_url',
+  tiktok_url: 'tiktok_url',
+  youtube_url: 'youtube_url'
 };
 
 exports.Prisma.AccountScalarFieldEnum = {
@@ -167,12 +172,6 @@ exports.Prisma.SessionScalarFieldEnum = {
   id: 'id',
   sessionToken: 'sessionToken',
   userId: 'userId',
-  expires: 'expires'
-};
-
-exports.Prisma.VerificationTokenScalarFieldEnum = {
-  identifier: 'identifier',
-  token: 'token',
   expires: 'expires'
 };
 
@@ -338,7 +337,6 @@ exports.Prisma.ModelName = {
   MakeUpArtist: 'MakeUpArtist',
   Account: 'Account',
   Session: 'Session',
-  VerificationToken: 'VerificationToken',
   PasswordReset: 'PasswordReset',
   ArtistService: 'ArtistService',
   Booking: 'Booking',
