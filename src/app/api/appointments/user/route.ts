@@ -3,6 +3,8 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { BookingStatus } from "@/generated/prisma";
 
+export const dynamic = "force-dynamic";
+
 // Extended user interface
 interface ExtendedUser {
   id: string;

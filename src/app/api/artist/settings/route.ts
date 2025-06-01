@@ -3,6 +3,8 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { artistSettingsSchema } from "@/lib/validations/artist-settings";
 
+export const dynamic = "force-dynamic";
+
 // Extended user interface for typing session.user
 interface ExtendedUser {
   id: string;

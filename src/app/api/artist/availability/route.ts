@@ -4,6 +4,8 @@ import { db } from "@/lib/db";
 import { z } from "zod";
 import { toEgyptTime, formatInEgypt } from "@/lib/timezone-config";
 
+export const dynamic = "force-dynamic";
+
 // Schema for availability settings validation
 const availabilitySettingsSchema = z.object({
   workingDays: z.array(z.number().min(0).max(6)), // 0=Sunday, 1=Monday, ..., 6=Saturday
