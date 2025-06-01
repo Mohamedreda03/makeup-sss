@@ -7,7 +7,10 @@ interface ClientOnlyWrapperProps {
   fallback?: React.ReactNode;
 }
 
-export function ClientOnlyWrapper({ children, fallback = null }: ClientOnlyWrapperProps) {
+export function ClientOnlyWrapper({
+  children,
+  fallback = null,
+}: ClientOnlyWrapperProps) {
   const [hasMounted, setHasMounted] = useState(false);
 
   useEffect(() => {

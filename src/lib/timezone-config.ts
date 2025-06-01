@@ -38,13 +38,20 @@ export const createLocalDate = (
   hours: number = 0,
   minutes: number = 0
 ): Date => {
-  // Create date in target timezone, not system timezone
-  const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(
-    day
-  ).padStart(2, "0")}T${String(hours).padStart(2, "0")}:${String(
-    minutes
-  ).padStart(2, "0")}:00${TIMEZONE_CONFIG.defaultOffset}`;
-  return new Date(dateStr);
+  // Create date using the standard Date constructor
+  // This avoids timezone offset issues with working hours validation
+  const date = new Date(year, month - 1, day, hours, minutes, 0, 0);
+  // Debug logging to track datetime creation
+  console.log("createLocalDate debug:", {
+    input: { year, month, day, hours, minutes },
+    created: date.toISOString(),
+    localHour: date.getHours(),
+    cairoTime: date.toLocaleString("en-US", { timeZone: "Africa/Cairo" }),
+    timestamp: date.getTime(),
+    timezone: TIMEZONE_CONFIG.timezone,
+  });
+
+  return date;
 };
 
 // Format date for consistent display
@@ -83,4 +90,25 @@ export const getCurrentLocalDate = (): Date => {
 export const isTimeSlotInPast = (slotDate: Date): boolean => {
   const now = getCurrentLocalDate();
   return slotDate < now;
+};
+
+// Validate if a time slot is within working hours
+export const validateWorkingHours = (
+  date: Date,
+  startHour: number = 9,
+  endHour: number = 18
+): boolean => {
+  const hour = date.getHours();
+  const isValid = hour >= startHour && hour < endHour;
+
+  console.log("validateWorkingHours:", {
+    date: date.toISOString(),
+    localTime: date.toLocaleString(),
+    hour,
+    startHour,
+    endHour,
+    isValid,
+  });
+
+  return isValid;
 };
