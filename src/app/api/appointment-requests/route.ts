@@ -105,31 +105,29 @@ export async function POST(req: Request) {
           { status: 404 }
         );
       }
-      console.log(`Makeup artist ID found: ${makeupArtistRecord.id}`);
-
-      // Parse date and time - simplified approach
-      console.log("=== PROCESSING DATE AND TIME (SIMPLIFIED) ===");
+      console.log(`Makeup artist ID found: ${makeupArtistRecord.id}`);      // Parse date and time - using createLocalDate for consistency
+      console.log("=== PROCESSING DATE AND TIME (CONSISTENT) ===");
       console.log("Received appointment date:", validatedData.appointmentDate);
-      console.log("Received appointment time:", validatedData.appointmentTime); // Parse date and time components with timezone awareness
-      // Create appointment datetime with Egypt timezone
-      // This ensures the appointment is stored correctly regardless of server timezone
-      const appointmentDateTime = new Date(
-        `${validatedData.appointmentDate}T${validatedData.appointmentTime}:00+02:00`
-      );
-      console.log(
-        "Appointment datetime created (Egypt timezone):",
-        appointmentDateTime.toLocaleString("en-US", {
-          timeZone: "Africa/Cairo",
-        })
-      );
-      console.log(
-        "Appointment datetime UTC:",
-        appointmentDateTime.toISOString()
-      );
+      console.log("Received appointment time:", validatedData.appointmentTime);
+
+      // Parse date and time components
+      const [year, month, day] = validatedData.appointmentDate.split("-").map(Number);
+      const [timeHour, timeMinute] = validatedData.appointmentTime.split(":").map(Number);
+
+      // Create appointment datetime using same method as frontend
+      const appointmentDateTime = new Date(year, month - 1, day, timeHour, timeMinute, 0, 0);
+      
+      console.log("Appointment datetime created (local):", {
+        input: { year, month, day, timeHour, timeMinute },
+        datetime: appointmentDateTime.toLocaleString(),
+        utc: appointmentDateTime.toISOString(),
+        egyptTime: appointmentDateTime.toLocaleString("en-US", { timeZone: "Africa/Cairo" })
+      });
 
       const dayOfWeek = getDay(appointmentDateTime);
-      const timeHour = appointmentDateTime.getHours();
-      const timeMinute = appointmentDateTime.getMinutes();
+      // Use the parsed time components directly instead of getHours/getMinutes to avoid timezone issues
+      // const timeHour = appointmentDateTime.getHours();
+      // const timeMinute = appointmentDateTime.getMinutes();
 
       const appointmentEndTime = addMinutes(
         appointmentDateTime,
