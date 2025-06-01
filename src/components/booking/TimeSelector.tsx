@@ -19,7 +19,7 @@ export function TimeSelector({
   selectedTime,
   onTimeSelect,
 }: TimeSelectorProps) {
-  const timeSlotContainerRef = useRef<HTMLDivElement>(null);  // Enhanced debug logging for timezone issues
+  const timeSlotContainerRef = useRef<HTMLDivElement>(null); // Enhanced debug logging for timezone issues
   console.log("TimeSelector - Enhanced Debug Info:", {
     totalSlots: timeSlots.length,
     availableSlots: timeSlots.filter((slot) => !slot.isBooked).length,
@@ -36,23 +36,36 @@ export function TimeSelector({
       label: slot.label,
       isBooked: slot.isBooked,
       isSelected: selectedTime === slot.label && !slot.isBooked,
-      status: slot.isBooked ? 'BOOKED' : (selectedTime === slot.label ? 'SELECTED' : 'AVAILABLE')
+      status: slot.isBooked
+        ? "BOOKED"
+        : selectedTime === slot.label
+        ? "SELECTED"
+        : "AVAILABLE",
     })),
   });
 
   // Additional validation logging
   if (timeSlots.length > 0) {
-    const bookedCount = timeSlots.filter(slot => slot.isBooked).length;
-    const availableCount = timeSlots.filter(slot => !slot.isBooked).length;
-    
+    const bookedCount = timeSlots.filter((slot) => slot.isBooked).length;
+    const availableCount = timeSlots.filter((slot) => !slot.isBooked).length;
+
     console.log("TimeSelector - Slot Statistics:", {
       total: timeSlots.length,
       booked: bookedCount,
       available: availableCount,
-      bookedPercentage: `${((bookedCount / timeSlots.length) * 100).toFixed(1)}%`,
-      availablePercentage: `${((availableCount / timeSlots.length) * 100).toFixed(1)}%`,
-      bookedTimes: timeSlots.filter(slot => slot.isBooked).map(slot => slot.label),
-      availableTimes: timeSlots.filter(slot => !slot.isBooked).map(slot => slot.label)
+      bookedPercentage: `${((bookedCount / timeSlots.length) * 100).toFixed(
+        1
+      )}%`,
+      availablePercentage: `${(
+        (availableCount / timeSlots.length) *
+        100
+      ).toFixed(1)}%`,
+      bookedTimes: timeSlots
+        .filter((slot) => slot.isBooked)
+        .map((slot) => slot.label),
+      availableTimes: timeSlots
+        .filter((slot) => !slot.isBooked)
+        .map((slot) => slot.label),
     });
   }
 
@@ -60,7 +73,8 @@ export function TimeSelector({
   const handleMouseDown = (e: MouseEvent<HTMLDivElement>) => {
     if (!timeSlotContainerRef.current) return;
     const startX = e.clientX;
-    const scrollLeft = timeSlotContainerRef.current.scrollLeft;    const handleMouseMove = (e: globalThis.MouseEvent) => {
+    const scrollLeft = timeSlotContainerRef.current.scrollLeft;
+    const handleMouseMove = (e: globalThis.MouseEvent) => {
       if (!timeSlotContainerRef.current) return;
       e.preventDefault();
       const x = e.clientX;
@@ -89,7 +103,8 @@ export function TimeSelector({
   const handleTouchStart = (e: TouchEvent<HTMLDivElement>) => {
     if (!timeSlotContainerRef.current || !e.touches[0]) return;
     const startX = e.touches[0].clientX;
-    const scrollLeft = timeSlotContainerRef.current.scrollLeft;    const handleTouchMove = (e: globalThis.TouchEvent) => {
+    const scrollLeft = timeSlotContainerRef.current.scrollLeft;
+    const handleTouchMove = (e: globalThis.TouchEvent) => {
       if (!timeSlotContainerRef.current || !e.touches[0]) return;
       const x = e.touches[0].clientX;
       const walk = (startX - x) * 2;
@@ -108,12 +123,16 @@ export function TimeSelector({
     return (
       <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
         <div className="text-lg font-medium">No available time slots</div>
-        <div className="text-sm mt-1">Please select a different date or check back later</div>
+        <div className="text-sm mt-1">
+          Please select a different date or check back later
+        </div>
       </div>
     );
   }
   return (
-    <div className="w-full overflow-hidden relative">      {/* Time slots availability summary with more details */}
+    <div className="w-full overflow-hidden relative">
+      {" "}
+      {/* Time slots availability summary with more details */}
       <div className="mb-4 text-sm text-gray-600 px-4">
         <div className="flex flex-wrap items-center gap-2">
           <span className="font-medium text-rose-600">
@@ -130,15 +149,15 @@ export function TimeSelector({
         </div>
         {/* Show current Egypt time for reference */}
         <div className="mt-1 text-xs text-gray-500">
-          Current Egypt time: {new Date().toLocaleString("en-US", {
+          Current Egypt time:{" "}
+          {new Date().toLocaleString("en-US", {
             timeZone: "Africa/Cairo",
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
           })}
         </div>
       </div>
-
       <div
         ref={timeSlotContainerRef}
         className="overflow-x-auto py-6 scrollbar-hide cursor-grab"
@@ -159,24 +178,29 @@ export function TimeSelector({
 
             return (
               <button
-                key={`${slot.time}-${slot.label}`}                onClick={() => {
+                key={`${slot.time}-${slot.label}`}
+                onClick={() => {
                   if (!isBooked) {
                     console.log("TimeSelector - Slot selected:", {
                       slot: slot.label,
                       time: slot.time,
                       isBooked,
                       timestamp: new Date().toISOString(),
-                      egyptTime: new Date().toLocaleString("en-US", { timeZone: "Africa/Cairo" })
+                      egyptTime: new Date().toLocaleString("en-US", {
+                        timeZone: "Africa/Cairo",
+                      }),
                     });
                     onTimeSelect(slot.label);
                   } else {
                     console.log("TimeSelector - Blocked slot clicked:", {
                       slot: slot.label,
                       time: slot.time,
-                      reason: "Already booked"
+                      reason: "Already booked",
                     });
                   }
-                }}                disabled={isBooked}                className={`group py-3 px-4 rounded-full border transition-all duration-200 ${
+                }}
+                disabled={isBooked}
+                className={`group py-3 px-4 rounded-full border transition-all duration-200 ${
                   isSelected
                     ? "bg-rose-500 text-white border-rose-500 shadow-md transform scale-105"
                     : isBooked
@@ -192,11 +216,13 @@ export function TimeSelector({
                     : "0 1px 2px rgba(0,0,0,0.05)",
                 }}
                 title={
-                  isBooked 
-                    ? "This time slot is already booked" 
+                  isBooked
+                    ? "This time slot is already booked"
                     : `Select ${slot.label} appointment`
                 }
-              >                <div className="text-center">
+              >
+                {" "}
+                <div className="text-center">
                   <div className="font-medium">{slot.label}</div>
                 </div>
               </button>
@@ -204,7 +230,6 @@ export function TimeSelector({
           })}
         </div>
       </div>
-
       {/* Custom scrollbar styling */}
       <style jsx global>{`
         .scrollbar-hide::-webkit-scrollbar {

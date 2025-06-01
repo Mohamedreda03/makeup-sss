@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { z } from "zod";
 import { getDay, format, addMinutes, startOfDay, addDays } from "date-fns";
 import { v4 as uuidv4 } from "uuid";
+import { createEgyptDate } from "@/lib/timezone-config";
 
 // Define status type
 type AppointmentStatus = "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED";
@@ -105,23 +106,36 @@ export async function POST(req: Request) {
           { status: 404 }
         );
       }
-      console.log(`Makeup artist ID found: ${makeupArtistRecord.id}`);      // Parse date and time - using createLocalDate for consistency
-      console.log("=== PROCESSING DATE AND TIME (CONSISTENT) ===");
+      console.log(`Makeup artist ID found: ${makeupArtistRecord.id}`);      // Parse date and time - using Egypt timezone for consistency
+      console.log("=== PROCESSING DATE AND TIME (EGYPT TIMEZONE) ===");
       console.log("Received appointment date:", validatedData.appointmentDate);
       console.log("Received appointment time:", validatedData.appointmentTime);
 
       // Parse date and time components
-      const [year, month, day] = validatedData.appointmentDate.split("-").map(Number);
-      const [timeHour, timeMinute] = validatedData.appointmentTime.split(":").map(Number);
+      const [year, month, day] = validatedData.appointmentDate
+        .split("-")
+        .map(Number);
+      const [timeHour, timeMinute] = validatedData.appointmentTime
+        .split(":")
+        .map(Number);
 
-      // Create appointment datetime using same method as frontend
-      const appointmentDateTime = new Date(year, month - 1, day, timeHour, timeMinute, 0, 0);
-      
-      console.log("Appointment datetime created (local):", {
+      // Create appointment datetime using Egypt timezone
+      const appointmentDateTime = createEgyptDate(
+        year,
+        month,
+        day,
+        timeHour,
+        timeMinute,
+        0
+      );
+
+      console.log("Appointment datetime created (Egypt timezone):", {
         input: { year, month, day, timeHour, timeMinute },
         datetime: appointmentDateTime.toLocaleString(),
         utc: appointmentDateTime.toISOString(),
-        egyptTime: appointmentDateTime.toLocaleString("en-US", { timeZone: "Africa/Cairo" })
+        egyptTime: appointmentDateTime.toLocaleString("en-US", {
+          timeZone: "Africa/Cairo",
+        }),
       });
 
       const dayOfWeek = getDay(appointmentDateTime);
@@ -276,15 +290,15 @@ export async function POST(req: Request) {
         "Requested appointment duration:",
         validatedData.duration,
         "minutes"
-      );
-
-      // Query for bookings on the same date
+      );      // Query for bookings on the same date - using Egypt timezone
       const dayStart = startOfDay(appointmentDateTime);
       const dayEnd = addDays(dayStart, 1);
 
-      console.log("Searching bookings in date range:", {
+      console.log("Searching bookings in date range (Egypt timezone):", {
         start: dayStart.toLocaleString(),
         end: dayEnd.toLocaleString(),
+        startUTC: dayStart.toISOString(),
+        endUTC: dayEnd.toISOString(),
       });
 
       const existingBookings = await db.booking.findMany({
