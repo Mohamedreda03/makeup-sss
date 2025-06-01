@@ -20,9 +20,8 @@ export function TimeSelector({
   onTimeSelect,
 }: TimeSelectorProps) {
   const timeSlotContainerRef = useRef<HTMLDivElement>(null);
-
-  // Debug logging for timezone issues
-  console.log("TimeSelector - Debug Info:", {
+  // Enhanced debug logging for timezone issues
+  console.log("TimeSelector - Enhanced Debug Info:", {
     totalSlots: timeSlots.length,
     availableSlots: timeSlots.filter((slot) => !slot.isBooked).length,
     bookedSlots: timeSlots.filter((slot) => slot.isBooked).length,
@@ -31,10 +30,13 @@ export function TimeSelector({
     currentTimeEgypt: new Date().toLocaleString("en-US", {
       timeZone: "Africa/Cairo",
     }),
-    timeSlots: timeSlots.map((slot) => ({
+    serverTime: new Date().toISOString(),
+    timeSlotsDetailed: timeSlots.map((slot, index) => ({
+      index,
       time: slot.time,
       label: slot.label,
       isBooked: slot.isBooked,
+      isSelected: selectedTime === slot.label && !slot.isBooked,
     })),
   });
 
@@ -42,8 +44,7 @@ export function TimeSelector({
   const handleMouseDown = (e: MouseEvent<HTMLDivElement>) => {
     if (!timeSlotContainerRef.current) return;
     const startX = e.clientX;
-    const scrollLeft = timeSlotContainerRef.current.scrollLeft;
-    const handleMouseMove = (e: globalThis.MouseEvent) => {
+    const scrollLeft = timeSlotContainerRef.current.scrollLeft;    const handleMouseMove = (e: globalThis.MouseEvent) => {
       if (!timeSlotContainerRef.current) return;
       e.preventDefault();
       const x = e.clientX;
@@ -72,8 +73,7 @@ export function TimeSelector({
   const handleTouchStart = (e: TouchEvent<HTMLDivElement>) => {
     if (!timeSlotContainerRef.current || !e.touches[0]) return;
     const startX = e.touches[0].clientX;
-    const scrollLeft = timeSlotContainerRef.current.scrollLeft;
-    const handleTouchMove = (e: globalThis.TouchEvent) => {
+    const scrollLeft = timeSlotContainerRef.current.scrollLeft;    const handleTouchMove = (e: globalThis.TouchEvent) => {
       if (!timeSlotContainerRef.current || !e.touches[0]) return;
       const x = e.touches[0].clientX;
       const walk = (startX - x) * 2;
@@ -88,17 +88,26 @@ export function TimeSelector({
     document.addEventListener("touchmove", handleTouchMove);
     document.addEventListener("touchend", handleTouchEnd);
   };
-
   if (timeSlots.length === 0) {
     return (
-      <div className="text-center py-6 text-gray-500 bg-gray-50 rounded-lg">
-        No available time slots for this day
+      <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+        <div className="text-lg font-medium">No available time slots</div>
+        <div className="text-sm mt-1">Please select a different date or check back later</div>
       </div>
     );
   }
-
   return (
     <div className="w-full overflow-hidden relative">
+      {/* Time slots availability summary */}
+      <div className="mb-4 text-sm text-gray-600 px-4">
+        <span className="font-medium">{timeSlots.filter((slot) => !slot.isBooked).length}</span> available slots
+        {timeSlots.filter((slot) => slot.isBooked).length > 0 && (
+          <span className="ml-2">
+            • <span className="font-medium">{timeSlots.filter((slot) => slot.isBooked).length}</span> booked
+          </span>
+        )}
+      </div>
+
       <div
         ref={timeSlotContainerRef}
         className="overflow-x-auto py-6 scrollbar-hide cursor-grab"
@@ -112,36 +121,56 @@ export function TimeSelector({
         onMouseDown={handleMouseDown}
         onTouchStart={handleTouchStart}
       >
-        {" "}
         <div className="flex space-x-4 min-w-max">
-          {" "}
           {timeSlots.map((slot) => {
             const isBooked = slot.isBooked === true;
             const isSelected = selectedTime === slot.label && !isBooked;
 
             return (
               <button
-                key={slot.time}
-                onClick={() => !isBooked && onTimeSelect(slot.label)}
+                key={`${slot.time}-${slot.label}`}
+                onClick={() => {
+                  if (!isBooked) {
+                    console.log("TimeSelector - Slot selected:", {
+                      slot: slot.label,
+                      time: slot.time,
+                      isBooked,
+                      timestamp: new Date().toISOString(),
+                    });
+                    onTimeSelect(slot.label);
+                  }
+                }}
                 disabled={isBooked}
-                className={`py-3 px-4 rounded-full border transition-colors ${
+                className={`py-3 px-4 rounded-full border transition-all duration-200 ${
                   isSelected
-                    ? "bg-rose-500 text-white border-rose-500"
+                    ? "bg-rose-500 text-white border-rose-500 shadow-md transform scale-105"
                     : isBooked
                     ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed opacity-60"
-                    : "bg-white hover:bg-gray-50 text-gray-700 border-gray-200 hover:border-gray-300"
+                    : "bg-white hover:bg-gray-50 text-gray-700 border-gray-200 hover:border-gray-300 hover:shadow-sm"
                 }`}
                 style={{
                   minWidth: "110px",
                   boxShadow: isSelected
-                    ? "none"
+                    ? "0 4px 12px rgba(244, 63, 94, 0.3)"
                     : isBooked
                     ? "none"
                     : "0 1px 2px rgba(0,0,0,0.05)",
                 }}
-                title={isBooked ? "This time slot is already booked" : ""}
+                title={
+                  isBooked 
+                    ? "This time slot is already booked" 
+                    : `Select ${slot.label} appointment`
+                }
               >
-                <div className="text-center font-medium">{slot.label}</div>
+                <div className="text-center">
+                  <div className="font-medium">{slot.label}</div>
+                  {isBooked && (
+                    <div className="text-xs mt-1 text-gray-400">Booked</div>
+                  )}
+                  {isSelected && (
+                    <div className="text-xs mt-1 text-rose-100">Selected</div>
+                  )}
+                </div>
               </button>
             );
           })}
