@@ -275,6 +275,29 @@ export async function GET(
     });
     console.log(`=== END ALL BOOKINGS ===`);
 
+    // Create a comprehensive booking report for debugging
+    const bookingReport = {
+      totalBookings: allBookings.length,
+      dateRangeBookings: appointments.length,
+      bookingsByStatus: {
+        PENDING: appointments.filter(b => b.booking_status === 'PENDING').length,
+        CONFIRMED: appointments.filter(b => b.booking_status === 'CONFIRMED').length,
+        CANCELLED: allBookings.filter(b => b.booking_status === 'CANCELLED').length,
+        COMPLETED: allBookings.filter(b => b.booking_status === 'COMPLETED').length,
+      },
+      bookingDates: appointments.map(b => ({
+        id: b.id,
+        date: format(new Date(b.date_time), "yyyy-MM-dd"),
+        time: format(new Date(b.date_time), "HH:mm"),
+        service: b.service_type,
+        status: b.booking_status
+      }))
+    };
+    
+    console.log("=== COMPREHENSIVE BOOKING REPORT ===");
+    console.log(JSON.stringify(bookingReport, null, 2));
+    console.log("=== END BOOKING REPORT ===");
+
     // Fetch all artist services to map service names to durations
     const artistServices = await db.artistService.findMany({
       where: {
@@ -370,14 +393,15 @@ export async function GET(
         for (let hour = businessHours.start; hour < businessHours.end; hour++) {
           // Use the artist's interval setting for appointments
           for (let minute = 0; minute < 60; minute += businessHours.interval) {
+            // Create slot time using current date but with Egypt timezone
             const slotTime = new Date(currentDate);
             slotTime.setHours(hour, minute, 0, 0);
 
-            // Skip slots in the past (compare using target timezone)
-            const now = new Date(
-              new Date().toLocaleString("en-US", { timeZone: "Africa/Cairo" })
-            );
-            if (slotTime < now) {
+            // Skip slots in the past (using Egypt timezone)
+            const nowInEgypt = new Date();
+            const currentEgyptTime = new Date(nowInEgypt.toLocaleString("en-US", { timeZone: "Africa/Cairo" }));
+            
+            if (slotTime < currentEgyptTime) {
               continue;
             }
 
@@ -390,65 +414,26 @@ export async function GET(
             console.log(
               `\n--- Checking slot ${slotTimeStr} on ${slotDateStr} ---`
             );
-            console.log(`Slot datetime: ${slotTime.toLocaleString()}`);
-            console.log(
-              `Current appointments to check: ${appointments.length}`
-            );
 
             for (const appointment of appointments) {
-              // Use appointment time directly (already in local time due to simplified storage)
+              // Parse appointment datetime to Egypt timezone for proper comparison
               const appointmentDateTime = new Date(appointment.date_time);
-              const appointmentEnd = new Date(appointmentDateTime);
-
-              // Use the actual service duration instead of hardcoded 60 minutes
-              const appointmentDuration =
-                serviceNameToDuration.get(appointment.service_type) ||
-                serviceDuration ||
-                60;
-              appointmentEnd.setMinutes(
-                appointmentEnd.getMinutes() + appointmentDuration
-              );
-
-              // Create date objects for the current slot
-              const slotStart = new Date(slotTime);
-              const slotEnd = new Date(slotTime);
-              slotEnd.setMinutes(slotEnd.getMinutes() + businessHours.interval);
-
-              // Convert times to minutes for easier comparison
-              const appointmentStartMinutes =
-                appointmentDateTime.getHours() * 60 +
-                appointmentDateTime.getMinutes();
-              const appointmentEndMinutes =
-                appointmentEnd.getHours() * 60 + appointmentEnd.getMinutes();
-              const slotStartMinutes =
-                slotStart.getHours() * 60 + slotStart.getMinutes();
-              const slotEndMinutes =
-                slotEnd.getHours() * 60 + slotEnd.getMinutes();
-
-              // Check if the appointment is on the same day
+              
+              // Convert appointment date to same format for comparison
               const appointmentDate = format(appointmentDateTime, "yyyy-MM-dd");
+              const appointmentTimeStr = format(appointmentDateTime, "HH:mm");
 
               console.log(`  Checking appointment ${appointment.id}:`);
-              console.log(
-                `    DateTime: ${appointment.date_time.toISOString()}`
-              );
-              console.log(`    Local: ${appointmentDateTime.toLocaleString()}`);
-              console.log(
-                `    Date: ${appointmentDate} (slot: ${slotDateStr})`
-              );
-              console.log(
-                `    Time: ${format(appointmentDateTime, "HH:mm")}-${format(
-                  appointmentEnd,
-                  "HH:mm"
-                )}`
-              );
+              console.log(`    DB DateTime: ${appointment.date_time.toISOString()}`);
+              console.log(`    Parsed Date: ${appointmentDate}`);
+              console.log(`    Parsed Time: ${appointmentTimeStr}`);
+              console.log(`    Slot Date: ${slotDateStr}`);
+              console.log(`    Slot Time: ${slotTimeStr}`);
               console.log(`    Status: ${appointment.booking_status}`);
-              console.log(
-                `    Service: ${appointment.service_type} (${appointmentDuration}min)`
-              );
 
+              // Skip if different date
               if (appointmentDate !== slotDateStr) {
-                console.log(`    → SKIP: Different date`);
+                console.log(`    → SKIP: Different date (${appointmentDate} vs ${slotDateStr})`);
                 continue;
               }
 
@@ -457,34 +442,50 @@ export async function GET(
                 appointment.booking_status !== "PENDING" &&
                 appointment.booking_status !== "CONFIRMED"
               ) {
-                console.log(`    → SKIP: Status not pending/confirmed`);
+                console.log(`    → SKIP: Status ${appointment.booking_status} not pending/confirmed`);
                 continue;
               }
 
-              // Check for any overlap between the slot and the appointment
-              // Improved overlap logic using minutes (all in local time)
-              const hasOverlap =
-                // Slot starts during an appointment
-                (slotStartMinutes >= appointmentStartMinutes &&
-                  slotStartMinutes < appointmentEndMinutes) ||
-                // Slot ends during an appointment
-                (slotEndMinutes > appointmentStartMinutes &&
-                  slotEndMinutes <= appointmentEndMinutes) ||
-                // Slot completely contains an appointment
-                (slotStartMinutes <= appointmentStartMinutes &&
-                  slotEndMinutes >= appointmentEndMinutes) ||
-                // Appointment completely contains the slot
-                (appointmentStartMinutes <= slotStartMinutes &&
-                  appointmentEndMinutes >= slotEndMinutes);
+              // Get service duration
+              const appointmentDuration =
+                serviceNameToDuration.get(appointment.service_type) ||
+                serviceDuration ||
+                60;
 
-              console.log(`    Overlap check:`);
-              console.log(
-                `      Slot: ${slotStartMinutes}-${slotEndMinutes} minutes`
-              );
-              console.log(
-                `      Appointment: ${appointmentStartMinutes}-${appointmentEndMinutes} minutes`
-              );
-              console.log(`      Has overlap: ${hasOverlap}`);
+              // Calculate appointment end time
+              const appointmentEnd = new Date(appointmentDateTime);
+              appointmentEnd.setMinutes(appointmentEnd.getMinutes() + appointmentDuration);
+              const appointmentEndTimeStr = format(appointmentEnd, "HH:mm");
+
+              // Calculate slot end time
+              const slotEnd = new Date(slotTime);
+              slotEnd.setMinutes(slotEnd.getMinutes() + businessHours.interval);
+              const slotEndTimeStr = format(slotEnd, "HH:mm");
+
+              console.log(`    Appointment: ${appointmentTimeStr} - ${appointmentEndTimeStr} (${appointmentDuration}min)`);
+              console.log(`    Slot: ${slotTimeStr} - ${slotEndTimeStr} (${businessHours.interval}min)`);
+
+              // Convert to minutes for easier comparison
+              const appointmentStartMinutes = appointmentDateTime.getHours() * 60 + appointmentDateTime.getMinutes();
+              const appointmentEndMinutes = appointmentEnd.getHours() * 60 + appointmentEnd.getMinutes();
+              const slotStartMinutes = slotTime.getHours() * 60 + slotTime.getMinutes();
+              const slotEndMinutes = slotEnd.getHours() * 60 + slotEnd.getMinutes();
+
+              // Simple overlap check - exact time match or overlapping ranges
+              const hasOverlap = 
+                // Exact time match
+                (slotStartMinutes === appointmentStartMinutes) ||
+                // Slot starts during appointment
+                (slotStartMinutes >= appointmentStartMinutes && slotStartMinutes < appointmentEndMinutes) ||
+                // Slot ends during appointment  
+                (slotEndMinutes > appointmentStartMinutes && slotEndMinutes <= appointmentEndMinutes) ||
+                // Slot completely contains appointment
+                (slotStartMinutes <= appointmentStartMinutes && slotEndMinutes >= appointmentEndMinutes) ||
+                // Appointment completely contains slot
+                (appointmentStartMinutes <= slotStartMinutes && appointmentEndMinutes >= slotEndMinutes);
+
+              console.log(`    Minutes - Appointment: ${appointmentStartMinutes}-${appointmentEndMinutes}, Slot: ${slotStartMinutes}-${slotEndMinutes}`);
+              console.log(`    Has overlap: ${hasOverlap}`);
 
               if (hasOverlap) {
                 console.log(`    → CONFLICT! Slot marked as booked`);
@@ -498,7 +499,7 @@ export async function GET(
             console.log(
               `Final result for ${slotTimeStr}: ${
                 isBooked ? "BOOKED" : "AVAILABLE"
-              }`
+              } (${isBooked ? "❌" : "✅"})`
             );
             console.log(`--- End slot check ---\n`);
 
