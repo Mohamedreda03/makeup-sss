@@ -131,24 +131,42 @@ export async function GET(
       },
     });
 
+    console.log(`=== ARTIST DEBUG INFO ===`);
+    console.log(`Artist User ID: ${artistId}`);
+    console.log(`Artist Name: ${artist.name}`);
+    console.log(`MakeupArtist Record ID: ${makeupArtistRecord.id}`);
+    console.log(
+      `Date range: ${format(startDate, "yyyy-MM-dd")} to ${format(
+        endDate,
+        "yyyy-MM-dd"
+      )}`
+    );
+    console.log(`Total appointments found: ${allAppointments.length}`);
+
     // Filter appointments for the date range - removed timezone conversion
     const relevantAppointments = allAppointments.filter((apt) => {
       return apt.date_time >= startDate && apt.date_time < endDate;
     });
 
-    console.log(`Total appointments found: ${allAppointments.length}`);
-    console.log(`Relevant appointments in date range: ${relevantAppointments.length}`);
-    
+    console.log(
+      `Relevant appointments in date range: ${relevantAppointments.length}`
+    );
+
     if (relevantAppointments.length > 0) {
       console.log("=== RELEVANT APPOINTMENTS ===");
       relevantAppointments.forEach((apt, index) => {
         console.log(`${index + 1}. ID: ${apt.id}`);
-        console.log(`   Date/Time: ${apt.date_time} (${format(apt.date_time, "yyyy-MM-dd HH:mm")})`);
+        console.log(
+          `   Date/Time: ${apt.date_time} (${format(
+            apt.date_time,
+            "yyyy-MM-dd HH:mm"
+          )})`
+        );
         console.log(`   Service: ${apt.service_type}`);
         console.log(`   Status: ${apt.booking_status}`);
       });
     }
-    
+
     console.log("Working hours configuration:", workingHours);
     console.log("Days off configuration:", regularDaysOff);
 
@@ -191,9 +209,21 @@ export async function GET(
               minute
             );
 
-            // Skip past slots - compare using current time
-            const now = new Date();
-            if (slotDateTime < now) {
+            // Skip past slots - compare using Egypt time
+            const nowInEgypt = new Date();
+            const todayInEgypt = new Date(
+              nowInEgypt.getFullYear(),
+              nowInEgypt.getMonth(),
+              nowInEgypt.getDate()
+            );
+
+            // Only skip if slot is in the past (same day or earlier + past time)
+            if (
+              currentDate.getTime() === todayInEgypt.getTime() &&
+              slotDateTime < nowInEgypt
+            ) {
+              continue;
+            } else if (currentDate < todayInEgypt) {
               continue;
             }
 
@@ -206,23 +236,31 @@ export async function GET(
             for (const appointment of relevantAppointments) {
               const appointmentDate = appointment.date_time;
 
+              // Convert appointment time to Egypt timezone for comparison
+              const appointmentInEgypt = new Date(
+                appointmentDate.getTime() + 2 * 60 * 60 * 1000
+              ); // Add 2 hours for Egypt timezone
+
               // Simple date comparison using date strings
-              const appointmentDay = format(appointmentDate, "yyyy-MM-dd");
+              const appointmentDay = format(appointmentInEgypt, "yyyy-MM-dd");
               const slotDay = format(currentDate, "yyyy-MM-dd");
-              
+
               // Skip if not the same day
               if (appointmentDay !== slotDay) {
                 continue;
               }
 
-              // Get appointment time in minutes since midnight
-              const appointmentHour = appointmentDate.getHours();
-              const appointmentMinute = appointmentDate.getMinutes();
-              const appointmentStartMinutes = appointmentHour * 60 + appointmentMinute;
+              // Get appointment time in minutes since midnight (Egypt time)
+              const appointmentHour = appointmentInEgypt.getHours();
+              const appointmentMinute = appointmentInEgypt.getMinutes();
+              const appointmentStartMinutes =
+                appointmentHour * 60 + appointmentMinute;
 
               // Get service duration
-              const appointmentDuration = serviceNameToDuration.get(appointment.service_type) || 60;
-              const appointmentEndMinutes = appointmentStartMinutes + appointmentDuration;
+              const appointmentDuration =
+                serviceNameToDuration.get(appointment.service_type) || 60;
+              const appointmentEndMinutes =
+                appointmentStartMinutes + appointmentDuration;
 
               // Get slot time in minutes since midnight
               const slotStartMinutes = hour * 60 + minute;
@@ -239,15 +277,21 @@ export async function GET(
                 console.log("=== BOOKING CONFLICT FOUND ===", {
                   appointmentId: appointment.id,
                   appointmentDate: appointmentDay,
-                  appointmentTime: `${appointmentHour}:${appointmentMinute.toString().padStart(2, '0')}`,
+                  appointmentTimeUTC: format(
+                    appointmentDate,
+                    "yyyy-MM-dd HH:mm"
+                  ),
+                  appointmentTimeEgypt: `${appointmentHour}:${appointmentMinute
+                    .toString()
+                    .padStart(2, "0")}`,
                   appointmentDuration: appointmentDuration,
-                  slotTime: `${hour}:${minute.toString().padStart(2, '0')}`,
+                  slotTime: `${hour}:${minute.toString().padStart(2, "0")}`,
                   slotDuration: workingHours.interval,
                   appointmentStartMinutes,
                   appointmentEndMinutes,
                   slotStartMinutes,
                   slotEndMinutes,
-                  overlap: true
+                  overlap: true,
                 });
                 isBooked = true;
                 break;
