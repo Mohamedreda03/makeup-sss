@@ -21,6 +21,23 @@ export function TimeSelector({
 }: TimeSelectorProps) {
   const timeSlotContainerRef = useRef<HTMLDivElement>(null);
 
+  // Debug logging for timezone issues
+  console.log("TimeSelector - Debug Info:", {
+    totalSlots: timeSlots.length,
+    availableSlots: timeSlots.filter((slot) => !slot.isBooked).length,
+    bookedSlots: timeSlots.filter((slot) => slot.isBooked).length,
+    selectedTime,
+    currentTime: new Date().toLocaleString(),
+    currentTimeEgypt: new Date().toLocaleString("en-US", {
+      timeZone: "Africa/Cairo",
+    }),
+    timeSlots: timeSlots.map((slot) => ({
+      time: slot.time,
+      label: slot.label,
+      isBooked: slot.isBooked,
+    })),
+  });
+
   // Mouse and touch event handlers for dragging
   const handleMouseDown = (e: MouseEvent<HTMLDivElement>) => {
     if (!timeSlotContainerRef.current) return;

@@ -273,10 +273,10 @@ export default function ArtistBooking({
 
       if (period === "PM" && hours !== 12) hours += 12;
       else if (period === "AM" && hours === 12) hours = 0;
-
       const [year, month, day] = selectedDate.split("-");
 
-      // Create date object in local time (this will be interpreted as Africa/Cairo on the server)
+      // Create date object in local time for Egypt timezone
+      // This ensures consistent handling between client and server
       const datetime = new Date(
         parseInt(year),
         parseInt(month) - 1,
@@ -285,8 +285,8 @@ export default function ArtistBooking({
         minutes
       );
 
-      // Send the datetime in ISO format but without converting to UTC
-      // Format: YYYY-MM-DDTHH:mm:ss (without Z suffix to indicate local time)
+      // Format the datetime string with Egypt timezone offset to ensure consistency
+      const egyptTimeOffset = "+02:00"; // Egypt Standard Time (you may need to adjust for DST)
       const localDatetimeString =
         datetime.getFullYear() +
         "-" +
@@ -297,14 +297,19 @@ export default function ArtistBooking({
         String(datetime.getHours()).padStart(2, "0") +
         ":" +
         String(datetime.getMinutes()).padStart(2, "0") +
-        ":" +
-        String(datetime.getSeconds()).padStart(2, "0");
+        ":00" +
+        egyptTimeOffset; // Add timezone offset
 
       console.log("Sending appointment data:", {
         selectedDate,
         selectedTime,
         localDateTime: datetime.toLocaleString(),
+        localDateTimeEgypt: datetime.toLocaleString("en-US", {
+          timeZone: "Africa/Cairo",
+        }),
         sentDatetime: localDatetimeString,
+        timezone: "Egypt (+02:00)",
+        serverTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       });
 
       const appointmentData = {

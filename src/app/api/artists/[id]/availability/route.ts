@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { addDays, format, parseISO, startOfDay, getDay } from "date-fns";
+
 const DEFAULT_BUSINESS_HOURS = {
   start: 10, // 10 AM
   end: 24, // 12 AM (midnight)
@@ -372,8 +373,10 @@ export async function GET(
             const slotTime = new Date(currentDate);
             slotTime.setHours(hour, minute, 0, 0);
 
-            // Skip slots in the past (compare in local time)
-            const now = new Date();
+            // Skip slots in the past (compare using target timezone)
+            const now = new Date(
+              new Date().toLocaleString("en-US", { timeZone: "Africa/Cairo" })
+            );
             if (slotTime < now) {
               continue;
             }
