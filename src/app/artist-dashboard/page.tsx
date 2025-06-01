@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
+import { toEgyptTime } from "@/lib/timezone-config";
 import {
   Calendar,
   Clock,
@@ -537,7 +538,10 @@ export default function ArtistDashboard() {
                               if (isNaN(appointmentDate.getTime())) {
                                 return "Invalid Date";
                               }
-                              return format(appointmentDate, "MMM d, yyyy");
+                              return format(
+                                toEgyptTime(appointmentDate),
+                                "MMM d, yyyy"
+                              );
                             } catch {
                               return "Date not available";
                             }
@@ -551,7 +555,10 @@ export default function ArtistDashboard() {
                                 if (isNaN(appointmentDate.getTime())) {
                                   return "Invalid Time";
                                 }
-                                return format(appointmentDate, "h:mm a");
+                                return format(
+                                  toEgyptTime(appointmentDate),
+                                  "h:mm a"
+                                );
                               } catch {
                                 return "Time not available";
                               }
@@ -705,7 +712,7 @@ export default function ArtistDashboard() {
                         if (isNaN(appointmentDate.getTime())) {
                           return "Invalid Date";
                         }
-                        return format(appointmentDate, "PPP");
+                        return format(toEgyptTime(appointmentDate), "PPP");
                       } catch {
                         return "Date not available";
                       }
@@ -719,7 +726,7 @@ export default function ArtistDashboard() {
                           if (isNaN(appointmentDate.getTime())) {
                             return "Invalid Time";
                           }
-                          return format(appointmentDate, "p");
+                          return format(toEgyptTime(appointmentDate), "p");
                         } catch {
                           return "Time not available";
                         }

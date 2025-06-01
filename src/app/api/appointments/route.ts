@@ -16,8 +16,8 @@ interface ExtendedUser {
 
 // Default business hours if none are set
 const DEFAULT_BUSINESS_HOURS = {
-  start: 10, // 10 AM
-  end: 24, // 12 AM (midnight)
+  start: 9, // 9 AM
+  end: 17, // 5 PM (17:00)
   interval: 30, // 30 minute intervals
 };
 

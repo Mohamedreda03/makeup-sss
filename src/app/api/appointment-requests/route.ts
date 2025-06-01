@@ -2,9 +2,13 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { z } from "zod";
-import { getDay, format, addMinutes, startOfDay, addDays } from "date-fns";
+import { getDay, format, addMinutes } from "date-fns";
 import { v4 as uuidv4 } from "uuid";
-import { createEgyptDate } from "@/lib/timezone-config";
+import {
+  createEgyptDate,
+  toEgyptTime,
+  isSameDayInEgypt,
+} from "@/lib/timezone-config";
 
 // Define status type
 type AppointmentStatus = "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED";
@@ -20,8 +24,8 @@ interface ExtendedUser {
 
 // Default business hours if none are set
 const DEFAULT_BUSINESS_HOURS = {
-  start: 10, // 10 AM
-  end: 24, // 12 AM (midnight)
+  start: 9, // 9 AM
+  end: 17, // 5 PM (17:00)
   interval: 30, // 30 minute intervals
 };
 
@@ -106,8 +110,8 @@ export async function POST(req: Request) {
           { status: 404 }
         );
       }
-      console.log(`Makeup artist ID found: ${makeupArtistRecord.id}`);      // Parse date and time - using Egypt timezone for consistency
-      console.log("=== PROCESSING DATE AND TIME (EGYPT TIMEZONE) ===");
+      console.log(`Makeup artist ID found: ${makeupArtistRecord.id}`); // Parse date and time using Egypt timezone for consistency
+      console.log("Processing date and time in Egypt timezone");
       console.log("Received appointment date:", validatedData.appointmentDate);
       console.log("Received appointment time:", validatedData.appointmentTime);
 
@@ -128,14 +132,11 @@ export async function POST(req: Request) {
         timeMinute,
         0
       );
-
-      console.log("Appointment datetime created (Egypt timezone):", {
-        input: { year, month, day, timeHour, timeMinute },
-        datetime: appointmentDateTime.toLocaleString(),
-        utc: appointmentDateTime.toISOString(),
-        egyptTime: appointmentDateTime.toLocaleString("en-US", {
+      console.log("Appointment datetime created in Egypt timezone:", {
+        datetime: appointmentDateTime.toLocaleString("en-US", {
           timeZone: "Africa/Cairo",
         }),
+        utc: appointmentDateTime.toISOString(),
       });
 
       const dayOfWeek = getDay(appointmentDateTime);
@@ -151,17 +152,8 @@ export async function POST(req: Request) {
         `Appointment time: ${format(
           appointmentDateTime,
           "yyyy-MM-dd HH:mm"
-        )} to ${format(appointmentEndTime, "HH:mm")}`
+        )} to ${format(appointmentEndTime, "HH:mm")} (Egypt timezone)`
       );
-
-      console.log("=== APPOINTMENT DETAILS ===");
-      console.log(
-        "Appointment date/time:",
-        appointmentDateTime.toLocaleString()
-      );
-      console.log("Day of week:", dayOfWeek);
-      console.log("Time hour:", timeHour);
-      console.log("Time minute:", timeMinute);
 
       // Parse availability settings or use defaults
       let workingHours = DEFAULT_BUSINESS_HOURS;
@@ -219,17 +211,14 @@ export async function POST(req: Request) {
       const appointmentEndHour = appointmentEndTime.getHours();
       const appointmentEndMinute = appointmentEndTime.getMinutes();
 
-      console.log("=== WORKING HOURS CHECK ===");
+      console.log("Checking working hours compatibility:");
       console.log(
         `Working hours: ${workingHours.start}:00 - ${workingHours.end}:00`
       );
       console.log(
-        `Appointment start: ${timeHour}:${timeMinute
+        `Appointment: ${timeHour}:${timeMinute
           .toString()
-          .padStart(2, "0")}`
-      );
-      console.log(
-        `Appointment end: ${appointmentEndHour}:${appointmentEndMinute
+          .padStart(2, "0")} - ${appointmentEndHour}:${appointmentEndMinute
           .toString()
           .padStart(2, "0")}`
       );
@@ -277,39 +266,29 @@ export async function POST(req: Request) {
           { status: 400 }
         );
       } // Check for conflicts with existing bookings
-      console.log("=== CHECKING FOR BOOKING CONFLICTS (SIMPLIFIED) ===");
+      console.log("=== CHECKING FOR BOOKING CONFLICTS ===");
       console.log(
         "Using makeup artist ID for conflict check:",
         makeupArtistRecord.id
       );
       console.log(
         "Requested appointment:",
-        appointmentDateTime.toLocaleString()
+        appointmentDateTime.toLocaleString("en-US", {
+          timeZone: "Africa/Cairo",
+        })
       );
       console.log(
         "Requested appointment duration:",
         validatedData.duration,
         "minutes"
-      );      // Query for bookings on the same date - using Egypt timezone
-      const dayStart = startOfDay(appointmentDateTime);
-      const dayEnd = addDays(dayStart, 1);
+      );
 
-      console.log("Searching bookings in date range (Egypt timezone):", {
-        start: dayStart.toLocaleString(),
-        end: dayEnd.toLocaleString(),
-        startUTC: dayStart.toISOString(),
-        endUTC: dayEnd.toISOString(),
-      });
-
+      // Query for bookings on the requested day using Egypt timezone comparison
       const existingBookings = await db.booking.findMany({
         where: {
-          artist_id: makeupArtistRecord.id, // Use makeup artist ID, not user ID
+          artist_id: makeupArtistRecord.id,
           booking_status: {
             in: ["PENDING", "CONFIRMED"],
-          },
-          date_time: {
-            gte: dayStart,
-            lt: dayEnd,
           },
         },
         select: {
@@ -319,22 +298,29 @@ export async function POST(req: Request) {
           service_type: true,
         },
       });
-      console.log(
-        `Found ${existingBookings.length} existing bookings for the day`
+
+      // Filter bookings to only those on the same day in Egypt timezone
+      const sameDayBookings = existingBookings.filter((booking) =>
+        isSameDayInEgypt(booking.date_time, appointmentDateTime)
       );
 
-      // Log each existing booking for debugging (simplified)
-      existingBookings.forEach((booking, index) => {
+      console.log(
+        `Found ${sameDayBookings.length} existing bookings for the day in Egypt timezone`
+      ); // Log each existing booking for debugging
+      sameDayBookings.forEach((booking, index) => {
         console.log(`Existing booking ${index + 1}:`, {
           id: booking.id,
-          date_time: booking.date_time.toLocaleString(),
+          date_time: booking.date_time.toLocaleString("en-US", {
+            timeZone: "Africa/Cairo",
+          }),
+          utc: booking.date_time.toISOString(),
           status: booking.booking_status,
           service: booking.service_type,
         });
       });
 
-      // Check for overlapping bookings (simplified)
-      console.log("=== CHECKING FOR TIME CONFLICTS (SIMPLIFIED) ===");
+      // Check for overlapping bookings
+      console.log("=== CHECKING FOR TIME CONFLICTS ===");
 
       // Fetch artist services to get accurate durations
       const artistServices = await db.artistService.findMany({
@@ -352,24 +338,28 @@ export async function POST(req: Request) {
       artistServices.forEach((service) => {
         serviceNameToDuration.set(service.name, service.duration);
       });
-      const isOverlapping = existingBookings.some((booking) => {
-        // Use existing booking datetime directly (simplified)
-        const existingStart = new Date(booking.date_time);
+      const isOverlapping = sameDayBookings.some((booking) => {
+        // Convert existing booking to Egypt timezone for consistent comparison
+        const existingStart = toEgyptTime(booking.date_time);
         // Use actual service duration or default to 60 minutes
         const existingDuration =
           serviceNameToDuration.get(booking.service_type) || 60;
         const existingEnd = addMinutes(existingStart, existingDuration);
 
+        console.log(`Checking conflict with booking ${booking.id}:`);
         console.log(
-          `Checking conflict with booking ${booking.id} (simplified):`
+          `  Existing: ${existingStart.toLocaleString("en-US", {
+            timeZone: "Africa/Cairo",
+          })} to ${existingEnd.toLocaleString("en-US", {
+            timeZone: "Africa/Cairo",
+          })} (${existingDuration}min)`
         );
         console.log(
-          `  Existing: ${existingStart.toLocaleString()} to ${existingEnd.toLocaleString()} (${existingDuration}min)`
-        );
-        console.log(
-          `  New: ${appointmentDateTime.toLocaleString()} to ${appointmentEndTime.toLocaleString()} (${
-            validatedData.duration
-          }min)`
+          `  New: ${appointmentDateTime.toLocaleString("en-US", {
+            timeZone: "Africa/Cairo",
+          })} to ${appointmentEndTime.toLocaleString("en-US", {
+            timeZone: "Africa/Cairo",
+          })} (${validatedData.duration}min)`
         );
 
         // Compare appointment times directly
@@ -391,10 +381,8 @@ export async function POST(req: Request) {
 
         return hasOverlap;
       });
-
       if (isOverlapping) {
-        console.log("=== TIME SLOT CONFLICT DETECTED ===");
-        console.log("Rejecting booking request due to time conflict");
+        console.log("Time slot conflict detected - rejecting booking request");
         return NextResponse.json(
           {
             message:
@@ -404,7 +392,7 @@ export async function POST(req: Request) {
           { status: 409 } // 409 Conflict status code
         );
       }
-      console.log("=== NO CONFLICTS FOUND - PROCEEDING WITH BOOKING ===");
+      console.log("No conflicts found - proceeding with booking");
 
       // Generate a temporary request ID
       const tempRequestId = uuidv4();
@@ -425,11 +413,7 @@ export async function POST(req: Request) {
         created: new Date(),
         artistName: artist.name || "Artist",
       };
-
-      console.log(
-        "Prepared appointment request (simplified):",
-        appointmentRequestData
-      );
+      console.log("Prepared appointment request:", appointmentRequestData);
 
       // Store this request data in a server-side session or temporary storage
       // For now, we'll simply return it with a temporary ID for the client to use

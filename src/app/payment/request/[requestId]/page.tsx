@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { format } from "date-fns";
+import { toEgyptTime } from "@/lib/timezone-config";
 import {
   Card,
   CardContent,
@@ -387,32 +389,22 @@ export default function PaymentRequestPage() {
                               return `${appointmentRequest.appointmentDate} at ${appointmentRequest.appointmentTime}`;
                             }
 
-                            // Format the date/time for display with better error handling
+                            // Format the date/time for display using our timezone utilities
                             try {
-                              const formattedDate =
-                                appointmentDateTime.toLocaleDateString(
-                                  "en-US",
-                                  {
-                                    weekday: "long",
-                                    year: "numeric",
-                                    month: "long",
-                                    day: "numeric",
-                                  }
-                                );
-
-                              const formattedTime =
-                                appointmentDateTime.toLocaleTimeString(
-                                  "en-US",
-                                  {
-                                    hour: "numeric",
-                                    minute: "2-digit",
-                                    hour12: true,
-                                  }
-                                );
+                              const egyptDateTime =
+                                toEgyptTime(appointmentDateTime);
+                              const formattedDate = format(
+                                egyptDateTime,
+                                "EEEE, MMMM d, yyyy"
+                              );
+                              const formattedTime = format(
+                                egyptDateTime,
+                                "h:mm a"
+                              );
 
                               return `${formattedDate} at ${formattedTime}`;
                             } catch {
-                              // Fallback formatting if localeString methods fail
+                              // Fallback formatting if format methods fail
                               return `${appointmentRequest.appointmentDate} at ${appointmentRequest.appointmentTime}`;
                             }
                           } catch {

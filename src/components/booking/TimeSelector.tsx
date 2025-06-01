@@ -19,55 +19,19 @@ export function TimeSelector({
   selectedTime,
   onTimeSelect,
 }: TimeSelectorProps) {
-  const timeSlotContainerRef = useRef<HTMLDivElement>(null); // Enhanced debug logging for timezone issues
-  console.log("TimeSelector - Enhanced Debug Info:", {
+  const timeSlotContainerRef = useRef<HTMLDivElement>(null);
+
+  // Debug logging to see what data we're receiving
+  console.log("TimeSelector Debug:", {
     totalSlots: timeSlots.length,
-    availableSlots: timeSlots.filter((slot) => !slot.isBooked).length,
-    bookedSlots: timeSlots.filter((slot) => slot.isBooked).length,
-    selectedTime,
-    currentTime: new Date().toLocaleString(),
-    currentTimeEgypt: new Date().toLocaleString("en-US", {
-      timeZone: "Africa/Cairo",
-    }),
-    serverTime: new Date().toISOString(),
-    timeSlotsDetailed: timeSlots.map((slot, index) => ({
-      index,
+    bookedSlots: timeSlots.filter(slot => slot.isBooked).length,
+    availableSlots: timeSlots.filter(slot => !slot.isBooked).length,
+    sampleSlots: timeSlots.slice(0, 3).map(slot => ({
       time: slot.time,
       label: slot.label,
-      isBooked: slot.isBooked,
-      isSelected: selectedTime === slot.label && !slot.isBooked,
-      status: slot.isBooked
-        ? "BOOKED"
-        : selectedTime === slot.label
-        ? "SELECTED"
-        : "AVAILABLE",
-    })),
+      isBooked: slot.isBooked
+    }))
   });
-
-  // Additional validation logging
-  if (timeSlots.length > 0) {
-    const bookedCount = timeSlots.filter((slot) => slot.isBooked).length;
-    const availableCount = timeSlots.filter((slot) => !slot.isBooked).length;
-
-    console.log("TimeSelector - Slot Statistics:", {
-      total: timeSlots.length,
-      booked: bookedCount,
-      available: availableCount,
-      bookedPercentage: `${((bookedCount / timeSlots.length) * 100).toFixed(
-        1
-      )}%`,
-      availablePercentage: `${(
-        (availableCount / timeSlots.length) *
-        100
-      ).toFixed(1)}%`,
-      bookedTimes: timeSlots
-        .filter((slot) => slot.isBooked)
-        .map((slot) => slot.label),
-      availableTimes: timeSlots
-        .filter((slot) => !slot.isBooked)
-        .map((slot) => slot.label),
-    });
-  }
 
   // Mouse and touch event handlers for dragging
   const handleMouseDown = (e: MouseEvent<HTMLDivElement>) => {
@@ -132,7 +96,6 @@ export function TimeSelector({
   return (
     <div className="w-full overflow-hidden relative">
       {" "}
-      {/* Time slots availability summary with more details */}
       <div className="mb-4 text-sm text-gray-600 px-4">
         <div className="flex flex-wrap items-center gap-2">
           <span className="font-medium text-rose-600">
@@ -146,16 +109,6 @@ export function TimeSelector({
           <span className="text-gray-400">
             • {timeSlots.length} total slots
           </span>
-        </div>
-        {/* Show current Egypt time for reference */}
-        <div className="mt-1 text-xs text-gray-500">
-          Current Egypt time:{" "}
-          {new Date().toLocaleString("en-US", {
-            timeZone: "Africa/Cairo",
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: true,
-          })}
         </div>
       </div>
       <div
@@ -181,22 +134,7 @@ export function TimeSelector({
                 key={`${slot.time}-${slot.label}`}
                 onClick={() => {
                   if (!isBooked) {
-                    console.log("TimeSelector - Slot selected:", {
-                      slot: slot.label,
-                      time: slot.time,
-                      isBooked,
-                      timestamp: new Date().toISOString(),
-                      egyptTime: new Date().toLocaleString("en-US", {
-                        timeZone: "Africa/Cairo",
-                      }),
-                    });
                     onTimeSelect(slot.label);
-                  } else {
-                    console.log("TimeSelector - Blocked slot clicked:", {
-                      slot: slot.label,
-                      time: slot.time,
-                      reason: "Already booked",
-                    });
                   }
                 }}
                 disabled={isBooked}

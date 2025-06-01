@@ -122,32 +122,27 @@ export const createEgyptDate = (
   minute: number = 0,
   second: number = 0
 ): Date => {
-  // Create a date string in Egypt timezone
-  const dateString = `${year}-${month
-    .toString()
-    .padStart(2, "0")}-${day.toString().padStart(2, "0")}T${hour
-    .toString()
-    .padStart(2, "0")}:${minute.toString().padStart(2, "0")}:${second
-    .toString()
-    .padStart(2, "0")}.000`;
-
-  // Parse the date as if it's in Egypt timezone
-  const date = new Date(dateString);
-
-  // Get the timezone offset for Egypt
-  const egyptDate = new Date(
-    date.toLocaleString("en-US", { timeZone: TIMEZONE_CONFIG.timezone })
-  );
-  const utcDate = new Date(date.toLocaleString("en-US", { timeZone: "UTC" }));
-  const offset = egyptDate.getTime() - utcDate.getTime();
-
-  // Adjust for timezone
-  return new Date(date.getTime() - offset);
+  // Create the date object directly - this will be in local system timezone
+  // but we'll treat the values as if they represent Egypt time
+  return new Date(year, month - 1, day, hour, minute, second);
 };
 
-// Convert any date to Egypt timezone
+// Convert any date to Egypt timezone representation
 export const toEgyptTime = (date: Date): Date => {
-  return new Date(date.toLocaleString("en-US", { timeZone: TIMEZONE_CONFIG.timezone }));
+  // Get the date/time components as they would appear in Egypt timezone
+  const egyptTimeString = date.toLocaleString("en-CA", {
+    timeZone: TIMEZONE_CONFIG.timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+
+  // Parse this as a local date (this gives us the "Egypt time" as a Date object)
+  return new Date(egyptTimeString.replace(",", "T"));
 };
 
 // Get current time in Egypt timezone
@@ -155,26 +150,54 @@ export const nowInEgypt = (): Date => {
   return toEgyptTime(new Date());
 };
 
-// Format date in Egypt timezone
+// Format date in Egypt timezone for display
 export const formatInEgypt = (date: Date): string => {
-  const egyptDate = toEgyptTime(date);
-  return egyptDate.toLocaleString("en-CA", { 
+  return date.toLocaleString("en-CA", {
     timeZone: TIMEZONE_CONFIG.timezone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false
-  }).replace(/,/, '');
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
 };
 
 // Check if two dates are the same day in Egypt timezone
 export const isSameDayInEgypt = (date1: Date, date2: Date): boolean => {
-  const egypt1 = toEgyptTime(date1);
-  const egypt2 = toEgyptTime(date2);
-  
-  return egypt1.getFullYear() === egypt2.getFullYear() &&
-         egypt1.getMonth() === egypt2.getMonth() &&
-         egypt1.getDate() === egypt2.getDate();
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString("en-CA", {
+      timeZone: TIMEZONE_CONFIG.timezone,
+    });
+  };
+
+  return formatDate(date1) === formatDate(date2);
+};
+
+// Simple helper to display time in Egypt timezone
+export const displayTimeInEgypt = (date: Date): string => {
+  return date.toLocaleString("en-US", {
+    timeZone: TIMEZONE_CONFIG.timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+};
+
+// Get date components in Egypt timezone
+export const getEgyptDateComponents = (date: Date) => {
+  const egyptTime = new Date(
+    date.toLocaleString("en-US", { timeZone: TIMEZONE_CONFIG.timezone })
+  );
+  return {
+    year: egyptTime.getFullYear(),
+    month: egyptTime.getMonth() + 1, // 1-based month
+    day: egyptTime.getDate(),
+    hour: egyptTime.getHours(),
+    minute: egyptTime.getMinutes(),
+    second: egyptTime.getSeconds(),
+  };
 };

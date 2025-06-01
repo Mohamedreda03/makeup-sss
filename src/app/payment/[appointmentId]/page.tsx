@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { format } from "date-fns";
+import { toEgyptTime } from "@/lib/timezone-config";
 import {
   Card,
   CardContent,
@@ -371,7 +372,7 @@ export default function PaymentPage() {
               <span className="font-medium flex items-center text-gray-700">
                 <Calendar className="mr-2 h-4 w-4 text-rose-500" />
                 Date & Time
-              </span>
+              </span>{" "}
               <span className="text-gray-900">
                 {(() => {
                   try {
@@ -383,10 +384,13 @@ export default function PaymentPage() {
                     }
 
                     const formattedDate = format(
-                      appointmentDate,
+                      toEgyptTime(appointmentDate),
                       "MMMM d, yyyy"
                     );
-                    const formattedTime = format(appointmentDate, "h:mm a");
+                    const formattedTime = format(
+                      toEgyptTime(appointmentDate),
+                      "h:mm a"
+                    );
 
                     return `${formattedDate} at ${formattedTime}`;
                   } catch {

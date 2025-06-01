@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { format } from "date-fns";
+import { toEgyptTime } from "@/lib/timezone-config";
 import { Metadata } from "next";
 import { Calendar, Clock, MapPin, User } from "lucide-react";
 import { BookingStatus } from "@/generated/prisma";
@@ -82,7 +83,7 @@ export default async function AppointmentPage({
                 if (isNaN(createdDate.getTime())) {
                   return "Unknown date";
                 }
-                return format(createdDate, "PPP");
+                return format(toEgyptTime(createdDate), "PPP");
               } catch {
                 return "Date not available";
               }
@@ -99,7 +100,7 @@ export default async function AppointmentPage({
                   Date & Time
                 </h3>
                 <div className="flex items-center mt-1">
-                  <Calendar className="h-4 w-4 mr-2 text-gray-500" />
+                  <Calendar className="h-4 w-4 mr-2 text-gray-500" />{" "}
                   <span>
                     {(() => {
                       try {
@@ -111,7 +112,10 @@ export default async function AppointmentPage({
                           return "Invalid Date";
                         }
 
-                        return format(appointmentDate, "EEEE, MMMM d, yyyy");
+                        return format(
+                          toEgyptTime(appointmentDate),
+                          "EEEE, MMMM d, yyyy"
+                        );
                       } catch {
                         return "Date not available";
                       }
@@ -119,7 +123,7 @@ export default async function AppointmentPage({
                   </span>
                 </div>
                 <div className="flex items-center mt-1">
-                  <Clock className="h-4 w-4 mr-2 text-gray-500" />
+                  <Clock className="h-4 w-4 mr-2 text-gray-500" />{" "}
                   <span>
                     {(() => {
                       try {
@@ -131,7 +135,7 @@ export default async function AppointmentPage({
                           return "Invalid Time";
                         }
 
-                        return format(appointmentDate, "h:mm a");
+                        return format(toEgyptTime(appointmentDate), "h:mm a");
                       } catch {
                         return "Time not available";
                       }

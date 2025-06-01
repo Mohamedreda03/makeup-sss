@@ -16,6 +16,7 @@ import {
   User,
 } from "lucide-react";
 import { format } from "date-fns";
+import { toEgyptTime } from "@/lib/timezone-config";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -508,6 +509,7 @@ export default function AppointmentsPage() {
                         </TableCell>{" "}
                         <TableCell>
                           <div className="flex flex-col">
+                            {" "}
                             <span className="font-medium">
                               {(() => {
                                 try {
@@ -517,10 +519,10 @@ export default function AppointmentsPage() {
                                   if (isNaN(appointmentDate.getTime())) {
                                     return "Invalid Date";
                                   }
-                                  return format(
-                                    appointmentDate,
-                                    "MMM dd, yyyy"
-                                  );
+                                  // Convert to Egypt timezone for display
+                                  const egyptDate =
+                                    toEgyptTime(appointmentDate);
+                                  return format(egyptDate, "MMM dd, yyyy");
                                 } catch {
                                   return "Date not available";
                                 }
@@ -535,7 +537,10 @@ export default function AppointmentsPage() {
                                   if (isNaN(appointmentDate.getTime())) {
                                     return "Invalid Time";
                                   }
-                                  return format(appointmentDate, "h:mm a");
+                                  // Convert to Egypt timezone for display
+                                  const egyptDate =
+                                    toEgyptTime(appointmentDate);
+                                  return format(egyptDate, "h:mm a");
                                 } catch {
                                   return "Time not available";
                                 }
@@ -696,7 +701,7 @@ export default function AppointmentsPage() {
               {" "}
               <div className="flex items-center">
                 <Calendar className="h-4 w-4 mr-2 text-gray-500" />
-                <span className="font-semibold">Date:</span>
+                <span className="font-semibold">Date:</span>{" "}
                 <span className="ml-2">
                   {selectedAppointment &&
                     (() => {
@@ -707,7 +712,9 @@ export default function AppointmentsPage() {
                         if (isNaN(appointmentDate.getTime())) {
                           return "Invalid Date";
                         }
-                        return format(appointmentDate, "MMMM d, yyyy");
+                        // Convert to Egypt timezone for display
+                        const egyptDate = toEgyptTime(appointmentDate);
+                        return format(egyptDate, "MMMM d, yyyy");
                       } catch {
                         return "Date not available";
                       }
@@ -727,7 +734,9 @@ export default function AppointmentsPage() {
                         if (isNaN(appointmentDate.getTime())) {
                           return "Invalid Time";
                         }
-                        return format(appointmentDate, "h:mm a");
+                        // Convert to Egypt timezone for display
+                        const egyptDate = toEgyptTime(appointmentDate);
+                        return format(egyptDate, "h:mm a");
                       } catch {
                         return "Time not available";
                       }

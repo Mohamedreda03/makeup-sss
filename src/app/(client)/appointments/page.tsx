@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { format } from "date-fns";
+import { toEgyptTime } from "@/lib/timezone-config";
 import {
   Calendar,
   Clock,
@@ -310,7 +311,9 @@ export default function AppointmentsPage() {
                             if (isNaN(appointmentDate.getTime())) {
                               return "Invalid Date";
                             }
-                            return format(appointmentDate, "MMM d, yyyy");
+                            // Convert to Egypt timezone for display
+                            const egyptDate = toEgyptTime(appointmentDate);
+                            return format(egyptDate, "MMM d, yyyy");
                           } catch {
                             return "Date not available";
                           }
@@ -328,7 +331,9 @@ export default function AppointmentsPage() {
                             if (isNaN(appointmentDate.getTime())) {
                               return "Invalid Time";
                             }
-                            return format(appointmentDate, "h:mm a");
+                            // Convert to Egypt timezone for display
+                            const egyptDate = toEgyptTime(appointmentDate);
+                            return format(egyptDate, "h:mm a");
                           } catch {
                             return "Time not available";
                           }

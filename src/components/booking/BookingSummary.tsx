@@ -1,6 +1,7 @@
 "use client";
 
 import { format } from "date-fns";
+import { toEgyptTime } from "@/lib/timezone-config";
 
 interface Service {
   id: string;
@@ -45,7 +46,7 @@ export function BookingSummary({
               <span className="font-medium">{selectedService.name}</span>
             </div>{" "}
             <div className="flex justify-between">
-              <span className="text-gray-500">Date:</span>
+              <span className="text-gray-500">Date:</span>{" "}
               <span className="font-medium">
                 {(() => {
                   try {
@@ -53,7 +54,7 @@ export function BookingSummary({
                     if (isNaN(appointmentDate.getTime())) {
                       return "Invalid Date";
                     }
-                    return format(appointmentDate, "MMMM d, yyyy");
+                    return format(toEgyptTime(appointmentDate), "MMMM d, yyyy");
                   } catch {
                     return "Date not available";
                   }

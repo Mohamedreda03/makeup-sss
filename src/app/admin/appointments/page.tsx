@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { format } from "date-fns";
+import { toEgyptTime } from "@/lib/timezone-config";
 import {
   ArrowLeft,
   Calendar,
@@ -556,7 +557,10 @@ function AdminAppointmentsPage() {
                               if (isNaN(appointmentDate.getTime())) {
                                 return "Invalid Date";
                               }
-                              return format(appointmentDate, "MMM dd, yyyy");
+                              return format(
+                                toEgyptTime(appointmentDate),
+                                "MMM dd, yyyy"
+                              );
                             } catch {
                               return "Date not available";
                             }
@@ -570,7 +574,10 @@ function AdminAppointmentsPage() {
                                 if (isNaN(appointmentDate.getTime())) {
                                   return "Invalid Time";
                                 }
-                                return format(appointmentDate, "h:mm a");
+                                return format(
+                                  toEgyptTime(appointmentDate),
+                                  "h:mm a"
+                                );
                               } catch {
                                 return "Time not available";
                               }
@@ -824,7 +831,10 @@ function AdminAppointmentsPage() {
                         if (isNaN(appointmentDate.getTime())) {
                           return "Invalid Date";
                         }
-                        return format(appointmentDate, "MMMM d, yyyy");
+                        return format(
+                          toEgyptTime(appointmentDate),
+                          "MMMM d, yyyy"
+                        );
                       } catch {
                         return "Date not available";
                       }
@@ -841,7 +851,7 @@ function AdminAppointmentsPage() {
                         if (isNaN(appointmentDate.getTime())) {
                           return "Invalid Time";
                         }
-                        return format(appointmentDate, "h:mm a");
+                        return format(toEgyptTime(appointmentDate), "h:mm a");
                       } catch {
                         return "Time not available";
                       }
