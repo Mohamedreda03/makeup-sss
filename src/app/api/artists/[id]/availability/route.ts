@@ -228,18 +228,18 @@ export async function GET(
             }
 
             const slotTimeStr = format(slotDateTime, "HH:mm");
-            const timeLabel = format(slotDateTime, "h:mm a");
-
-            // Check if this slot conflicts with any appointment
+            const timeLabel = format(slotDateTime, "h:mm a");            // Check if this slot conflicts with any appointment
             let isBooked = false;
 
             for (const appointment of relevantAppointments) {
               const appointmentDate = appointment.date_time;
 
-              // Convert appointment time to Egypt timezone for comparison
+              // Use proper timezone conversion
               const appointmentInEgypt = new Date(
-                appointmentDate.getTime() + 2 * 60 * 60 * 1000
-              ); // Add 2 hours for Egypt timezone
+                appointmentDate.toLocaleString("en-US", {
+                  timeZone: "Africa/Cairo",
+                })
+              );
 
               // Simple date comparison using date strings
               const appointmentDay = format(appointmentInEgypt, "yyyy-MM-dd");
