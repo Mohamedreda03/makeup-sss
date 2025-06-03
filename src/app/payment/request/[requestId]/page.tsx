@@ -3,8 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { format } from "date-fns";
-import { toEgyptTime } from "@/lib/timezone-config";
+import { formatTimeToEgypt12h, formatDateToEgyptLocale } from "@/lib/timezone-config";
 import {
   Card,
   CardContent,
@@ -378,36 +377,13 @@ export default function PaymentRequestPage() {
                     appointmentRequest.appointmentTime
                       ? (() => {
                           try {
-                            // Create a proper date string in ISO format
-                            const dateTimeString = `${appointmentRequest.appointmentDate}T${appointmentRequest.appointmentTime}:00`;
-                            const appointmentDateTime = new Date(
-                              dateTimeString
-                            );
-
-                            // Check if the date is valid
-                            if (isNaN(appointmentDateTime.getTime())) {
-                              return `${appointmentRequest.appointmentDate} at ${appointmentRequest.appointmentTime}`;
-                            }
-
-                            // Format the date/time for display using our timezone utilities
-                            try {
-                              const egyptDateTime =
-                                toEgyptTime(appointmentDateTime);
-                              const formattedDate = format(
-                                egyptDateTime,
-                                "EEEE, MMMM d, yyyy"
-                              );
-                              const formattedTime = format(
-                                egyptDateTime,
-                                "h:mm a"
-                              );
-
-                              return `${formattedDate} at ${formattedTime}`;
-                            } catch {
-                              // Fallback formatting if format methods fail
-                              return `${appointmentRequest.appointmentDate} at ${appointmentRequest.appointmentTime}`;
-                            }
-                          } catch {
+                            // Format the date and time using our consistent Egypt timezone utilities
+                            const formattedDate = formatDateToEgyptLocale(appointmentRequest.appointmentDate);
+                            const formattedTime = formatTimeToEgypt12h(appointmentRequest.appointmentTime);
+                            
+                            return `${formattedDate} at ${formattedTime}`;
+                          } catch (error) {
+                            console.error("Error formatting date/time:", error);
                             // Fallback to simple string concatenation if parsing fails
                             return `${appointmentRequest.appointmentDate} at ${appointmentRequest.appointmentTime}`;
                           }
