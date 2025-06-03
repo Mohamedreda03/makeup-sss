@@ -19,6 +19,15 @@ import {
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+import customParseFormat from "dayjs/plugin/customParseFormat";
+
+// Initialize dayjs plugins
+dayjs.extend(utc);
+dayjs.extend(timezone);
+dayjs.extend(customParseFormat);
 
 interface AvailabilitySettings {
   workingDays: number[];
@@ -115,9 +124,31 @@ export default function ArtistAvailabilityPage() {
     } finally {
       setIsLoading(false);
     }
-  };
-  // Save availability changes
+  }; // Save availability changes
   const handleSaveChanges = async () => {
+    // Validate input before saving
+    if (availabilitySettings.workingDays.length === 0) {
+      toast({
+        title: "Validation Error",
+        description: "Please select at least one working day",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate end time is after start time
+    const start = dayjs(`2000-01-01T${availabilitySettings.startTime}`);
+    const end = dayjs(`2000-01-01T${availabilitySettings.endTime}`);
+    if (end.isBefore(start) && end.hour() !== 0) {
+      // If end time is before start time (and not midnight which is a special case)
+      toast({
+        title: "Validation Warning",
+        description:
+          "End time is before start time. This will be treated as spanning across midnight.",
+        variant: "default",
+      });
+    }
+
     try {
       setIsSaving(true);
       const response = await fetch("/api/artist/availability", {
@@ -174,28 +205,32 @@ export default function ArtistAvailabilityPage() {
     }));
     setHasUnsavedChanges(true);
   };
-
   // Calculate total daily sessions
   const calculateDailySessions = () => {
     if (!availabilitySettings.startTime || !availabilitySettings.endTime)
       return 0;
 
-    const start = new Date(`2000-01-01T${availabilitySettings.startTime}`);
-    const end = new Date(`2000-01-01T${availabilitySettings.endTime}`);
-    const totalMinutes = (end.getTime() - start.getTime()) / (1000 * 60);
+    const start = dayjs(`2000-01-01T${availabilitySettings.startTime}`);
+    let end = dayjs(`2000-01-01T${availabilitySettings.endTime}`);
+
+    // Handle times that cross midnight
+    if (end.isBefore(start)) {
+      end = end.add(1, "day");
+    }
+
+    const totalMinutes = end.diff(start, "minute");
     const sessionWithBreak =
       availabilitySettings.sessionDuration +
       availabilitySettings.breakBetweenSessions;
 
     return Math.floor(totalMinutes / sessionWithBreak);
   };
-  // Format time for display
+
+  // Format time for display with Egyptian timezone
   const formatTime = (timeString: string) => {
-    return new Date(`2000-01-01T${timeString}`).toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    });
+    return dayjs(`2000-01-01T${timeString}`)
+      .tz("Africa/Cairo")
+      .format("h:mm A");
   };
 
   if (status === "loading" || isLoading) {

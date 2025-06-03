@@ -2,16 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
-import { format } from "date-fns";
-import { toEgyptTime } from "@/lib/timezone-config";
-import {
-  Calendar,
-  Clock,
-  User,
-  CheckCircle,
-  DollarSign,
-  CreditCard,
-} from "lucide-react";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+import { Calendar, Clock, User, CheckCircle, DollarSign } from "lucide-react";
+
+// تهيئة إضافات dayjs
+dayjs.extend(utc);
+dayjs.extend(timezone);
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -100,6 +98,8 @@ export default function AppointmentsPage() {
             return { ...appointment, hasReview: false };
           })
         );
+
+        console.log("Fetched appointments:", appointmentsWithReviewStatus);
 
         setAppointments(appointmentsWithReviewStatus);
         setFilteredAppointments(appointmentsWithReviewStatus);
@@ -305,35 +305,25 @@ export default function AppointmentsPage() {
                       <span>
                         {(() => {
                           try {
-                            const appointmentDate = new Date(
-                              appointment.datetime
-                            );
-                            if (isNaN(appointmentDate.getTime())) {
-                              return "Invalid Date";
-                            }
-                            // Convert to Egypt timezone for display
-                            const egyptDate = toEgyptTime(appointmentDate);
-                            return format(egyptDate, "MMM d, yyyy");
+                            // استخدام dayjs لتحويل وتنسيق التاريخ بتوقيت مصر
+                            return dayjs(appointment.datetime)
+                              .tz("Africa/Cairo")
+                              .format("MMM D, YYYY");
                           } catch {
                             return "Date not available";
                           }
                         })()}
                       </span>
-                    </div>
+                    </div>{" "}
                     <div className="flex items-center">
                       <Clock className="h-3 w-3 mr-1 text-gray-500" />
                       <span>
                         {(() => {
                           try {
-                            const appointmentDate = new Date(
-                              appointment.datetime
-                            );
-                            if (isNaN(appointmentDate.getTime())) {
-                              return "Invalid Time";
-                            }
-                            // Convert to Egypt timezone for display
-                            const egyptDate = toEgyptTime(appointmentDate);
-                            return format(egyptDate, "h:mm a");
+                            // استخدام dayjs لتحويل وتنسيق الوقت بتوقيت مصر
+                            return dayjs(appointment.datetime)
+                              .tz("Africa/Cairo")
+                              .format("h:mm A");
                           } catch {
                             return "Time not available";
                           }
@@ -401,13 +391,10 @@ export default function AppointmentsPage() {
                       <span>
                         {(() => {
                           try {
-                            const appointmentDate = new Date(
-                              appointment.datetime
-                            );
-                            if (isNaN(appointmentDate.getTime())) {
-                              return "Invalid Date";
-                            }
-                            return format(appointmentDate, "MMMM d, yyyy");
+                            // استخدام dayjs لتحويل وتنسيق التاريخ بتوقيت مصر
+                            return dayjs(appointment.datetime)
+                              .tz("Africa/Cairo")
+                              .format("MMMM D, YYYY");
                           } catch {
                             return "Date not available";
                           }
@@ -420,13 +407,10 @@ export default function AppointmentsPage() {
                       <span>
                         {(() => {
                           try {
-                            const appointmentDate = new Date(
-                              appointment.datetime
-                            );
-                            if (isNaN(appointmentDate.getTime())) {
-                              return "Invalid Time";
-                            }
-                            return format(appointmentDate, "h:mm a");
+                            // استخدام dayjs لتحويل وتنسيق الوقت بتوقيت مصر
+                            return dayjs(appointment.datetime)
+                              .tz("Africa/Cairo")
+                              .format("h:mm A");
                           } catch {
                             return "Time not available";
                           }
@@ -485,18 +469,16 @@ export default function AppointmentsPage() {
                     </Badge>
                   </div>{" "}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm bg-gray-50 p-3 rounded-md">
+                    {" "}
                     <div className="flex items-center">
                       <Calendar className="h-4 w-4 mr-2 text-gray-500" />
                       <span>
                         {(() => {
                           try {
-                            const appointmentDate = new Date(
-                              appointment.datetime
-                            );
-                            if (isNaN(appointmentDate.getTime())) {
-                              return "Invalid Date";
-                            }
-                            return format(appointmentDate, "MMMM d, yyyy");
+                            // استخدام dayjs لتحويل وتنسيق التاريخ بتوقيت مصر
+                            return dayjs(appointment.datetime)
+                              .tz("Africa/Cairo")
+                              .format("MMMM D, YYYY");
                           } catch {
                             return "Date not available";
                           }
@@ -508,13 +490,10 @@ export default function AppointmentsPage() {
                       <span>
                         {(() => {
                           try {
-                            const appointmentDate = new Date(
-                              appointment.datetime
-                            );
-                            if (isNaN(appointmentDate.getTime())) {
-                              return "Invalid Time";
-                            }
-                            return format(appointmentDate, "h:mm a");
+                            // استخدام dayjs لتحويل وتنسيق الوقت بتوقيت مصر
+                            return dayjs(appointment.datetime)
+                              .tz("Africa/Cairo")
+                              .format("h:mm A");
                           } catch {
                             return "Time not available";
                           }
@@ -559,6 +538,26 @@ export default function AppointmentsPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* No filtered results message */}
+      {appointments.length > 0 &&
+        filteredAppointments.length === 0 &&
+        !isLoading && (
+          <Card className="border-dashed border-gray-300 bg-gray-50">
+            <CardContent className="p-12 text-center">
+              <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-amber-50 flex items-center justify-center">
+                <Calendar className="h-8 w-8 text-amber-400" />
+              </div>
+              <h3 className="text-xl font-medium mb-2 text-gray-800">
+                No Matching Appointments
+              </h3>
+              <p className="text-gray-500 max-w-md mx-auto">
+                No appointments match the selected filter. Try another filter to
+                see your appointments.
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
       {/* Confirmation Dialog */}
       <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>

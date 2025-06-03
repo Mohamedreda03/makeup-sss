@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import Image from "next/image";
-import { Phone, Mail, MapPin } from "lucide-react";
+import { Phone, Mail } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Contact Us - BrideGlam",
@@ -24,29 +24,32 @@ export default function ContactPage() {
             className="object-cover"
             priority
           />
-        </div>
-
+        </div>{" "}
         {/* Right side: Contact information */}
         <div className="flex flex-col justify-between">
           <div className="space-y-8">
             <div>
               <h2 className="text-xl font-semibold text-gray-700 mb-4">
-                OUR OFFICE
+                GET IN TOUCH
               </h2>
-              <address className="not-italic space-y-1 text-gray-600">
-                <p>54709 Wilma Station</p>
-                <p>Suite 550, Washington, USA</p>
-              </address>
-              <div className="mt-4 space-y-1">
-                <div className="flex items-center gap-2">
-                  <Phone className="h-4 w-4 text-pink-500" />
-                  <p className="text-gray-700">Tel: (555)-555-0123</p>
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <Phone className="h-5 w-5 text-pink-500" />
+                  <div>
+                    <p className="text-sm text-gray-500">Phone</p>
+                    <p className="text-gray-700 font-medium">
+                      +250-784-652-570
+                    </p>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-pink-500" />
-                  <p className="text-gray-700">
-                    Email: brideglam2023@gmail.com
-                  </p>
+                <div className="flex items-center gap-3">
+                  <Mail className="h-5 w-5 text-pink-500" />
+                  <div>
+                    <p className="text-sm text-gray-500">Email</p>
+                    <p className="text-gray-700 font-medium">
+                      BrideGlam502@gmail.com
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>

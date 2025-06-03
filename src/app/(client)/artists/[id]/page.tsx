@@ -5,6 +5,15 @@ import { auth } from "@/lib/auth";
 import ArtistClientPage from "@/components/artists/ArtistClientPage";
 import dynamicImport from "next/dynamic";
 import { ReviewList } from "@/components/reviews/ReviewList";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+import customParseFormat from "dayjs/plugin/customParseFormat";
+
+// Initialize dayjs plugins
+dayjs.extend(utc);
+dayjs.extend(timezone);
+dayjs.extend(customParseFormat);
 
 // Force dynamic rendering to prevent build-time database queries
 export const dynamic = "force-dynamic";
@@ -218,13 +227,18 @@ async function getArtistAvailabilitySettings(id: string) {
         interval: 60,
       },
       regularDaysOff: [0, 6], // Sunday and Saturday
-      bookedSlots: existingBookings.map((booking) => ({
-        date: booking.date_time.toISOString().split("T")[0],
-        time: booking.date_time.toTimeString().slice(0, 5), // HH:mm format
-        booking_id: booking.id,
-        service_type: booking.service_type,
-        status: booking.booking_status,
-      })),
+      bookedSlots: existingBookings.map((booking) => {
+        // تحويل التاريخ والوقت إلى توقيت القاهرة مع ضمان الدقة
+        const bookingDateTime = dayjs(booking.date_time).tz("Africa/Cairo");
+
+        return {
+          date: bookingDateTime.format("YYYY-MM-DD"), // التاريخ بتوقيت مصر
+          time: bookingDateTime.format("HH:mm"), // الوقت بتوقيت مصر (24 ساعة)
+          booking_id: booking.id,
+          service_type: booking.service_type,
+          status: booking.booking_status,
+        };
+      }),
     };
 
     if (!artist?.makeup_artist?.available_slots) {
@@ -253,21 +267,39 @@ async function getArtistAvailabilitySettings(id: string) {
         );
       }
 
+      // استخدام dayjs لمعالجة أوقات البداية والنهاية بتوقيت مصر
+      const startTime = availableSlots.startTime
+        ? dayjs
+            .tz(`2000-01-01T${availableSlots.startTime}`, "Africa/Cairo")
+            .hour()
+        : 9;
+
+      const endTime = availableSlots.endTime
+        ? dayjs
+            .tz(`2000-01-01T${availableSlots.endTime}`, "Africa/Cairo")
+            .hour()
+        : 18;
+
       const settings = {
         isAvailable: availableSlots.isAvailable ?? true,
         workingHours: {
-          start: parseInt(availableSlots.startTime?.split(":")[0] || "9"),
-          end: parseInt(availableSlots.endTime?.split(":")[0] || "18"),
+          start: startTime,
+          end: endTime,
           interval: availableSlots.sessionDuration || 60,
         },
         regularDaysOff,
-        bookedSlots: existingBookings.map((booking) => ({
-          date: booking.date_time.toISOString().split("T")[0],
-          time: booking.date_time.toTimeString().slice(0, 5), // HH:mm format
-          booking_id: booking.id,
-          service_type: booking.service_type,
-          status: booking.booking_status,
-        })),
+        bookedSlots: existingBookings.map((booking) => {
+          // تحويل التاريخ والوقت إلى توقيت القاهرة مع ضمان الدقة
+          const bookingDateTime = dayjs(booking.date_time).tz("Africa/Cairo");
+
+          return {
+            date: bookingDateTime.format("YYYY-MM-DD"), // التاريخ بتوقيت مصر
+            time: bookingDateTime.format("HH:mm"), // الوقت بتوقيت مصر (24 ساعة)
+            booking_id: booking.id,
+            service_type: booking.service_type,
+            status: booking.booking_status,
+          };
+        }),
       };
 
       return settings;
@@ -366,6 +398,8 @@ export default async function ArtistPage({
 }) {
   const session = await auth();
   const artist = await getArtist(params.id);
+
+  console.log("Artist data:", artist?.makeup_artist);
 
   if (!artist) {
     notFound();

@@ -1,8 +1,22 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowLeft } from "lucide-react";
-import { format } from "date-fns";
+import {
+  ArrowLeft,
+  Calendar,
+  User,
+  Package,
+  CreditCard,
+  Mail,
+  Phone,
+} from "lucide-react";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+
+// تهيئة إضافات dayjs
+dayjs.extend(utc);
+dayjs.extend(timezone);
 import { checkAdmin } from "@/lib/utils/auth-utils";
 import { db } from "@/lib/db";
 import { Button } from "@/components/ui/button";
@@ -48,7 +62,7 @@ interface OrderDetailsWithProduct extends OrderDetailsType {
 function formatPrice(price: number) {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: "USD",
+    currency: "EGP",
   }).format(price);
 }
 
@@ -81,36 +95,48 @@ export default async function OrderDetailsPage({
     (total, item) => total + item.price * item.quantity,
     0
   );
-
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
+    <div className="px-1 py-2">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div className="flex items-center gap-4">
-          <Button variant="outline" size="icon" asChild>
+          <Button
+            variant="outline"
+            size="icon"
+            asChild
+            className="rounded-full shadow-sm hover:shadow-md transition-all"
+          >
             <Link href="/admin/orders">
               <ArrowLeft className="h-4 w-4" />
               <span className="sr-only">Back to Orders</span>
             </Link>
           </Button>
-          <h1 className="text-3xl font-bold">Order Details</h1>
-          <OrderStatusBadge status={order.status} />
+          <div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-rose-600 to-purple-600 bg-clip-text text-transparent">
+              Order Details
+            </h1>
+            <p className="text-sm text-gray-500">
+              Order ID:{" "}
+              <span className="font-medium text-gray-700">
+                {order.id.slice(0, 12)}...
+              </span>
+            </p>
+          </div>
         </div>
-        <div className="text-sm text-gray-500">
-          Order ID: {order.id.slice(0, 12)}...
-        </div>
+        <OrderStatusBadge status={order.status} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Order Info */}
         <Card className="md:col-span-2">
+          {" "}
           <CardHeader>
             <CardTitle>Order Items</CardTitle>{" "}
-            <CardDescription>
+            <CardDescription className="flex items-center">
+              <Calendar className="h-3.5 w-3.5 mr-1.5 text-gray-500" />
               Placed on{" "}
-              {format(
-                new Date(order.order_date || order.createdAt),
-                "MMMM d, yyyy 'at' h:mm a"
-              )}
+              {dayjs(order.order_date || order.createdAt)
+                .tz("Africa/Cairo")
+                .format("MMMM D, YYYY [at] h:mm A")}
             </CardDescription>
           </CardHeader>{" "}
           <CardContent>
@@ -118,9 +144,9 @@ export default async function OrderDetailsPage({
               (item: OrderDetailsWithProduct, index: number) => (
                 <div
                   key={`${item.order_id}-${item.product_id}`}
-                  className="flex items-center gap-4 py-4 border-b last:border-0"
+                  className="flex items-center gap-4 py-4 border-b last:border-0 hover:bg-gray-50/50 p-2 rounded-md transition-colors"
                 >
-                  <div className="relative h-16 w-16 rounded-md overflow-hidden flex-shrink-0 border">
+                  <div className="relative h-20 w-20 rounded-md overflow-hidden flex-shrink-0 border shadow-sm">
                     {item.product?.image ? (
                       <Image
                         src={item.product.image}
@@ -135,40 +161,43 @@ export default async function OrderDetailsPage({
                     )}
                   </div>
                   <div className="flex-grow">
-                    <div className="font-medium">
+                    <div className="font-medium text-gray-900">
                       {item.product?.name || "Unknown Product"}
                     </div>
-                    <div className="text-sm text-gray-500">
-                      Quantity: {item.quantity}
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      Price: {formatPrice(item.price)}
+                    <div className="flex gap-4 mt-1">
+                      <div className="text-sm bg-purple-50 text-purple-700 px-2 py-1 rounded-full shadow-sm">
+                        Qty: {item.quantity}
+                      </div>
+                      <div className="text-sm bg-blue-50 text-blue-700 px-2 py-1 rounded-full shadow-sm">
+                        {formatPrice(item.price)}
+                      </div>
                     </div>
                   </div>
-                  <div className="font-medium">
+                  <div className="font-medium text-lg text-green-600">
                     {formatPrice(item.price * item.quantity)}
                   </div>
                 </div>
               )
-            )}
-
-            <div className="mt-4 flex justify-end">
-              <div className="space-y-1 text-right">
-                <div className="text-sm text-gray-500">Total</div>
-                <div className="text-2xl font-bold">
+            )}{" "}
+            <div className="mt-6 flex justify-end">
+              <div className="bg-gradient-to-r from-rose-50 to-purple-50 p-4 rounded-lg shadow-sm border border-gray-100">
+                <div className="text-sm text-gray-600 mb-1">Order Total</div>
+                <div className="text-2xl font-bold bg-gradient-to-r from-rose-600 to-purple-600 bg-clip-text text-transparent">
                   {formatPrice(orderTotal)}
                 </div>
               </div>
             </div>
           </CardContent>
         </Card>
-
-        {/* Customer and Shipping Info */}
+        {/* Customer and Shipping Info */}{" "}
         <div className="space-y-6">
           {/* Order Status Management */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Order Status</CardTitle>
+          <Card className="border-t-4 border-t-purple-500 shadow-md">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center">
+                <Package className="h-5 w-5 mr-2 text-purple-500" />
+                Order Status
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <OrderStatusSelector
@@ -179,28 +208,37 @@ export default async function OrderDetailsPage({
           </Card>
 
           {/* Customer Info */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Customer Information</CardTitle>
+          <Card className="border-t-4 border-t-blue-500 shadow-md">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center">
+                <User className="h-5 w-5 mr-2 text-blue-500" />
+                Customer Information
+              </CardTitle>
             </CardHeader>
             <CardContent>
               {order.user ? (
-                <div className="flex items-center gap-3">
+                <div className="flex items-start gap-4 p-2 bg-blue-50/50 rounded-lg">
                   <UserObjectAvatar user={order.user} size="md" />
-                  <div>
-                    <div className="font-medium">{order.user.name}</div>
-                    <div className="text-sm text-gray-500">
+                  <div className="space-y-1">
+                    <div className="font-medium text-gray-900">
+                      {order.user.name}
+                    </div>
+                    <div className="text-sm text-gray-700 flex items-center">
+                      <Mail className="h-3.5 w-3.5 mr-1.5 text-blue-500" />
                       {order.user.email}
                     </div>
                     {order.user.phone && (
-                      <div className="text-sm text-gray-500">
+                      <div className="text-sm text-gray-700 flex items-center">
+                        <Phone className="h-3.5 w-3.5 mr-1.5 text-blue-500" />
                         {order.user.phone}
                       </div>
                     )}
                   </div>
                 </div>
               ) : (
-                <div className="text-gray-500">Guest checkout</div>
+                <div className="text-gray-500 p-4 bg-gray-50 rounded-lg text-center">
+                  Guest checkout
+                </div>
               )}
             </CardContent>
           </Card>

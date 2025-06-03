@@ -332,7 +332,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "C:\\Users\\mohamed\\Documents\\GitHub\\makeup-sss - Copy (2)\\src\\generated\\prisma",
+      "value": "C:\\Users\\mohamed\\Documents\\GitHub\\makeup-sss - Copy (2) - Copy\\src\\generated\\prisma",
       "fromEnvVar": null
     },
     "config": {
@@ -346,7 +346,7 @@ const config = {
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "C:\\Users\\mohamed\\Documents\\GitHub\\makeup-sss - Copy (2)\\prisma\\schema.prisma",
+    "sourceFilePath": "C:\\Users\\mohamed\\Documents\\GitHub\\makeup-sss - Copy (2) - Copy\\prisma\\schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {

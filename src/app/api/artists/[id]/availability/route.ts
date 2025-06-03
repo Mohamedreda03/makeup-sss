@@ -228,31 +228,59 @@ export async function GET(
             }
 
             const slotTimeStr = format(slotDateTime, "HH:mm");
-            const timeLabel = format(slotDateTime, "h:mm a");            // Check if this slot conflicts with any appointment
+            const timeLabel = format(slotDateTime, "h:mm a"); // Check if this slot conflicts with any appointment
             let isBooked = false;
-
             for (const appointment of relevantAppointments) {
               const appointmentDate = appointment.date_time;
 
-              // Use proper timezone conversion
-              const appointmentInEgypt = new Date(
-                appointmentDate.toLocaleString("en-US", {
-                  timeZone: "Africa/Cairo",
-                })
+              // Convert UTC time to Egypt timezone properly
+              const egyptTimeString = appointmentDate.toLocaleString("en-US", {
+                timeZone: "Africa/Cairo",
+                year: "numeric",
+                month: "2-digit",
+                day: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: false,
+              });
+
+              // Parse the Egypt time string to get date and time components
+              const [datePart, timePart] = egyptTimeString.split(", ");
+              const [month, day, year] = datePart.split("/");
+              const [appointmentHour, appointmentMinute] = timePart
+                .split(":")
+                .map(Number);
+
+              // Create a date object for comparison (date only)
+              const appointmentEgyptDate = new Date(
+                parseInt(year),
+                parseInt(month) - 1,
+                parseInt(day)
               );
 
               // Simple date comparison using date strings
-              const appointmentDay = format(appointmentInEgypt, "yyyy-MM-dd");
-              const slotDay = format(currentDate, "yyyy-MM-dd");
-
-              // Skip if not the same day
+              const appointmentDay = format(appointmentEgyptDate, "yyyy-MM-dd");
+              const slotDay = format(currentDate, "yyyy-MM-dd"); // Skip if not the same day
               if (appointmentDay !== slotDay) {
                 continue;
               }
+              console.log(`\n=== APPOINTMENT ANALYSIS ===`);
+              console.log(
+                `Original appointment time (UTC): ${appointmentDate}`
+              );
+              console.log(`Egypt time string: ${egyptTimeString}`);
+              console.log(
+                `Appointment day: ${appointmentDay}, Slot day: ${slotDay}`
+              );
+              console.log(
+                `Appointment time in Egypt: ${appointmentHour}:${appointmentMinute
+                  .toString()
+                  .padStart(2, "0")}`
+              );
+              console.log(`Service: ${appointment.service_type}`);
+              console.log(`Appointment ID: ${appointment.id}`);
 
               // Get appointment time in minutes since midnight (Egypt time)
-              const appointmentHour = appointmentInEgypt.getHours();
-              const appointmentMinute = appointmentInEgypt.getMinutes();
               const appointmentStartMinutes =
                 appointmentHour * 60 + appointmentMinute;
 
@@ -270,7 +298,22 @@ export async function GET(
               const hasOverlap = !(
                 slotEndMinutes <= appointmentStartMinutes ||
                 slotStartMinutes >= appointmentEndMinutes
-              );
+              ); // Debug logging for this specific day
+              if (appointmentDay === slotDay) {
+                console.log(
+                  `🔍 Checking slot ${hour}:${minute
+                    .toString()
+                    .padStart(
+                      2,
+                      "0"
+                    )} vs appointment ${appointmentHour}:${appointmentMinute
+                    .toString()
+                    .padStart(2, "0")}`
+                );
+                console.log(
+                  `   Slot: ${slotStartMinutes}-${slotEndMinutes} mins | Appointment: ${appointmentStartMinutes}-${appointmentEndMinutes} mins | Overlap: ${hasOverlap}`
+                );
+              }
 
               // Enhanced debug logging
               if (hasOverlap) {

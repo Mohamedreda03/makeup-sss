@@ -1,7 +1,9 @@
 "use client";
 
-import { format } from "date-fns";
-import { toEgyptTime } from "@/lib/timezone-config";
+import {
+  formatTimeToEgypt12h,
+  formatDateToEgyptLocale,
+} from "@/lib/timezone-config";
 
 interface Service {
   id: string;
@@ -48,13 +50,10 @@ export function BookingSummary({
             <div className="flex justify-between">
               <span className="text-gray-500">Date:</span>{" "}
               <span className="font-medium">
+                {" "}
                 {(() => {
                   try {
-                    const appointmentDate = new Date(selectedDate);
-                    if (isNaN(appointmentDate.getTime())) {
-                      return "Invalid Date";
-                    }
-                    return format(toEgyptTime(appointmentDate), "MMMM d, yyyy");
+                    return formatDateToEgyptLocale(selectedDate);
                   } catch {
                     return "Date not available";
                   }
@@ -63,7 +62,15 @@ export function BookingSummary({
             </div>{" "}
             <div className="flex justify-between">
               <span className="text-gray-500">Time:</span>
-              <span className="font-medium">{selectedTime}</span>
+              <span className="font-medium">
+                {(() => {
+                  try {
+                    return formatTimeToEgypt12h(selectedTime);
+                  } catch {
+                    return selectedTime;
+                  }
+                })()}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-500">Artist:</span>

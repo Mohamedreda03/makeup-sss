@@ -4,6 +4,17 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+import customParseFormat from "dayjs/plugin/customParseFormat";
+import { toEgyptISOString } from "@/lib/timezone-config";
+
+// تهيئة الملحقات
+dayjs.extend(utc);
+dayjs.extend(timezone);
+dayjs.extend(customParseFormat);
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -295,19 +306,24 @@ export default function ArtistBooking({
     }
     setIsBooking(true);
     try {
-      // Parse time - simple approach with separate date and time
-      const [timeStr, period] = selectedTime.split(" ");
-      const [hoursStr, minutesStr] = timeStr.split(":");
-      let hours = parseInt(hoursStr);
-      const minutes = parseInt(minutesStr);
+      // selectedTime should now be already in HH:MM format (24-hour)
+      // Ensure it matches the expected format HH:MM
+      let formattedTime = selectedTime;
 
-      if (period === "PM" && hours !== 12) hours += 12;
-      else if (period === "AM" && hours === 12) hours = 0;
+      // If the time contains AM/PM, convert it to 24-hour format
+      if (selectedTime.includes(" ")) {
+        const [timeStr, period] = selectedTime.split(" ");
+        const [hoursStr, minutesStr] = timeStr.split(":");
+        let hours = parseInt(hoursStr);
+        const minutes = parseInt(minutesStr);
 
-      // Format time as HH:MM (24-hour format)
-      const formattedTime = `${hours.toString().padStart(2, "0")}:${minutes
-        .toString()
-        .padStart(2, "0")}`;
+        if (period === "PM" && hours !== 12) hours += 12;
+        else if (period === "AM" && hours === 12) hours = 0;
+
+        formattedTime = `${hours.toString().padStart(2, "0")}:${minutes
+          .toString()
+          .padStart(2, "0")}`;
+      }
 
       console.log("=== SIMPLIFIED BOOKING DEBUG ===");
       console.log("Selected time:", selectedTime);

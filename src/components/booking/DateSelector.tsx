@@ -1,6 +1,15 @@
 "use client";
 
 import { useRef, MouseEvent, TouchEvent } from "react";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+import customParseFormat from "dayjs/plugin/customParseFormat";
+
+// تهيئة الملحقات
+dayjs.extend(utc);
+dayjs.extend(timezone);
+dayjs.extend(customParseFormat);
 
 interface DayAvailability {
   date: string;
@@ -32,7 +41,7 @@ export function DateSelector({
     const startX = e.clientX;
     const scrollLeft = daysContainerRef.current.scrollLeft;
 
-    const handleMouseMove = (e: MouseEvent) => {
+    const handleMouseMove = (e: globalThis.MouseEvent) => {
       if (!daysContainerRef.current) return;
       e.preventDefault();
       const x = e.clientX;
@@ -41,7 +50,7 @@ export function DateSelector({
     };
 
     const handleMouseUp = () => {
-      document.removeEventListener("mousemove", handleMouseMove as any);
+      document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
       if (daysContainerRef.current) {
         daysContainerRef.current.style.cursor = "grab";
@@ -53,8 +62,7 @@ export function DateSelector({
       daysContainerRef.current.style.cursor = "grabbing";
       daysContainerRef.current.style.userSelect = "none";
     }
-
-    document.addEventListener("mousemove", handleMouseMove as any);
+    document.addEventListener("mousemove", handleMouseMove);
     document.addEventListener("mouseup", handleMouseUp);
   };
 
@@ -63,19 +71,17 @@ export function DateSelector({
     const startX = e.touches[0].clientX;
     const scrollLeft = daysContainerRef.current.scrollLeft;
 
-    const handleTouchMove = (e: TouchEvent) => {
+    const handleTouchMove = (e: globalThis.TouchEvent) => {
       if (!daysContainerRef.current || !e.touches[0]) return;
       const x = e.touches[0].clientX;
       const walk = (startX - x) * 2;
       daysContainerRef.current.scrollLeft = scrollLeft + walk;
     };
-
     const handleTouchEnd = () => {
-      document.removeEventListener("touchmove", handleTouchMove as any);
+      document.removeEventListener("touchmove", handleTouchMove);
       document.removeEventListener("touchend", handleTouchEnd);
     };
-
-    document.addEventListener("touchmove", handleTouchMove as any);
+    document.addEventListener("touchmove", handleTouchMove);
     document.addEventListener("touchend", handleTouchEnd);
   };
 

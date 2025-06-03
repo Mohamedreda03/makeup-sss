@@ -1,3 +1,14 @@
+// Add dayjs utilities for consistent datetime handling
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+import customParseFormat from "dayjs/plugin/customParseFormat";
+
+// Initialize dayjs plugins
+dayjs.extend(utc);
+dayjs.extend(timezone);
+dayjs.extend(customParseFormat);
+
 // Timezone configuration for consistent handling across dev and production
 export const TIMEZONE_CONFIG = {
   // Set your target timezone (Egypt/Cairo)
@@ -200,4 +211,26 @@ export const getEgyptDateComponents = (date: Date) => {
     minute: egyptTime.getMinutes(),
     second: egyptTime.getSeconds(),
   };
+};
+
+// Format a time string (HH:MM) to 12-hour format with AM/PM in Egypt timezone
+export const formatTimeToEgypt12h = (time: string): string => {
+  if (!time || !time.match(/^\d{2}:\d{2}$/)) {
+    return time;
+  }
+
+  const today = dayjs().format("YYYY-MM-DD");
+  const dateTimeString = `${today}T${time}`;
+  return dayjs(dateTimeString).tz("Africa/Cairo").format("h:mm A");
+};
+
+// Format a date string (YYYY-MM-DD) to localized format in Egypt timezone
+export const formatDateToEgyptLocale = (date: string): string => {
+  return dayjs(date).tz("Africa/Cairo").format("MMMM D, YYYY");
+};
+
+// Convert a date and time to Egypt timezone ISO string
+export const toEgyptISOString = (date: string, time: string): string => {
+  const dateTimeString = `${date}T${time}`;
+  return dayjs(dateTimeString).tz("Africa/Cairo").format();
 };

@@ -15,8 +15,13 @@ import {
   X,
   User,
 } from "lucide-react";
-import { format } from "date-fns";
-import { toEgyptTime } from "@/lib/timezone-config";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+
+// تهيئة إضافات dayjs
+dayjs.extend(utc);
+dayjs.extend(timezone);
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -464,9 +469,28 @@ export default function AppointmentsPage() {
             <CardTitle>Appointments</CardTitle>
           </CardHeader>
           <CardContent>
-            {appointments.length === 0 ? (
-              <div className="flex h-32 items-center justify-center">
-                <p className="text-muted-foreground">No appointments found.</p>
+            {" "}
+            {appointments.length === 0 && !isLoading ? (
+              <div className="flex flex-col h-32 items-center justify-center">
+                <div className="w-16 h-16 mb-4 rounded-full bg-gray-50 flex items-center justify-center">
+                  <Calendar className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <p className="text-muted-foreground">لا توجد مواعيد</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  No appointments found.
+                </p>
+              </div>
+            ) : statusFilter !== "ALL" && appointments.length === 0 ? (
+              <div className="flex flex-col h-32 items-center justify-center">
+                <div className="w-16 h-16 mb-4 rounded-full bg-amber-50 flex items-center justify-center">
+                  <Filter className="h-8 w-8 text-amber-400" />
+                </div>
+                <p className="text-muted-foreground">
+                  لا توجد نتائج للفلتر المحدد
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  No appointments match the selected filter.
+                </p>
               </div>
             ) : (
               <>
@@ -513,16 +537,10 @@ export default function AppointmentsPage() {
                             <span className="font-medium">
                               {(() => {
                                 try {
-                                  const appointmentDate = new Date(
-                                    appointment.date_time
-                                  );
-                                  if (isNaN(appointmentDate.getTime())) {
-                                    return "Invalid Date";
-                                  }
-                                  // Convert to Egypt timezone for display
-                                  const egyptDate =
-                                    toEgyptTime(appointmentDate);
-                                  return format(egyptDate, "MMM dd, yyyy");
+                                  // استخدام dayjs لتحويل وتنسيق التاريخ بتوقيت مصر
+                                  return dayjs(appointment.date_time)
+                                    .tz("Africa/Cairo")
+                                    .format("MMM DD, YYYY");
                                 } catch {
                                   return "Date not available";
                                 }
@@ -531,16 +549,10 @@ export default function AppointmentsPage() {
                             <span className="text-xs text-muted-foreground">
                               {(() => {
                                 try {
-                                  const appointmentDate = new Date(
-                                    appointment.date_time
-                                  );
-                                  if (isNaN(appointmentDate.getTime())) {
-                                    return "Invalid Time";
-                                  }
-                                  // Convert to Egypt timezone for display
-                                  const egyptDate =
-                                    toEgyptTime(appointmentDate);
-                                  return format(egyptDate, "h:mm a");
+                                  // استخدام dayjs لتحويل وتنسيق الوقت بتوقيت مصر
+                                  return dayjs(appointment.date_time)
+                                    .tz("Africa/Cairo")
+                                    .format("h:mm A");
                                 } catch {
                                   return "Time not available";
                                 }
@@ -706,15 +718,10 @@ export default function AppointmentsPage() {
                   {selectedAppointment &&
                     (() => {
                       try {
-                        const appointmentDate = new Date(
-                          selectedAppointment.date_time
-                        );
-                        if (isNaN(appointmentDate.getTime())) {
-                          return "Invalid Date";
-                        }
-                        // Convert to Egypt timezone for display
-                        const egyptDate = toEgyptTime(appointmentDate);
-                        return format(egyptDate, "MMMM d, yyyy");
+                        // استخدام dayjs لتحويل وتنسيق التاريخ بتوقيت مصر
+                        return dayjs(selectedAppointment.date_time)
+                          .tz("Africa/Cairo")
+                          .format("MMMM D, YYYY");
                       } catch {
                         return "Date not available";
                       }
@@ -728,15 +735,10 @@ export default function AppointmentsPage() {
                   {selectedAppointment &&
                     (() => {
                       try {
-                        const appointmentDate = new Date(
-                          selectedAppointment.date_time
-                        );
-                        if (isNaN(appointmentDate.getTime())) {
-                          return "Invalid Time";
-                        }
-                        // Convert to Egypt timezone for display
-                        const egyptDate = toEgyptTime(appointmentDate);
-                        return format(egyptDate, "h:mm a");
+                        // استخدام dayjs لتحويل وتنسيق الوقت بتوقيت مصر
+                        return dayjs(selectedAppointment.date_time)
+                          .tz("Africa/Cairo")
+                          .format("h:mm A");
                       } catch {
                         return "Time not available";
                       }

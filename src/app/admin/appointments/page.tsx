@@ -2,8 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-import { format } from "date-fns";
-import { toEgyptTime } from "@/lib/timezone-config";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+
+// تهيئة إضافات dayjs
+dayjs.extend(utc);
+dayjs.extend(timezone);
 import {
   ArrowLeft,
   Calendar,
@@ -551,16 +556,10 @@ function AdminAppointmentsPage() {
                         <div>
                           {(() => {
                             try {
-                              const appointmentDate = new Date(
-                                booking.date_time
-                              );
-                              if (isNaN(appointmentDate.getTime())) {
-                                return "Invalid Date";
-                              }
-                              return format(
-                                toEgyptTime(appointmentDate),
-                                "MMM dd, yyyy"
-                              );
+                              // استخدام dayjs لتحويل وتنسيق التاريخ بتوقيت مصر
+                              return dayjs(booking.date_time)
+                                .tz("Africa/Cairo")
+                                .format("MMM DD, YYYY");
                             } catch {
                               return "Date not available";
                             }
@@ -568,16 +567,10 @@ function AdminAppointmentsPage() {
                           <div className="text-sm text-muted-foreground">
                             {(() => {
                               try {
-                                const appointmentDate = new Date(
-                                  booking.date_time
-                                );
-                                if (isNaN(appointmentDate.getTime())) {
-                                  return "Invalid Time";
-                                }
-                                return format(
-                                  toEgyptTime(appointmentDate),
-                                  "h:mm a"
-                                );
+                                // استخدام dayjs لتحويل وتنسيق الوقت بتوقيت مصر
+                                return dayjs(booking.date_time)
+                                  .tz("Africa/Cairo")
+                                  .format("h:mm A");
                               } catch {
                                 return "Time not available";
                               }
@@ -685,13 +678,20 @@ function AdminAppointmentsPage() {
       ) : (
         <Card className="bg-gray-50 border-dashed">
           <CardContent className="pt-6 pb-6 flex flex-col items-center justify-center">
-            <div className="rounded-full bg-gray-100 p-3 mb-4">
-              <Calendar className="h-6 w-6 text-gray-400" />
+            <div className="rounded-full bg-amber-50 p-3 mb-4">
+              <Calendar className="h-6 w-6 text-amber-400" />
             </div>{" "}
             <h3 className="text-lg font-medium text-gray-900 mb-1">
-              No Bookings
+              {searchInput || statusFilter !== "all"
+                ? "لا توجد حجوزات مطابقة"
+                : "لا توجد حجوزات"}
             </h3>
             <p className="text-gray-500 text-center max-w-sm mb-4">
+              {searchInput || statusFilter !== "all"
+                ? "لم يتم العثور على حجوزات تطابق معايير البحث المحددة"
+                : "لا توجد حجوزات في النظام حتى الآن"}
+            </p>
+            <p className="text-xs text-muted-foreground mb-4">
               {searchInput || statusFilter !== "all"
                 ? "No bookings match your search criteria"
                 : "There are no bookings in the system yet"}
@@ -819,7 +819,7 @@ function AdminAppointmentsPage() {
                 <div className="space-y-2">
                   <h3 className="text-sm font-medium text-gray-500">
                     Date & Time
-                  </h3>
+                  </h3>{" "}
                   <p className="font-medium">
                     {(() => {
                       try {
@@ -827,14 +827,10 @@ function AdminAppointmentsPage() {
                           (b) => b.id === bookingToUpdate
                         );
                         if (!booking) return "Booking not found";
-                        const appointmentDate = new Date(booking.date_time);
-                        if (isNaN(appointmentDate.getTime())) {
-                          return "Invalid Date";
-                        }
-                        return format(
-                          toEgyptTime(appointmentDate),
-                          "MMMM d, yyyy"
-                        );
+                        // استخدام dayjs لتحويل وتنسيق التاريخ بتوقيت مصر
+                        return dayjs(booking.date_time)
+                          .tz("Africa/Cairo")
+                          .format("MMMM D, YYYY");
                       } catch {
                         return "Date not available";
                       }
@@ -847,11 +843,10 @@ function AdminAppointmentsPage() {
                           (b) => b.id === bookingToUpdate
                         );
                         if (!booking) return "Booking not found";
-                        const appointmentDate = new Date(booking.date_time);
-                        if (isNaN(appointmentDate.getTime())) {
-                          return "Invalid Time";
-                        }
-                        return format(toEgyptTime(appointmentDate), "h:mm a");
+                        // استخدام dayjs لتحويل وتنسيق الوقت بتوقيت مصر
+                        return dayjs(booking.date_time)
+                          .tz("Africa/Cairo")
+                          .format("h:mm A");
                       } catch {
                         return "Time not available";
                       }

@@ -2,6 +2,15 @@
 
 import { useState, useEffect } from "react";
 import ArtistBooking from "./ArtistBooking";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+import customParseFormat from "dayjs/plugin/customParseFormat";
+
+// تهيئة الملحقات
+dayjs.extend(utc);
+dayjs.extend(timezone);
+dayjs.extend(customParseFormat);
 
 interface Service {
   id: string;

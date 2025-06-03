@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, MouseEvent, TouchEvent } from "react";
+import { formatTimeToEgypt12h } from "@/lib/timezone-config";
 
 interface TimeSlot {
   time: string;
@@ -118,14 +119,14 @@ export function TimeSelector({
         <div className="flex space-x-4 min-w-max">
           {timeSlots.map((slot) => {
             const isBooked = slot.isBooked === true;
-            const isSelected = selectedTime === slot.label && !isBooked;
+            const isSelected = selectedTime === slot.time && !isBooked;
 
             return (
               <button
                 key={`${slot.time}-${slot.label}`}
                 onClick={() => {
                   if (!isBooked) {
-                    onTimeSelect(slot.label);
+                    onTimeSelect(slot.time); // استخدام الوقت الأصلي بتنسيق 24 ساعة
                   }
                 }}
                 disabled={isBooked}
@@ -147,11 +148,13 @@ export function TimeSelector({
                 title={
                   isBooked
                     ? "This time slot is already booked"
-                    : `Select ${slot.label} appointment`
+                    : `Select ${formatTimeToEgypt12h(slot.time)} appointment`
                 }
               >
                 <div className="text-center">
-                  <div className="font-medium">{slot.label}</div>
+                  <div className="font-medium">
+                    {formatTimeToEgypt12h(slot.time)}
+                  </div>
                 </div>
               </button>
             );

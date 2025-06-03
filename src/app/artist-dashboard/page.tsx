@@ -3,8 +3,13 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { format } from "date-fns";
-import { toEgyptTime } from "@/lib/timezone-config";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+
+// تهيئة إضافات dayjs
+dayjs.extend(utc);
+dayjs.extend(timezone);
 import {
   Calendar,
   Clock,
@@ -492,6 +497,7 @@ export default function ArtistDashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {" "}
             {bookings.length > 0 ? (
               <Table>
                 <TableHeader>
@@ -532,16 +538,10 @@ export default function ArtistDashboard() {
                         <div>
                           {(() => {
                             try {
-                              const appointmentDate = new Date(
-                                booking.date_time
-                              );
-                              if (isNaN(appointmentDate.getTime())) {
-                                return "Invalid Date";
-                              }
-                              return format(
-                                toEgyptTime(appointmentDate),
-                                "MMM d, yyyy"
-                              );
+                              // استخدام dayjs لتحويل وتنسيق التاريخ بتوقيت مصر
+                              return dayjs(booking.date_time)
+                                .tz("Africa/Cairo")
+                                .format("MMM D, YYYY");
                             } catch {
                               return "Date not available";
                             }
@@ -549,16 +549,10 @@ export default function ArtistDashboard() {
                           <div className="text-xs text-gray-500">
                             {(() => {
                               try {
-                                const appointmentDate = new Date(
-                                  booking.date_time
-                                );
-                                if (isNaN(appointmentDate.getTime())) {
-                                  return "Invalid Time";
-                                }
-                                return format(
-                                  toEgyptTime(appointmentDate),
-                                  "h:mm a"
-                                );
+                                // استخدام dayjs لتحويل وتنسيق الوقت بتوقيت مصر
+                                return dayjs(booking.date_time)
+                                  .tz("Africa/Cairo")
+                                  .format("h:mm A");
                               } catch {
                                 return "Time not available";
                               }
@@ -642,8 +636,19 @@ export default function ArtistDashboard() {
                 </TableBody>
               </Table>
             ) : (
-              <div className="text-center py-8 text-gray-500">
-                No bookings found for the selected filters
+              <div className="flex flex-col items-center justify-center py-10">
+                <div className="w-16 h-16 mb-4 rounded-full bg-amber-50 flex items-center justify-center">
+                  <Calendar className="h-8 w-8 text-amber-400" />
+                </div>
+                <h3 className="text-xl font-medium mb-2 text-gray-800">
+                  لا توجد حجوزات مطابقة
+                </h3>
+                <p className="text-gray-500 max-w-md text-center">
+                  لم يتم العثور على حجوزات للفلتر المحدد. يرجى تجربة فلتر آخر.
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  No bookings found for the selected filters.
+                </p>
               </div>
             )}
           </CardContent>
@@ -706,13 +711,10 @@ export default function ArtistDashboard() {
                   <div>
                     {(() => {
                       try {
-                        const appointmentDate = new Date(
-                          selectedBooking.date_time
-                        );
-                        if (isNaN(appointmentDate.getTime())) {
-                          return "Invalid Date";
-                        }
-                        return format(toEgyptTime(appointmentDate), "PPP");
+                        // استخدام dayjs لتحويل وتنسيق التاريخ بتوقيت مصر
+                        return dayjs(selectedBooking.date_time)
+                          .tz("Africa/Cairo")
+                          .format("MMMM D, YYYY");
                       } catch {
                         return "Date not available";
                       }
@@ -720,13 +722,10 @@ export default function ArtistDashboard() {
                     <div className="text-sm text-gray-500">
                       {(() => {
                         try {
-                          const appointmentDate = new Date(
-                            selectedBooking.date_time
-                          );
-                          if (isNaN(appointmentDate.getTime())) {
-                            return "Invalid Time";
-                          }
-                          return format(toEgyptTime(appointmentDate), "p");
+                          // استخدام dayjs لتحويل وتنسيق الوقت بتوقيت مصر
+                          return dayjs(selectedBooking.date_time)
+                            .tz("Africa/Cairo")
+                            .format("h:mm A");
                         } catch {
                           return "Time not available";
                         }
