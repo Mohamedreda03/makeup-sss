@@ -5,6 +5,13 @@ import { z } from "zod";
 import { format, addMinutes } from "date-fns";
 import { BookingStatus } from "@/generated/prisma";
 import { toEgyptISOString } from "@/lib/timezone-config";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+
+// Initialize dayjs plugins
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 // Extended user interface
 interface ExtendedUser {
@@ -177,7 +184,7 @@ export async function POST(req: Request) {
           { status: 404 }
         );
       }
-      console.log(`Artist verified: ${artist.name || artist.id}`);      // Convert Egypt timezone date/time to UTC for database storage
+      console.log(`Artist verified: ${artist.name || artist.id}`); // Convert Egypt timezone date/time to UTC for database storage
       console.log("=== TIMEZONE-AWARE DATETIME PROCESSING ===");
       console.log("Received appointmentDate:", validatedData.appointmentDate);
       console.log("Received appointmentTime:", validatedData.appointmentTime);
@@ -187,15 +194,32 @@ export async function POST(req: Request) {
         validatedData.appointmentDate,
         validatedData.appointmentTime
       );
-      
+
       // Create Date object from UTC ISO string for further processing
       const appointmentDateTime = new Date(appointmentDateTimeUTC);
 
-      console.log("Egypt date/time input:", `${validatedData.appointmentDate} ${validatedData.appointmentTime}`);
-      console.log("Converted to UTC ISO:", appointmentDateTimeUTC);      console.log("Created UTC datetime object:", appointmentDateTime.toISOString());      console.log("Will display in Egypt as:", appointmentDateTime.toLocaleString("en-US", { timeZone: "Africa/Cairo" }));
-      
+      console.log(
+        "Egypt date/time input:",
+        `${validatedData.appointmentDate} ${validatedData.appointmentTime}`
+      );
+      console.log("Converted to UTC ISO:", appointmentDateTimeUTC);
+      console.log(
+        "Created UTC datetime object:",
+        appointmentDateTime.toISOString()
+      );
+      console.log(
+        "Will display in Egypt as:",
+        appointmentDateTime.toLocaleString("en-US", {
+          timeZone: "Africa/Cairo",
+        })
+      );
+
       // Get day of week in Egypt timezone for proper validation
-      const egyptDate = new Date(appointmentDateTime.toLocaleString("en-US", { timeZone: "Africa/Cairo" }));
+      const egyptDate = new Date(
+        appointmentDateTime.toLocaleString("en-US", {
+          timeZone: "Africa/Cairo",
+        })
+      );
       const dayOfWeek = egyptDate.getDay();
       const appointmentEndTime = addMinutes(appointmentDateTime, 60); // Default duration
 
@@ -253,13 +277,20 @@ export async function POST(req: Request) {
         return NextResponse.json(
           { message: "This artist is not currently accepting bookings" },
           { status: 400 }
-        );      } // Check if appointment is during working hours (in Egypt timezone)
+        );
+      } // Check if appointment is during working hours (in Egypt timezone)
       // Extract Egypt timezone hours/minutes for working hours validation
-      const egyptDateTime = new Date(appointmentDateTime.toLocaleString("en-US", { timeZone: "Africa/Cairo" }));
+      const egyptDateTime = new Date(
+        appointmentDateTime.toLocaleString("en-US", {
+          timeZone: "Africa/Cairo",
+        })
+      );
       const egyptHours = egyptDateTime.getHours();
       const egyptMinutes = egyptDateTime.getMinutes();
-      
-      const egyptEndDateTime = new Date(appointmentEndTime.toLocaleString("en-US", { timeZone: "Africa/Cairo" }));
+
+      const egyptEndDateTime = new Date(
+        appointmentEndTime.toLocaleString("en-US", { timeZone: "Africa/Cairo" })
+      );
       const appointmentEndHour = egyptEndDateTime.getHours();
       const appointmentEndMinute = egyptEndDateTime.getMinutes();
 
@@ -268,7 +299,9 @@ export async function POST(req: Request) {
         `Working hours: ${workingHours.start}:00 - ${workingHours.end}:00`
       );
       console.log(
-        `Appointment start (Egypt): ${egyptHours}:${egyptMinutes.toString().padStart(2, "0")}`
+        `Appointment start (Egypt): ${egyptHours}:${egyptMinutes
+          .toString()
+          .padStart(2, "0")}`
       );
       console.log(
         `Appointment end (Egypt): ${appointmentEndHour}:${appointmentEndMinute
@@ -283,7 +316,7 @@ export async function POST(req: Request) {
           { message: "Selected time is outside the artist's working hours" },
           { status: 400 }
         );
-      }// Check if appointment end time is within working hours
+      } // Check if appointment end time is within working hours
       // Allow appointments that start within working hours, even if they extend slightly beyond
       // This fixes the issue where last available time slots couldn't be booked
       if (
@@ -308,7 +341,7 @@ export async function POST(req: Request) {
           { message: "Selected day is the artist's day off" },
           { status: 400 }
         );
-      }      // Check if the time slot is properly aligned with the artist's interval settings
+      } // Check if the time slot is properly aligned with the artist's interval settings
       if (egyptMinutes % workingHours.interval !== 0) {
         console.log("Time doesn't align with scheduling intervals");
         return NextResponse.json(
@@ -318,7 +351,7 @@ export async function POST(req: Request) {
           },
           { status: 400 }
         );
-      }// Check for conflicts with existing bookings - UTC aware approach
+      } // Check for conflicts with existing bookings - UTC aware approach
       console.log("=== CHECKING FOR BOOKING CONFLICTS (UTC AWARE) ===");
       console.log(
         "Using makeup artist ID for conflict check:",
@@ -330,20 +363,31 @@ export async function POST(req: Request) {
       );
       console.log(
         "Requested appointment datetime (Egypt display):",
-        appointmentDateTime.toLocaleString("en-US", { timeZone: "Africa/Cairo" })
+        appointmentDateTime.toLocaleString("en-US", {
+          timeZone: "Africa/Cairo",
+        })
       );
 
       // Create UTC day range for the appointment date in Egypt timezone
       // We need to find the UTC range that covers the entire Egypt day
-      const egyptDayStart = new Date(`${validatedData.appointmentDate}T00:00:00+02:00`);
-      const egyptDayEnd = new Date(`${validatedData.appointmentDate}T23:59:59+02:00`);
+      const egyptDayStart = new Date(
+        `${validatedData.appointmentDate}T00:00:00+02:00`
+      );
+      const egyptDayEnd = new Date(
+        `${validatedData.appointmentDate}T23:59:59+02:00`
+      );
 
       console.log("Searching bookings in UTC date range:", {
         start: egyptDayStart.toISOString(),
         end: egyptDayEnd.toISOString(),
-        egyptStart: egyptDayStart.toLocaleString("en-US", { timeZone: "Africa/Cairo" }),
-        egyptEnd: egyptDayEnd.toLocaleString("en-US", { timeZone: "Africa/Cairo" }),
-      });      const existingBookings = await db.booking.findMany({
+        egyptStart: egyptDayStart.toLocaleString("en-US", {
+          timeZone: "Africa/Cairo",
+        }),
+        egyptEnd: egyptDayEnd.toLocaleString("en-US", {
+          timeZone: "Africa/Cairo",
+        }),
+      });
+      const existingBookings = await db.booking.findMany({
         where: {
           artist_id: artist.makeup_artist.id,
           booking_status: {
@@ -364,22 +408,26 @@ export async function POST(req: Request) {
 
       console.log(
         `Found ${existingBookings.length} existing bookings for the day`
-      );      // Check for time conflicts using Egypt timezone comparison
+      ); // Check for time conflicts using Egypt timezone comparison with dayjs
+      const requestedDateTime = dayjs(appointmentDateTime).tz("Africa/Cairo");
+      const requestedTimeStr = requestedDateTime.format("YYYY-MM-DD HH:mm");
+
+      console.log("=== DETAILED CONFLICT CHECK ===");
+      console.log("Requested appointment (Egypt):", requestedTimeStr);
+
       const isOverlapping = existingBookings.some((booking) => {
-        const existingDateTime = new Date(booking.date_time);
-        const existingEgyptTime = new Date(existingDateTime.toLocaleString("en-US", { timeZone: "Africa/Cairo" }));
-        const existingHour = existingEgyptTime.getHours();
-        const existingMinute = existingEgyptTime.getMinutes();
+        const existingDateTime = dayjs(booking.date_time).tz("Africa/Cairo");
+        const existingTimeStr = existingDateTime.format("YYYY-MM-DD HH:mm");
 
-        console.log(
-          `Comparing new ${egyptHours}:${egyptMinutes
-            .toString()
-            .padStart(2, "0")} with existing ${existingHour}:${existingMinute
-            .toString()
-            .padStart(2, "0")}`
-        );
+        console.log(`Comparing with existing booking ${booking.id}:`);
+        console.log(`  Existing: ${existingTimeStr}`);
+        console.log(`  Requested: ${requestedTimeStr}`);
 
-        return existingHour === egyptHours && existingMinute === egyptMinutes;
+        // Compare exact date and time strings for precision
+        const isConflict = existingTimeStr === requestedTimeStr;
+        console.log(`  Conflict: ${isConflict}`);
+
+        return isConflict;
       });
 
       if (isOverlapping) {
@@ -392,7 +440,7 @@ export async function POST(req: Request) {
           },
           { status: 409 }
         );
-      }      // Create the booking
+      } // Create the booking
       const bookingData = {
         user_id: userId,
         artist_id: artist.makeup_artist.id, // Use makeup_artist.id instead of user.id
@@ -407,7 +455,9 @@ export async function POST(req: Request) {
         ...bookingData,
         date_time: {
           utc: bookingData.date_time.toISOString(),
-          egypt: bookingData.date_time.toLocaleString("en-US", { timeZone: "Africa/Cairo" }),
+          egypt: bookingData.date_time.toLocaleString("en-US", {
+            timeZone: "Africa/Cairo",
+          }),
         },
       });
 

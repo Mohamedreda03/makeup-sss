@@ -3,7 +3,10 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { formatTimeToEgypt12h, formatDateToEgyptLocale } from "@/lib/timezone-config";
+import {
+  formatTimeToEgypt12h,
+  formatDateToEgyptLocale,
+} from "@/lib/timezone-config";
 import {
   Card,
   CardContent,
@@ -378,9 +381,13 @@ export default function PaymentRequestPage() {
                       ? (() => {
                           try {
                             // Format the date and time using our consistent Egypt timezone utilities
-                            const formattedDate = formatDateToEgyptLocale(appointmentRequest.appointmentDate);
-                            const formattedTime = formatTimeToEgypt12h(appointmentRequest.appointmentTime);
-                            
+                            const formattedDate = formatDateToEgyptLocale(
+                              appointmentRequest.appointmentDate
+                            );
+                            const formattedTime = formatTimeToEgypt12h(
+                              appointmentRequest.appointmentTime
+                            );
+
                             return `${formattedDate} at ${formattedTime}`;
                           } catch (error) {
                             console.error("Error formatting date/time:", error);
