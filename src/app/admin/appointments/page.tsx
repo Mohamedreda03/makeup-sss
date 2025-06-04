@@ -2,27 +2,20 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-import dayjs from "dayjs";
-import utc from "dayjs/plugin/utc";
-import timezone from "dayjs/plugin/timezone";
-
-// تهيئة إضافات dayjs
-dayjs.extend(utc);
-dayjs.extend(timezone);
+import { 
+  toEgyptTime, 
+  formatDateToEgyptLocale, 
+  formatTimeToEgypt12h 
+} from "@/lib/timezone-config";
 import {
   ArrowLeft,
   Calendar,
   Clock,
-  MoreHorizontal,
   Search,
-  Trash2,
   CheckCircle,
   AlertCircle,
   XCircle,
   Loader2,
-  User,
-  Phone,
-  Mail,
   Check,
   X,
 } from "lucide-react";
@@ -30,18 +23,11 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -451,9 +437,8 @@ function AdminAppointmentsPage() {
       </div>
     );
   }
-
   // Check admin permissions
-  if (!session?.user || (session.user as any).role !== "ADMIN") {
+  if (!session?.user || (session.user as { role?: string }).role !== "ADMIN") {
     return (
       <div className="container mx-auto px-4 py-8">
         <Card className="border-red-200">
@@ -553,24 +538,22 @@ function AdminAppointmentsPage() {
                         </div>
                       </TableCell>{" "}
                       <TableCell>
-                        <div>
-                          {(() => {
-                            try {
-                              // استخدام dayjs لتحويل وتنسيق التاريخ بتوقيت مصر
-                              return dayjs(booking.date_time)
-                                .tz("Africa/Cairo")
-                                .format("MMM DD, YYYY");
-                            } catch {
-                              return "Date not available";
-                            }
-                          })()}
+                        <div>                            {(() => {
+                              try {
+                                // Use timezone utilities for consistent Egypt timezone formatting
+                                return formatDateToEgyptLocale(booking.date_time.toISOString().split('T')[0]);
+                              } catch {
+                                return "Date not available";
+                              }
+                            })()}
                           <div className="text-sm text-muted-foreground">
                             {(() => {
                               try {
-                                // استخدام dayjs لتحويل وتنسيق الوقت بتوقيت مصر
-                                return dayjs(booking.date_time)
-                                  .tz("Africa/Cairo")
-                                  .format("h:mm A");
+                                // Use timezone utilities for consistent Egypt timezone formatting
+                                const egyptTime = toEgyptTime(booking.date_time);
+                                return formatTimeToEgypt12h(
+                                  `${egyptTime.getHours().toString().padStart(2, '0')}:${egyptTime.getMinutes().toString().padStart(2, '0')}`
+                                );
                               } catch {
                                 return "Time not available";
                               }
@@ -826,11 +809,8 @@ function AdminAppointmentsPage() {
                         const booking = bookings.find(
                           (b) => b.id === bookingToUpdate
                         );
-                        if (!booking) return "Booking not found";
-                        // استخدام dayjs لتحويل وتنسيق التاريخ بتوقيت مصر
-                        return dayjs(booking.date_time)
-                          .tz("Africa/Cairo")
-                          .format("MMMM D, YYYY");
+                        if (!booking) return "Booking not found";                        // Use timezone utilities for consistent Egypt timezone formatting
+                        return formatDateToEgyptLocale(booking.date_time.toISOString().split('T')[0]);
                       } catch {
                         return "Date not available";
                       }
@@ -842,11 +822,11 @@ function AdminAppointmentsPage() {
                         const booking = bookings.find(
                           (b) => b.id === bookingToUpdate
                         );
-                        if (!booking) return "Booking not found";
-                        // استخدام dayjs لتحويل وتنسيق الوقت بتوقيت مصر
-                        return dayjs(booking.date_time)
-                          .tz("Africa/Cairo")
-                          .format("h:mm A");
+                        if (!booking) return "Booking not found";                        // Use timezone utilities for consistent Egypt timezone formatting
+                        const egyptTime = toEgyptTime(booking.date_time);
+                        return formatTimeToEgypt12h(
+                          `${egyptTime.getHours().toString().padStart(2, '0')}:${egyptTime.getMinutes().toString().padStart(2, '0')}`
+                        );
                       } catch {
                         return "Time not available";
                       }

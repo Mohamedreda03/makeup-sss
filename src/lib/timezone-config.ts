@@ -133,27 +133,37 @@ export const createEgyptDate = (
   minute: number = 0,
   second: number = 0
 ): Date => {
-  // Create the date object directly - this will be in local system timezone
-  // but we'll treat the values as if they represent Egypt time
-  return new Date(year, month - 1, day, hour, minute, second);
+  // Use dayjs to create a date in Egypt timezone and convert to local Date
+  const egyptMoment = dayjs.tz(
+    `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')} ${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}:${second.toString().padStart(2, '0')}`,
+    "Africa/Cairo"
+  );
+  
+  // Return as a regular Date object representing the Egypt time
+  return new Date(
+    egyptMoment.year(),
+    egyptMoment.month(), // dayjs months are 0-based like Date
+    egyptMoment.date(),
+    egyptMoment.hour(),
+    egyptMoment.minute(),
+    egyptMoment.second()
+  );
 };
 
 // Convert any date to Egypt timezone representation
 export const toEgyptTime = (date: Date): Date => {
-  // Get the date/time components as they would appear in Egypt timezone
-  const egyptTimeString = date.toLocaleString("en-CA", {
-    timeZone: TIMEZONE_CONFIG.timezone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-  });
-
-  // Parse this as a local date (this gives us the "Egypt time" as a Date object)
-  return new Date(egyptTimeString.replace(",", "T"));
+  // Use dayjs for more reliable timezone conversion
+  const egyptMoment = dayjs(date).tz("Africa/Cairo");
+  
+  // Create a new Date object with the Egypt timezone components
+  return new Date(
+    egyptMoment.year(),
+    egyptMoment.month(), // dayjs months are 0-based like Date
+    egyptMoment.date(),
+    egyptMoment.hour(),
+    egyptMoment.minute(),
+    egyptMoment.second()
+  );
 };
 
 // Get current time in Egypt timezone
@@ -229,8 +239,140 @@ export const formatDateToEgyptLocale = (date: string): string => {
   return dayjs(date).tz("Africa/Cairo").format("MMMM D, YYYY");
 };
 
-// Convert a date and time to Egypt timezone ISO string
+// Convert a date and time from Egypt timezone to UTC ISO string for database storage
 export const toEgyptISOString = (date: string, time: string): string => {
   const dateTimeString = `${date}T${time}`;
-  return dayjs(dateTimeString).tz("Africa/Cairo").format();
+  // Parse as Egypt time, then convert to UTC
+  return dayjs.tz(dateTimeString, "Africa/Cairo").utc().toISOString();
+};
+
+// ===== WORKING HOURS UTC CONVERSION FUNCTIONS =====
+
+// Convert working hours from Egypt timezone to UTC for database storage
+export const convertWorkingHoursToUTC = (
+  startTime: string, // HH:MM format
+  endTime: string    // HH:MM format
+): { startTimeUTC: string; endTimeUTC: string } => {
+  // Use a reference date to convert times
+  const referenceDate = "2000-01-01";
+  
+  const startTimeUTC = dayjs.tz(`${referenceDate}T${startTime}`, "Africa/Cairo").utc().format("HH:mm");
+  const endTimeUTC = dayjs.tz(`${referenceDate}T${endTime}`, "Africa/Cairo").utc().format("HH:mm");
+  
+  return {
+    startTimeUTC,
+    endTimeUTC
+  };
+};
+
+// Convert working hours from UTC back to Egypt timezone for display
+export const convertWorkingHoursFromUTC = (
+  startTimeUTC: string, // HH:MM format in UTC
+  endTimeUTC: string    // HH:MM format in UTC
+): { startTime: string; endTime: string } => {
+  // Use a reference date to convert times
+  const referenceDate = "2000-01-01";
+  
+  const startEgypt = dayjs.utc(`${referenceDate}T${startTimeUTC}`).tz("Africa/Cairo").format("HH:mm");
+  const endEgypt = dayjs.utc(`${referenceDate}T${endTimeUTC}`).tz("Africa/Cairo").format("HH:mm");
+  
+  return {
+    startTime: startEgypt,
+    endTime: endEgypt
+  };
+};
+
+// Convert availability settings to UTC for storage
+export const convertAvailabilityToUTC = (settings: {
+  workingDays: number[];
+  startTime: string;
+  endTime: string;
+  sessionDuration: number;
+  breakBetweenSessions: number;
+  isAvailable: boolean;
+}) => {
+  const { startTimeUTC, endTimeUTC } = convertWorkingHoursToUTC(
+    settings.startTime,
+    settings.endTime
+  );
+  
+  return {
+    ...settings,
+    startTimeUTC,
+    endTimeUTC,
+    // Keep original Egypt times for reference
+    startTimeEgypt: settings.startTime,
+    endTimeEgypt: settings.endTime
+  };
+};
+
+// Convert availability settings from UTC for display
+export const convertAvailabilityFromUTC = (settings: {
+  workingDays: number[];
+  startTimeUTC?: string;
+  endTimeUTC?: string;
+  startTime?: string;
+  endTime?: string;
+  sessionDuration: number;
+  breakBetweenSessions: number;
+  isAvailable: boolean;
+}) => {
+  // If we have UTC times, convert them to Egypt timezone
+  if (settings.startTimeUTC && settings.endTimeUTC) {
+    const { startTime, endTime } = convertWorkingHoursFromUTC(
+      settings.startTimeUTC,
+      settings.endTimeUTC
+    );
+    
+    return {
+      workingDays: settings.workingDays,
+      startTime,
+      endTime,
+      sessionDuration: settings.sessionDuration,
+      breakBetweenSessions: settings.breakBetweenSessions,
+      isAvailable: settings.isAvailable
+    };
+  }
+  
+  // Fallback to existing Egypt times if UTC not available
+  return {
+    workingDays: settings.workingDays,
+    startTime: settings.startTime || "09:00",
+    endTime: settings.endTime || "17:00",
+    sessionDuration: settings.sessionDuration,
+    breakBetweenSessions: settings.breakBetweenSessions,
+    isAvailable: settings.isAvailable
+  };
+};
+
+// Check if a given Egypt time falls within working hours (in Egypt timezone)
+export const isWithinWorkingHours = (
+  egyptTime: Date,
+  startTime: string, // HH:MM format in Egypt timezone
+  endTime: string    // HH:MM format in Egypt timezone
+): boolean => {
+  const timeStr = dayjs(egyptTime).tz("Africa/Cairo").format("HH:mm");
+  return timeStr >= startTime && timeStr < endTime;
+};
+
+// Generate time slots for a given day in Egypt timezone
+export const generateTimeSlots = (
+  date: string, // YYYY-MM-DD format
+  startTime: string, // HH:MM format in Egypt timezone
+  endTime: string,   // HH:MM format in Egypt timezone
+  intervalMinutes: number = 60
+): string[] => {
+  const slots: string[] = [];
+  
+  const startDateTime = dayjs.tz(`${date}T${startTime}`, "Africa/Cairo");
+  const endDateTime = dayjs.tz(`${date}T${endTime}`, "Africa/Cairo");
+  
+  let currentTime = startDateTime;
+  
+  while (currentTime.isBefore(endDateTime)) {
+    slots.push(currentTime.format("HH:mm"));
+    currentTime = currentTime.add(intervalMinutes, "minute");
+  }
+  
+  return slots;
 };

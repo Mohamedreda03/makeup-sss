@@ -23,6 +23,7 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import customParseFormat from "dayjs/plugin/customParseFormat";
+import { formatTimeToEgypt12h, formatDateToEgyptLocale } from "@/lib/timezone-config";
 
 // Initialize dayjs plugins
 dayjs.extend(utc);
@@ -225,12 +226,9 @@ export default function ArtistAvailabilityPage() {
 
     return Math.floor(totalMinutes / sessionWithBreak);
   };
-
   // Format time for display with Egyptian timezone
   const formatTime = (timeString: string) => {
-    return dayjs(`2000-01-01T${timeString}`)
-      .tz("Africa/Cairo")
-      .format("h:mm A");
+    return formatTimeToEgypt12h(timeString);
   };
 
   if (status === "loading" || isLoading) {
@@ -241,8 +239,7 @@ export default function ArtistAvailabilityPage() {
     );
   }
   return (
-    <div className="container mx-auto p-6 max-w-6xl">
-      {/* Header */}
+    <div className="container mx-auto p-6 max-w-6xl">      {/* Header */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold flex items-center gap-2">
           <Settings className="h-8 w-8" />
@@ -251,6 +248,12 @@ export default function ArtistAvailabilityPage() {
         <p className="text-muted-foreground mt-2">
           Configure your working schedule and availability for client bookings.
         </p>
+        <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-sm text-blue-800">
+            <strong>Timezone Note:</strong> All times are displayed and saved in Egypt timezone (UTC+2/+3). 
+            Clients will see appointment times in Egypt timezone regardless of their location.
+          </p>
+        </div>
       </div>
 
       {/* Unsaved Changes Alert */}
@@ -375,8 +378,21 @@ export default function ArtistAvailabilityPage() {
                     parseInt(e.target.value) || 0
                   )
                 }
-              />
-            </div>
+              />            </div>
+
+            {/* Time Preview */}
+            {availabilitySettings.startTime && availabilitySettings.endTime && (
+              <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                <p className="text-sm font-medium text-gray-700 mb-2">Time Preview (Egypt Timezone):</p>
+                <div className="text-sm text-gray-600">
+                  <p><strong>Start:</strong> {formatTime(availabilitySettings.startTime)}</p>
+                  <p><strong>End:</strong> {formatTime(availabilitySettings.endTime)}</p>
+                  <p className="mt-2 text-xs text-gray-500">
+                    Times are automatically saved in UTC and displayed in Egypt timezone
+                  </p>
+                </div>
+              </div>
+            )}
 
             <div className="flex items-center space-x-2">
               <Switch

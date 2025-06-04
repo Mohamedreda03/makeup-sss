@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { addDays, format, startOfDay, getDay } from "date-fns";
+import { 
+  convertAvailabilityFromUTC, 
+  nowInEgypt, 
+  createEgyptDate, 
+  toEgyptTime,
+  isSameDayInEgypt
+} from "@/lib/timezone-config";
 
 const DEFAULT_BUSINESS_HOURS = {
   start: 9, // 9 AM
@@ -51,22 +58,33 @@ export async function GET(
         message: "Artist profile not found",
         availability: [],
       });
-    }
-
-    // Parse availability settings
+    }    // Parse availability settings and convert from UTC storage to Egypt timezone
     let workingHours = DEFAULT_BUSINESS_HOURS;
     let regularDaysOff = DEFAULT_REGULAR_DAYS_OFF;
     let isAvailable = true;
 
     if (makeupArtistRecord?.available_slots) {
-      try {
-        const settings = makeupArtistRecord.available_slots as {
+      try {        const storedSettings = makeupArtistRecord.available_slots as {
           workingDays?: number[];
           startTime?: string;
           endTime?: string;
           sessionDuration?: number;
+          breakBetweenSessions?: number;
           isAvailable?: boolean;
         };
+
+        // Set default values for required properties
+        const settingsWithDefaults = {
+          workingDays: storedSettings.workingDays || [1, 2, 3, 4, 5], // Monday to Friday default
+          sessionDuration: storedSettings.sessionDuration || 60,
+          breakBetweenSessions: storedSettings.breakBetweenSessions || 15,
+          isAvailable: storedSettings.isAvailable !== undefined ? storedSettings.isAvailable : true,
+          startTime: storedSettings.startTime,
+          endTime: storedSettings.endTime,
+        };
+
+        // Convert from UTC storage to Egypt timezone for display/processing
+        const settings = convertAvailabilityFromUTC(settingsWithDefaults);
 
         if (settings.startTime && settings.endTime) {
           workingHours = {
@@ -104,15 +122,13 @@ export async function GET(
         message: "This artist is not currently accepting bookings",
         availability: [],
       });
-    }
-
-    // Set date range in Egypt timezone
+    }    // Set date range in Egypt timezone
     let startDate: Date;
     if (dateParam) {
       const [year, month, day] = dateParam.split("-").map(Number);
-      startDate = startOfDay(new Date(year, month - 1, day));
+      startDate = startOfDay(createEgyptDate(year, month, day));
     } else {
-      startDate = startOfDay(new Date());
+      startDate = startOfDay(nowInEgypt());
     }
 
     const endDate = addDays(startDate, parseInt(daysParam, 10));
@@ -141,11 +157,10 @@ export async function GET(
         "yyyy-MM-dd"
       )}`
     );
-    console.log(`Total appointments found: ${allAppointments.length}`);
-
-    // Filter appointments for the date range - removed timezone conversion
+    console.log(`Total appointments found: ${allAppointments.length}`);    // Filter appointments for the date range using Egypt timezone
     const relevantAppointments = allAppointments.filter((apt) => {
-      return apt.date_time >= startDate && apt.date_time < endDate;
+      const aptInEgypt = toEgyptTime(apt.date_time);
+      return aptInEgypt >= startDate && aptInEgypt < endDate;
     });
 
     console.log(
@@ -207,20 +222,16 @@ export async function GET(
               currentDate.getDate(),
               hour,
               minute
-            );
-
-            // Skip past slots - compare using Egypt time
-            const nowInEgypt = new Date();
+            );            // Skip past slots - compare using Egypt time
+            const nowEgyptTime = nowInEgypt();
             const todayInEgypt = new Date(
-              nowInEgypt.getFullYear(),
-              nowInEgypt.getMonth(),
-              nowInEgypt.getDate()
-            );
-
-            // Only skip if slot is in the past (same day or earlier + past time)
+              nowEgyptTime.getFullYear(),
+              nowEgyptTime.getMonth(),
+              nowEgyptTime.getDate()
+            );            // Only skip if slot is in the past (same day or earlier + past time)
             if (
               currentDate.getTime() === todayInEgypt.getTime() &&
-              slotDateTime < nowInEgypt
+              slotDateTime < nowEgyptTime
             ) {
               continue;
             } else if (currentDate < todayInEgypt) {
@@ -228,118 +239,43 @@ export async function GET(
             }
 
             const slotTimeStr = format(slotDateTime, "HH:mm");
-            const timeLabel = format(slotDateTime, "h:mm a"); // Check if this slot conflicts with any appointment
+            const timeLabel = format(slotDateTime, "h:mm a");            // Check if this slot conflicts with any appointment
             let isBooked = false;
             for (const appointment of relevantAppointments) {
-              const appointmentDate = appointment.date_time;
+              const appointmentInEgypt = toEgyptTime(appointment.date_time);
 
-              // Convert UTC time to Egypt timezone properly
-              const egyptTimeString = appointmentDate.toLocaleString("en-US", {
-                timeZone: "Africa/Cairo",
-                year: "numeric",
-                month: "2-digit",
-                day: "2-digit",
-                hour: "2-digit",
-                minute: "2-digit",
-                hour12: false,
-              });
-
-              // Parse the Egypt time string to get date and time components
-              const [datePart, timePart] = egyptTimeString.split(", ");
-              const [month, day, year] = datePart.split("/");
-              const [appointmentHour, appointmentMinute] = timePart
-                .split(":")
-                .map(Number);
-
-              // Create a date object for comparison (date only)
-              const appointmentEgyptDate = new Date(
-                parseInt(year),
-                parseInt(month) - 1,
-                parseInt(day)
-              );
-
-              // Simple date comparison using date strings
-              const appointmentDay = format(appointmentEgyptDate, "yyyy-MM-dd");
-              const slotDay = format(currentDate, "yyyy-MM-dd"); // Skip if not the same day
-              if (appointmentDay !== slotDay) {
+              // Check if appointment is on the same day
+              if (!isSameDayInEgypt(appointmentInEgypt, currentDate)) {
                 continue;
               }
-              console.log(`\n=== APPOINTMENT ANALYSIS ===`);
-              console.log(
-                `Original appointment time (UTC): ${appointmentDate}`
-              );
-              console.log(`Egypt time string: ${egyptTimeString}`);
-              console.log(
-                `Appointment day: ${appointmentDay}, Slot day: ${slotDay}`
-              );
-              console.log(
-                `Appointment time in Egypt: ${appointmentHour}:${appointmentMinute
-                  .toString()
-                  .padStart(2, "0")}`
-              );
-              console.log(`Service: ${appointment.service_type}`);
-              console.log(`Appointment ID: ${appointment.id}`);
 
-              // Get appointment time in minutes since midnight (Egypt time)
-              const appointmentStartMinutes =
-                appointmentHour * 60 + appointmentMinute;
-
-              // Get service duration
               const appointmentDuration =
                 serviceNameToDuration.get(appointment.service_type) || 60;
+
+              // Calculate appointment end time
+              const appointmentEnd = new Date(appointmentInEgypt);
+              appointmentEnd.setMinutes(
+                appointmentEnd.getMinutes() + appointmentDuration
+              );
+
+              // Convert times to minutes for comparison
+              const slotMinutes = hour * 60 + minute;
+              const slotEndMinutes = slotMinutes + workingHours.interval;
+              const appointmentMinutes =
+                appointmentInEgypt.getHours() * 60 + appointmentInEgypt.getMinutes();
               const appointmentEndMinutes =
-                appointmentStartMinutes + appointmentDuration;
+                appointmentEnd.getHours() * 60 + appointmentEnd.getMinutes();
 
-              // Get slot time in minutes since midnight
-              const slotStartMinutes = hour * 60 + minute;
-              const slotEndMinutes = slotStartMinutes + workingHours.interval;
-
-              // Check for time overlap
+              // Check for overlap
               const hasOverlap = !(
-                slotEndMinutes <= appointmentStartMinutes ||
-                slotStartMinutes >= appointmentEndMinutes
-              ); // Debug logging for this specific day
-              if (appointmentDay === slotDay) {
-                console.log(
-                  `🔍 Checking slot ${hour}:${minute
-                    .toString()
-                    .padStart(
-                      2,
-                      "0"
-                    )} vs appointment ${appointmentHour}:${appointmentMinute
-                    .toString()
-                    .padStart(2, "0")}`
-                );
-                console.log(
-                  `   Slot: ${slotStartMinutes}-${slotEndMinutes} mins | Appointment: ${appointmentStartMinutes}-${appointmentEndMinutes} mins | Overlap: ${hasOverlap}`
-                );
-              }
+                slotEndMinutes <= appointmentMinutes ||
+                slotMinutes >= appointmentEndMinutes
+              );
 
-              // Enhanced debug logging
               if (hasOverlap) {
-                console.log("=== BOOKING CONFLICT FOUND ===", {
-                  appointmentId: appointment.id,
-                  appointmentDate: appointmentDay,
-                  appointmentTimeUTC: format(
-                    appointmentDate,
-                    "yyyy-MM-dd HH:mm"
-                  ),
-                  appointmentTimeEgypt: `${appointmentHour}:${appointmentMinute
-                    .toString()
-                    .padStart(2, "0")}`,
-                  appointmentDuration: appointmentDuration,
-                  slotTime: `${hour}:${minute.toString().padStart(2, "0")}`,
-                  slotDuration: workingHours.interval,
-                  appointmentStartMinutes,
-                  appointmentEndMinutes,
-                  slotStartMinutes,
-                  slotEndMinutes,
-                  overlap: true,
-                });
                 isBooked = true;
                 break;
-              }
-            }
+              }            }
 
             allTimeSlots.push({
               time: slotTimeStr,

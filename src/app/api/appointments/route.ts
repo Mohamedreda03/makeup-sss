@@ -4,7 +4,10 @@ import { db } from "@/lib/db";
 import { z } from "zod";
 import { format, addMinutes } from "date-fns";
 import { BookingStatus } from "@/generated/prisma";
-import { toEgyptISOString } from "@/lib/timezone-config";
+import { 
+  toEgyptISOString, 
+  convertWorkingHoursFromUTC 
+} from "@/lib/timezone-config";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
@@ -227,8 +230,7 @@ export async function POST(req: Request) {
         `Appointment time: ${format(
           appointmentDateTime,
           "yyyy-MM-dd HH:mm"
-        )} to ${format(appointmentEndTime, "HH:mm")}`
-      );
+        )} to ${format(appointmentEndTime, "HH:mm")}`      );
 
       // Parse availability settings or use defaults
       let workingHours = DEFAULT_BUSINESS_HOURS;
@@ -236,37 +238,53 @@ export async function POST(req: Request) {
       let isAvailable = true; // Default to available if no settings found
 
       if (artist.makeup_artist.available_slots) {
-        const settings = artist.makeup_artist.available_slots as {
+        const storedSettings = artist.makeup_artist.available_slots as {
           workingDays?: number[];
           startTime?: string;
           endTime?: string;
+          startTimeUTC?: string;
+          endTimeUTC?: string;
           sessionDuration?: number;
           breakBetweenSessions?: number;
           isAvailable?: boolean;
         };
 
-        // Convert the new format to the old format for compatibility
-        if (settings.startTime && settings.endTime) {
-          const startHour = parseInt(settings.startTime.split(":")[0]);
-          const endHour = parseInt(settings.endTime.split(":")[0]);
+        // Convert from UTC storage to Egypt timezone for processing
+        let startTime = storedSettings.startTime || "09:00";
+        let endTime = storedSettings.endTime || "17:00";
+        
+        // If we have UTC times stored, convert them to Egypt timezone
+        if (storedSettings.startTimeUTC && storedSettings.endTimeUTC) {
+          const convertedTimes = convertWorkingHoursFromUTC(
+            storedSettings.startTimeUTC,
+            storedSettings.endTimeUTC
+          );
+          startTime = convertedTimes.startTime;
+          endTime = convertedTimes.endTime;
+        }
+
+        // Convert the times to the old format for compatibility
+        if (startTime && endTime) {
+          const startHour = parseInt(startTime.split(":")[0]);
+          const endHour = parseInt(endTime.split(":")[0]);
           workingHours = {
             start: startHour,
             end: endHour,
-            interval: settings.sessionDuration || 30,
+            interval: storedSettings.sessionDuration || 30,
           };
         }
 
         // Convert workingDays to regularDaysOff
-        if (settings.workingDays) {
+        if (storedSettings.workingDays) {
           const allDays = [0, 1, 2, 3, 4, 5, 6]; // Sunday to Saturday
           regularDaysOff = allDays.filter(
-            (day) => !settings.workingDays!.includes(day)
+            (day) => !storedSettings.workingDays!.includes(day)
           );
         }
 
         // Get the artist's overall availability status
-        if (settings.isAvailable !== undefined) {
-          isAvailable = settings.isAvailable;
+        if (storedSettings.isAvailable !== undefined) {
+          isAvailable = storedSettings.isAvailable;
         }
       }
       console.log("Artist availability settings retrieved");

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { z } from "zod";
-import { toEgyptTime, formatInEgypt } from "@/lib/timezone-config";
+import { convertAvailabilityToUTC, convertAvailabilityFromUTC } from "@/lib/timezone-config";
 
 export const dynamic = "force-dynamic";
 
@@ -40,10 +40,13 @@ export async function GET() {
     let availabilitySettings = null;
     if (artist.available_slots) {
       try {
-        availabilitySettings =
+        const storedSettings =
           typeof artist.available_slots === "string"
             ? JSON.parse(artist.available_slots)
             : artist.available_slots;
+            
+        // Convert from UTC storage to Egypt timezone for display
+        availabilitySettings = convertAvailabilityFromUTC(storedSettings);
       } catch (e) {
         console.error("Error parsing availability settings:", e);
       }
@@ -94,6 +97,9 @@ export async function PUT(req: NextRequest) {
 
     const availabilitySettings = validation.data;
 
+    // Convert Egypt timezone settings to include UTC for storage
+    const utcConvertedSettings = convertAvailabilityToUTC(availabilitySettings);
+
     // Find and verify the makeup artist belongs to the current user
     const artist = await db.makeUpArtist.findUnique({
       where: { user_id: session.user.id },
@@ -103,11 +109,11 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "Artist not found" }, { status: 404 });
     }
 
-    // Update the availability settings
+    // Update the availability settings with UTC conversion
     const updatedArtist = await db.makeUpArtist.update({
       where: { user_id: session.user.id },
       data: {
-        available_slots: availabilitySettings,
+        available_slots: utcConvertedSettings, // Store with UTC times
         // Set general availability based on working days
         availability:
           availabilitySettings.isAvailable &&
@@ -115,11 +121,12 @@ export async function PUT(req: NextRequest) {
       },
     });
 
+    // Return Egypt timezone settings to the frontend
     return NextResponse.json({
       success: true,
       message: "Availability settings updated successfully",
       data: {
-        availabilitySettings: updatedArtist.available_slots,
+        availabilitySettings: availabilitySettings, // Return original Egypt timezone
         generalAvailability: updatedArtist.availability,
       },
     });

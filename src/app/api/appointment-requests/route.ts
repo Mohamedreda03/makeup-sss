@@ -8,6 +8,7 @@ import {
   createEgyptDate,
   toEgyptTime,
   isSameDayInEgypt,
+  convertWorkingHoursFromUTC,
 } from "@/lib/timezone-config";
 
 // Define status type
@@ -109,8 +110,9 @@ export async function POST(req: Request) {
           { message: "Artist profile not found" },
           { status: 404 }
         );
-      }
-      console.log(`Makeup artist ID found: ${makeupArtistRecord.id}`); // Parse date and time using Egypt timezone for consistency
+      }      console.log(`Makeup artist ID found: ${makeupArtistRecord.id}`);
+
+      // Parse date and time using Egypt timezone for consistency
       console.log("Processing date and time in Egypt timezone");
       console.log("Received appointment date:", validatedData.appointmentDate);
       console.log("Received appointment time:", validatedData.appointmentTime);
@@ -140,10 +142,6 @@ export async function POST(req: Request) {
       });
 
       const dayOfWeek = getDay(appointmentDateTime);
-      // Use the parsed time components directly instead of getHours/getMinutes to avoid timezone issues
-      // const timeHour = appointmentDateTime.getHours();
-      // const timeMinute = appointmentDateTime.getMinutes();
-
       const appointmentEndTime = addMinutes(
         appointmentDateTime,
         validatedData.duration
@@ -163,42 +161,57 @@ export async function POST(req: Request) {
       if (artist?.makeup_artist?.available_slots) {
         try {
           // available_slots is already a JSON object, no need to parse
-          const settings = artist.makeup_artist.available_slots as {
+          const storedSettings = artist.makeup_artist.available_slots as {
             workingDays?: number[];
             startTime?: string;
             endTime?: string;
+            startTimeUTC?: string;
+            endTimeUTC?: string;
             sessionDuration?: number;
             breakBetweenSessions?: number;
             isAvailable?: boolean;
           };
 
-          console.log("Artist availability settings retrieved:", settings);
+          console.log("Artist availability settings retrieved:", storedSettings);
 
-          if (settings.startTime && settings.endTime) {
+          // Check if we have UTC times and convert them, otherwise use Egypt times directly
+          let startTime = storedSettings.startTime || "09:00";
+          let endTime = storedSettings.endTime || "17:00";
+          
+          if (storedSettings.startTimeUTC && storedSettings.endTimeUTC) {
+            // Convert from UTC storage to Egypt timezone for processing
+            const convertedTimes = convertWorkingHoursFromUTC(
+              storedSettings.startTimeUTC,
+              storedSettings.endTimeUTC
+            );
+            startTime = convertedTimes.startTime;
+            endTime = convertedTimes.endTime;
+          }
+
+          if (startTime && endTime) {
             workingHours = {
-              start: parseInt(settings.startTime.split(":")[0]),
-              end: parseInt(settings.endTime.split(":")[0]),
-              interval: settings.sessionDuration || 30,
+              start: parseInt(startTime.split(":")[0]),
+              end: parseInt(endTime.split(":")[0]),
+              interval: storedSettings.sessionDuration || 30,
             };
           }
-          if (settings.workingDays && Array.isArray(settings.workingDays)) {
+          if (storedSettings.workingDays && Array.isArray(storedSettings.workingDays)) {
             // Convert workingDays to regularDaysOff
             const allDays = [0, 1, 2, 3, 4, 5, 6]; // Sunday=0 to Saturday=6
             regularDaysOff = allDays.filter(
-              (day) => !settings.workingDays!.includes(day)
+              (day) => !storedSettings.workingDays!.includes(day)
             );
-            console.log("Working days:", settings.workingDays);
+            console.log("Working days:", storedSettings.workingDays);
             console.log("Regular days off:", regularDaysOff);
           }
-          if (settings.isAvailable !== undefined) {
-            isAvailable = settings.isAvailable;
+          if (storedSettings.isAvailable !== undefined) {
+            isAvailable = storedSettings.isAvailable;
           }
         } catch (error) {
           console.error("Error parsing availability settings:", error);
           // Continue with defaults
         }
-      }
-      console.log("Artist availability settings retrieved");
+      }      console.log("Artist availability settings retrieved");
 
       // Check if artist is accepting bookings
       if (!isAvailable) {
@@ -207,7 +220,9 @@ export async function POST(req: Request) {
           { message: "This artist is not currently accepting bookings" },
           { status: 400 }
         );
-      } // Check if appointment is during working hours
+      }
+
+      // Check if appointment is during working hours
       const appointmentEndHour = appointmentEndTime.getHours();
       const appointmentEndMinute = appointmentEndTime.getMinutes();
 
@@ -228,9 +243,10 @@ export async function POST(req: Request) {
         console.log("Appointment start time is outside working hours");
         return NextResponse.json(
           { message: "Selected time is outside the artist's working hours" },
-          { status: 400 }
-        );
-      } // Check if appointment end time is within working hours
+          { status: 400 }        );
+      }
+
+      // Check if appointment end time is within working hours
       // Allow appointments that start within working hours, even if they extend slightly beyond
       // This fixes the issue where last available time slots couldn't be booked
       if (
@@ -244,8 +260,7 @@ export async function POST(req: Request) {
             message:
               "Selected appointment duration exceeds the artist's working hours",
           },
-          { status: 400 }
-        );
+          { status: 400 }        );
       }
 
       // Check if it's the artist's day off
@@ -255,7 +270,9 @@ export async function POST(req: Request) {
           { message: "Selected day is the artist's day off" },
           { status: 400 }
         );
-      } // Check if the time slot is properly aligned with the artist's interval settings
+      }
+
+      // Check if the time slot is properly aligned with the artist's interval settings
       if (timeMinute % workingHours.interval !== 0) {
         console.log("Time doesn't align with scheduling intervals");
         return NextResponse.json(
@@ -263,9 +280,10 @@ export async function POST(req: Request) {
             message:
               "Selected time does not align with the artist's scheduling intervals",
           },
-          { status: 400 }
-        );
-      } // Check for conflicts with existing bookings
+          { status: 400 }        );
+      }
+
+      // Check for conflicts with existing bookings
       console.log("=== CHECKING FOR BOOKING CONFLICTS ===");
       console.log(
         "Using makeup artist ID for conflict check:",
@@ -304,9 +322,10 @@ export async function POST(req: Request) {
         isSameDayInEgypt(booking.date_time, appointmentDateTime)
       );
 
-      console.log(
-        `Found ${sameDayBookings.length} existing bookings for the day in Egypt timezone`
-      ); // Log each existing booking for debugging
+      console.log(        `Found ${sameDayBookings.length} existing bookings for the day in Egypt timezone`
+      );
+
+      // Log each existing booking for debugging
       sameDayBookings.forEach((booking, index) => {
         console.log(`Existing booking ${index + 1}:`, {
           id: booking.id,
