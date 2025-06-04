@@ -99,32 +99,56 @@ export async function POST(request: NextRequest) {
           total_price: 0,
         },
       });
-    }
-
-    // Clear existing cart items
+    } // Clear existing cart items
     await prisma.cartItem.deleteMany({
       where: { cart_id: cart.id },
-    }); // Add new cart items
+    });
+
+    // Add new cart items with validation
     if (items.length > 0) {
-      await prisma.cartItem.createMany({
-        data: items.map((item: CartItemRequest) => ({
-          cart_id: cart.id,
-          product_id: item.productId,
-          quantity: item.quantity,
-        })),
+      // Validate that all products exist before creating cart items
+      const productIds = items.map((item: CartItemRequest) => item.productId);
+      const existingProducts = await prisma.product.findMany({
+        where: { id: { in: productIds } },
+        select: { id: true },
       });
 
-      // Update total price
-      const totalPrice = items.reduce(
-        (sum: number, item: CartItemRequest) =>
-          sum + item.product.price * item.quantity,
-        0
+      const existingProductIds = existingProducts.map((p) => p.id);
+      const validItems = items.filter((item: CartItemRequest) =>
+        existingProductIds.includes(item.productId)
       );
 
-      await prisma.cart.update({
-        where: { id: cart.id },
-        data: { total_price: totalPrice },
-      });
+      if (validItems.length > 0) {
+        await prisma.cartItem.createMany({
+          data: validItems.map((item: CartItemRequest) => ({
+            cart_id: cart.id,
+            product_id: item.productId,
+            quantity: item.quantity,
+          })),
+        });
+
+        // Update total price with valid items only
+        const totalPrice = validItems.reduce(
+          (sum: number, item: CartItemRequest) =>
+            sum + item.product.price * item.quantity,
+          0
+        );
+
+        await prisma.cart.update({
+          where: { id: cart.id },
+          data: { total_price: totalPrice },
+        });
+      }
+
+      // Log invalid items for debugging
+      const invalidItems = items.filter(
+        (item: CartItemRequest) => !existingProductIds.includes(item.productId)
+      );      if (invalidItems.length > 0) {
+        console.warn(
+          "Attempted to add non-existent products to cart:",
+          invalidItems.map((item: CartItemRequest) => item.productId)
+        );
+      }
     }
 
     return NextResponse.json({ success: true });

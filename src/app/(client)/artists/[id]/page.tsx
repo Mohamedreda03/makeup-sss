@@ -228,12 +228,12 @@ async function getArtistAvailabilitySettings(id: string) {
       },
       regularDaysOff: [0, 6], // Sunday and Saturday
       bookedSlots: existingBookings.map((booking) => {
-        // تحويل التاريخ والوقت إلى توقيت القاهرة مع ضمان الدقة
+        // Convert date and time to Cairo timezone with accuracy guarantee
         const bookingDateTime = dayjs(booking.date_time).tz("Africa/Cairo");
 
         return {
-          date: bookingDateTime.format("YYYY-MM-DD"), // التاريخ بتوقيت مصر
-          time: bookingDateTime.format("HH:mm"), // الوقت بتوقيت مصر (24 ساعة)
+          date: bookingDateTime.format("YYYY-MM-DD"), // Date in Egypt timezone
+          time: bookingDateTime.format("HH:mm"), // Time in Egypt timezone (24 hour format)
           booking_id: booking.id,
           service_type: booking.service_type,
           status: booking.booking_status,
@@ -267,7 +267,7 @@ async function getArtistAvailabilitySettings(id: string) {
         );
       }
 
-      // استخدام dayjs لمعالجة أوقات البداية والنهاية بتوقيت مصر
+      // Use dayjs to handle start and end times in Egypt timezone
       const startTime = availableSlots.startTime
         ? dayjs
             .tz(`2000-01-01T${availableSlots.startTime}`, "Africa/Cairo")
@@ -289,12 +289,12 @@ async function getArtistAvailabilitySettings(id: string) {
         },
         regularDaysOff,
         bookedSlots: existingBookings.map((booking) => {
-          // تحويل التاريخ والوقت إلى توقيت القاهرة مع ضمان الدقة
+          // Convert date and time to Cairo timezone with accuracy guarantee
           const bookingDateTime = dayjs(booking.date_time).tz("Africa/Cairo");
 
           return {
-            date: bookingDateTime.format("YYYY-MM-DD"), // التاريخ بتوقيت مصر
-            time: bookingDateTime.format("HH:mm"), // الوقت بتوقيت مصر (24 ساعة)
+            date: bookingDateTime.format("YYYY-MM-DD"), // Date in Egypt timezone
+            time: bookingDateTime.format("HH:mm"), // Time in Egypt timezone (24 hour format)
             booking_id: booking.id,
             service_type: booking.service_type,
             status: booking.booking_status,

@@ -18,6 +18,7 @@ import {
   ShoppingBag,
   ArrowRight,
   Clock,
+  DollarSign,
 } from "lucide-react";
 import {
   Table,
@@ -45,6 +46,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
   const user = await checkAdmin();
+
   // Get counts for the dashboard
   const productsCount = await db.product.count();
   const usersCount = await db.user.count({
@@ -56,7 +58,13 @@ export default async function AdminPage() {
 
   // Get appointment count
   const appointmentsCount = await db.booking.count();
-  // Get recent orders
+
+  // Get admin earnings from commission (7% from all bookings)
+  const adminUser = await db.user.findFirst({
+    where: { role: "ADMIN" },
+    select: { earnings: true },
+  });
+  const adminEarnings = adminUser?.earnings || 0; // Get recent orders including payment information
   const recentOrders = await db.order.findMany({
     take: 5,
     orderBy: {
@@ -74,17 +82,25 @@ export default async function AdminPage() {
           quantity: true,
         },
       },
+      payment: {
+        select: {
+          amount: true,
+        },
+      },
     },
-  });
-
-  // Calculate total for each order
+  }); // Calculate total for each order using payment amount (with discount) or fallback to order details
   const ordersWithTotals = recentOrders.map((order) => ({
     ...order,
-    total: order.order_details.reduce(
-      (sum, detail) => sum + detail.price * detail.quantity,
-      0
-    ),
+    total: order.payment
+      ? order.payment.amount // Use actual payment amount (includes discount)
+      : order.order_details.reduce(
+          // Fallback to calculated total
+          (sum: number, detail: { price: number; quantity: number }) =>
+            sum + detail.price * detail.quantity,
+          0
+        ),
   }));
+
   // Get recent products
   const recentProducts = await db.product.findMany({
     take: 5,
@@ -133,6 +149,7 @@ export default async function AdminPage() {
     {
       title: "Total Products",
       value: productsCount,
+      displayValue: productsCount.toLocaleString(),
       icon: <Package className="h-8 w-8 text-white" />,
       bgGradient: "from-purple-600 via-pink-600 to-red-600",
       iconBg: "bg-gradient-to-br from-purple-500 to-pink-500",
@@ -142,6 +159,7 @@ export default async function AdminPage() {
     {
       title: "Total Customers",
       value: usersCount,
+      displayValue: usersCount.toLocaleString(),
       icon: <Users className="h-8 w-8 text-white" />,
       bgGradient: "from-blue-600 via-cyan-600 to-teal-600",
       iconBg: "bg-gradient-to-br from-blue-500 to-cyan-500",
@@ -151,6 +169,7 @@ export default async function AdminPage() {
     {
       title: "Artists",
       value: artistsCount,
+      displayValue: artistsCount.toLocaleString(),
       icon: <UserCog className="h-8 w-8 text-white" />,
       bgGradient: "from-orange-600 via-yellow-600 to-amber-600",
       iconBg: "bg-gradient-to-br from-orange-500 to-yellow-500",
@@ -160,11 +179,22 @@ export default async function AdminPage() {
     {
       title: "Appointments",
       value: appointmentsCount,
+      displayValue: appointmentsCount.toLocaleString(),
       icon: <Calendar className="h-8 w-8 text-white" />,
       bgGradient: "from-emerald-600 via-green-600 to-lime-600",
       iconBg: "bg-gradient-to-br from-emerald-500 to-green-500",
       textColor: "text-white",
       subText: "Total bookings made",
+    },
+    {
+      title: "Admin Earnings",
+      value: adminEarnings,
+      displayValue: `EGP ${adminEarnings.toFixed(2)}`,
+      icon: <DollarSign className="h-8 w-8 text-white" />,
+      bgGradient: "from-rose-600 via-pink-600 to-purple-600",
+      iconBg: "bg-gradient-to-br from-rose-500 to-pink-500",
+      textColor: "text-white",
+      subText: "7% commission from bookings",
     },
   ];
 
@@ -188,7 +218,7 @@ export default async function AdminPage() {
         </div>
       </div>{" "}
       {/* Stats Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-8 mb-12">
         {stats.map((stat, index) => (
           <Card
             key={index}
@@ -209,10 +239,10 @@ export default async function AdminPage() {
               <div className={`${stat.iconBg} p-3 rounded-xl shadow-lg`}>
                 {stat.icon}
               </div>
-            </CardHeader>
+            </CardHeader>{" "}
             <CardContent className="relative z-10">
               <div className={`text-4xl font-bold ${stat.textColor} mb-2`}>
-                {stat.value.toLocaleString()}
+                {stat.displayValue}
               </div>
               <div
                 className={`text-xs ${stat.textColor} opacity-75 flex items-center`}

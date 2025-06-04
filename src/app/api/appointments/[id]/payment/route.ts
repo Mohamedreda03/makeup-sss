@@ -39,24 +39,45 @@ export async function POST(
       data: {
         booking_status: "CONFIRMED",
       },
-    });
-
-    // 3. If booking has a total_price, update artist earnings
+    }); // 3. Process earnings and admin commission
     if (booking.total_price && booking.total_price > 0) {
       try {
+        // Calculate admin commission (7%)
+        const adminCommission = booking.total_price * 0.07;
+        const artistEarnings = booking.total_price - adminCommission;
+
+        // Update artist earnings (93% of total)
         await db.makeUpArtist.update({
           where: { id: booking.artist_id },
           data: {
             earnings: {
-              increment: booking.total_price,
+              increment: artistEarnings,
             },
           },
         });
+
+        // Find admin user and update their earnings
+        const adminUser = await db.user.findFirst({
+          where: { role: "ADMIN" },
+        });
+
+        if (adminUser) {
+          await db.user.update({
+            where: { id: adminUser.id },
+            data: {
+              earnings: {
+                increment: adminCommission,
+              },
+            },
+          });
+        }
+
         console.log(
-          `Updated artist ${booking.artist_id} earnings by ${booking.total_price}`
+          `Updated artist ${booking.artist_id} earnings by ${artistEarnings} (93%)`
         );
+        console.log(`Updated admin earnings by ${adminCommission} (7%)`);
       } catch (earningsError) {
-        console.error("Error updating artist earnings:", earningsError);
+        console.error("Error updating earnings:", earningsError);
         // Don't fail the main operation if earnings update fails
       }
     }

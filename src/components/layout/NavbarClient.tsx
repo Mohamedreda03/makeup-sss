@@ -18,7 +18,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useCartStore } from "@/store/useCartStore";
 
-// تعريف واجهة بيانات المستخدم
+// Define user data interface
 interface UserProps {
   id?: string;
   name?: string | null;

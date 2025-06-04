@@ -46,6 +46,7 @@ model User {
   phone     String?
   address   String?
   image     String?
+  earnings  Float    @default(0.0) // أرباح المستخدم (للادمن من الحجوزات والمبيعات)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

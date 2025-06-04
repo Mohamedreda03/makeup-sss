@@ -29,10 +29,15 @@ function CartClient() {
       </div>
     );
   }
-
   const shipping = 50;
-  const tax = total * 0.14;
-  const grandTotal = total + shipping + tax;
+
+  // Calculate bulk discount (10% off for 3+ items)
+  const hasDiscount = itemCount >= 3;
+  const discountAmount = hasDiscount ? total * 0.1 : 0;
+  const discountedSubtotal = total - discountAmount;
+
+  const tax = discountedSubtotal * 0.14; // 14% VAT applied after discount
+  const grandTotal = discountedSubtotal + shipping + tax;
 
   return (
     <div className="p-6">
@@ -122,19 +127,37 @@ function CartClient() {
           <div className="bg-gray-50 rounded-lg p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">
               Order Summary
-            </h2>
-
+            </h2>{" "}
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span>Items ({itemCount})</span>
+                <span>Subtotal ({itemCount} items)</span>
                 <span>{formatPrice(total)}</span>
               </div>
+
+              {hasDiscount && (
+                <div className="flex justify-between bg-green-50 px-2 py-1 rounded">
+                  <span className="text-green-700 font-medium">
+                    Bulk Discount (10% off)
+                  </span>
+                  <span className="text-green-700 font-semibold">
+                    -{formatPrice(discountAmount)}
+                  </span>
+                </div>
+              )}
+
+              {hasDiscount && (
+                <div className="flex justify-between border-t border-gray-100 pt-2">
+                  <span>Subtotal after discount</span>
+                  <span>{formatPrice(discountedSubtotal)}</span>
+                </div>
+              )}
+
               <div className="flex justify-between">
                 <span>Shipping</span>
                 <span>{formatPrice(shipping)}</span>
               </div>
               <div className="flex justify-between">
-                <span>Tax (14%)</span>
+                <span>Tax (14% VAT)</span>
                 <span>{formatPrice(tax)}</span>
               </div>
               <div className="border-t border-gray-200 pt-2 mt-2">
@@ -146,7 +169,6 @@ function CartClient() {
                 </div>
               </div>
             </div>
-
             <Link href="/checkout" className="mt-6 block">
               <Button className="w-full bg-rose-500 hover:bg-rose-600">
                 Proceed to Checkout

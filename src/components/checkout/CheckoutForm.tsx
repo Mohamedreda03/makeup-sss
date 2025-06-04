@@ -14,7 +14,7 @@ export default function CheckoutForm() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
-  // استخدام المخزن للحصول على القيم
+  // Use store to get values
   const { items, total, clearCart } = useCartStore();
 
   const [formData, setFormData] = useState({
@@ -36,7 +36,6 @@ export default function CheckoutForm() {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -69,7 +68,18 @@ export default function CheckoutForm() {
       setIsSubmitting(true);
 
       // Simulate payment processing
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      await new Promise((resolve) => setTimeout(resolve, 1500)); // Calculate final total with discount (same logic as CheckoutSummary)
+      const subtotal = total;
+      const shipping = 50; // Fixed shipping rate in EGP
+      const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+
+      // Calculate bulk discount (10% off for 3+ items)
+      const hasDiscount = itemCount >= 3;
+      const discountAmount = hasDiscount ? subtotal * 0.1 : 0;
+      const discountedSubtotal = subtotal - discountAmount;
+
+      const tax = discountedSubtotal * 0.14; // 14% VAT in Egypt (applied after discount)
+      const finalTotal = discountedSubtotal + shipping + tax;
 
       // Create an order object from cart and form data
       const order = {
@@ -91,7 +101,7 @@ export default function CheckoutForm() {
           price: item.product.price,
           name: item.product.name,
         })),
-        total: total,
+        total: finalTotal, // Use the calculated final total with discount
       };
 
       // Submit order to API

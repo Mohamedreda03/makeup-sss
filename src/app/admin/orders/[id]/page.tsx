@@ -1,15 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import {
-  ArrowLeft,
-  Calendar,
-  User,
-  Package,
-  CreditCard,
-  Mail,
-  Phone,
-} from "lucide-react";
+import { ArrowLeft, Calendar, User, Package, Mail, Phone } from "lucide-react";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
@@ -27,7 +19,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { UserObjectAvatar } from "@/components/user-avatar";
 import { OrderStatusSelector } from "@/components/order-status-selector";
 import { OrderStatusBadge } from "@/components/order-status-badge";
@@ -72,8 +63,7 @@ export default async function OrderDetailsPage({
   params: { id: string };
 }) {
   // Check if user is admin
-  await checkAdmin();
-  // Fetch order details
+  await checkAdmin(); // Fetch order details including payment information
   const order = await db.order.findUnique({
     where: { id: params.id },
     include: {
@@ -83,18 +73,23 @@ export default async function OrderDetailsPage({
           product: true,
         },
       },
+      payment: true, // Include payment information to get actual amount paid
     },
   });
+
+  console.log("Fetched order details:", order);
+
   // If order not found, show 404
   if (!order) {
     notFound();
-  }
-
-  // Calculate total from order details
-  const orderTotal = order.order_details.reduce(
-    (total, item) => total + item.price * item.quantity,
-    0
-  );
+  } // Calculate total from payment amount (with discount) or fallback to order details
+  const orderTotal = order.payment
+    ? order.payment.amount // Use actual payment amount (includes discount)
+    : order.order_details.reduce(
+        // Fallback to calculated total
+        (total: number, item: any) => total + item.price * item.quantity,
+        0
+      );
   return (
     <div className="px-1 py-2">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
@@ -180,10 +175,45 @@ export default async function OrderDetailsPage({
               )
             )}{" "}
             <div className="mt-6 flex justify-end">
-              <div className="bg-gradient-to-r from-rose-50 to-purple-50 p-4 rounded-lg shadow-sm border border-gray-100">
-                <div className="text-sm text-gray-600 mb-1">Order Total</div>
-                <div className="text-2xl font-bold bg-gradient-to-r from-rose-600 to-purple-600 bg-clip-text text-transparent">
-                  {formatPrice(orderTotal)}
+              <div className="space-y-3">
+                {" "}
+                {/* Show discount information if applicable */}
+                {(() => {
+                  const calculatedSubtotal = order.order_details.reduce(
+                    (total: number, item: any) =>
+                      total + item.price * item.quantity,
+                    0
+                  );
+                  const actualTotal = order.payment
+                    ? order.payment.amount
+                    : calculatedSubtotal;
+                  const discountAmount = calculatedSubtotal - actualTotal;
+
+                  if (discountAmount > 5) {
+                    // Show discount if more than 5 EGP difference
+                    return (
+                      <div className="bg-amber-50 border border-amber-200 p-3 rounded-lg text-sm">
+                        <div className="flex justify-between text-gray-600">
+                          <span>Subtotal:</span>
+                          <span>{formatPrice(calculatedSubtotal)}</span>
+                        </div>
+                        <div className="flex justify-between text-green-600 font-medium">
+                          <span>Bulk Discount (10%):</span>
+                          <span>-{formatPrice(discountAmount)}</span>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+                <div className="bg-gradient-to-r from-rose-50 to-purple-50 p-4 rounded-lg shadow-sm border border-gray-100">
+                  {" "}
+                  <div className="text-sm text-gray-600 mb-1">
+                    {order.payment ? "Amount Paid" : "Order Total"}
+                  </div>
+                  <div className="text-2xl font-bold bg-gradient-to-r from-rose-600 to-purple-600 bg-clip-text text-transparent">
+                    {formatPrice(orderTotal)}
+                  </div>
                 </div>
               </div>
             </div>

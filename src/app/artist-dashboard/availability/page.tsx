@@ -23,7 +23,10 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import customParseFormat from "dayjs/plugin/customParseFormat";
-import { formatTimeToEgypt12h, formatDateToEgyptLocale } from "@/lib/timezone-config";
+import {
+  formatTimeToEgypt12h,
+  formatDateToEgyptLocale,
+} from "@/lib/timezone-config";
 
 // Initialize dayjs plugins
 dayjs.extend(utc);
@@ -239,7 +242,9 @@ export default function ArtistAvailabilityPage() {
     );
   }
   return (
-    <div className="container mx-auto p-6 max-w-6xl">      {/* Header */}
+    <div className="container mx-auto p-6 max-w-6xl">
+      {" "}
+      {/* Header */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold flex items-center gap-2">
           <Settings className="h-8 w-8" />
@@ -250,12 +255,12 @@ export default function ArtistAvailabilityPage() {
         </p>
         <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
           <p className="text-sm text-blue-800">
-            <strong>Timezone Note:</strong> All times are displayed and saved in Egypt timezone (UTC+2/+3). 
-            Clients will see appointment times in Egypt timezone regardless of their location.
+            <strong>Timezone Note:</strong> All times are displayed and saved in
+            Egypt timezone (UTC+2/+3). Clients will see appointment times in
+            Egypt timezone regardless of their location.
           </p>
         </div>
       </div>
-
       {/* Unsaved Changes Alert */}
       {hasUnsavedChanges && (
         <Alert className="mb-6">
@@ -266,7 +271,6 @@ export default function ArtistAvailabilityPage() {
           </AlertDescription>
         </Alert>
       )}
-
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Working Days Selection */}
         <Card>
@@ -378,17 +382,27 @@ export default function ArtistAvailabilityPage() {
                     parseInt(e.target.value) || 0
                   )
                 }
-              />            </div>
+              />{" "}
+            </div>
 
             {/* Time Preview */}
             {availabilitySettings.startTime && availabilitySettings.endTime && (
               <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                <p className="text-sm font-medium text-gray-700 mb-2">Time Preview (Egypt Timezone):</p>
+                <p className="text-sm font-medium text-gray-700 mb-2">
+                  Time Preview (Egypt Timezone):
+                </p>
                 <div className="text-sm text-gray-600">
-                  <p><strong>Start:</strong> {formatTime(availabilitySettings.startTime)}</p>
-                  <p><strong>End:</strong> {formatTime(availabilitySettings.endTime)}</p>
+                  <p>
+                    <strong>Start:</strong>{" "}
+                    {formatTime(availabilitySettings.startTime)}
+                  </p>
+                  <p>
+                    <strong>End:</strong>{" "}
+                    {formatTime(availabilitySettings.endTime)}
+                  </p>
                   <p className="mt-2 text-xs text-gray-500">
-                    Times are automatically saved in UTC and displayed in Egypt timezone
+                    Times are automatically saved in UTC and displayed in Egypt
+                    timezone
                   </p>
                 </div>
               </div>
@@ -409,7 +423,6 @@ export default function ArtistAvailabilityPage() {
           </CardContent>
         </Card>
       </div>
-
       {/* Summary and Save */}
       <Card className="mt-6">
         <CardHeader>

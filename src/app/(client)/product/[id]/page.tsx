@@ -5,8 +5,6 @@ import Link from "next/link";
 import {
   Loader2,
   ChevronLeft,
-  ShoppingCart,
-  Heart,
   Truck,
   Package2,
   RefreshCw,
@@ -172,69 +170,30 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 </p>
               </div>
 
-              {/* Product Features */}
-              <div className="bg-gradient-to-r from-pink-50 to-rose-50 p-4 rounded-lg mb-8">
-                <h3 className="text-sm font-semibold text-gray-800 mb-3">
-                  Product Features
-                </h3>
-                <ul className="space-y-2">
-                  <li className="flex items-center text-sm text-gray-700">
-                    <ShieldCheck className="h-4 w-4 text-rose-500 mr-2" />
-                    <span>High-quality ingredients</span>
-                  </li>
-                  <li className="flex items-center text-sm text-gray-700">
-                    <ShieldCheck className="h-4 w-4 text-rose-500 mr-2" />
-                    <span>Dermatologically tested</span>
-                  </li>
-                  <li className="flex items-center text-sm text-gray-700">
-                    <ShieldCheck className="h-4 w-4 text-rose-500 mr-2" />
-                    <span>100% cruelty-free</span>
-                  </li>
-                </ul>
-              </div>
-
-              {/* Shipping and Benefits */}
-              <div className="grid grid-cols-2 gap-4 mb-8">
-                <div className="flex items-center">
-                  <div className="mr-3 bg-rose-100 p-2 rounded-full">
-                    <Truck className="h-5 w-5 text-rose-600" />
+              {/* Special Offer Banner */}
+              <div className="bg-gradient-to-r from-amber-50 via-orange-50 to-yellow-50 border-l-4 border-amber-400 p-6 rounded-lg mb-6 shadow-sm">
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
+                      <span className="text-amber-600 font-bold text-sm">
+                        %
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium">Free Shipping</p>
-                    <p className="text-xs text-gray-500">
-                      On orders over EGP 500
+                  <div className="ml-4">
+                    <h3 className="text-lg font-semibold text-amber-800 mb-2">
+                      Special Bulk Discount Offer! 🎉
+                    </h3>
+                    <p className="text-amber-700 text-sm leading-relaxed">
+                      Add <strong>3 or more products</strong> to your cart and
+                      get an automatic <strong>10% discount</strong> on your
+                      entire order! Mix and match any products from our
+                      collection.
                     </p>
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  <div className="mr-3 bg-rose-100 p-2 rounded-full">
-                    <Package2 className="h-5 w-5 text-rose-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">Secure Packaging</p>
-                    <p className="text-xs text-gray-500">
-                      Safe delivery guaranteed
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  <div className="mr-3 bg-rose-100 p-2 rounded-full">
-                    <RefreshCw className="h-5 w-5 text-rose-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">30-Day Returns</p>
-                    <p className="text-xs text-gray-500">Easy return process</p>
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  <div className="mr-3 bg-rose-100 p-2 rounded-full">
-                    <Heart className="h-5 w-5 text-rose-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">Cruelty Free</p>
-                    <p className="text-xs text-gray-500">
-                      Not tested on animals
-                    </p>
+                    <div className="mt-3 flex items-center text-xs text-amber-600">
+                      <Star className="h-3 w-3 mr-1 fill-current" />
+                      <span>Discount applied automatically at checkout</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -256,6 +215,65 @@ export default async function ProductPage({ params }: ProductPageProps) {
           </div>
         </div>
 
+        {/* Shipping and Benefits Section */}
+        <div className="bg-white rounded-xl overflow-hidden shadow-md mb-16 border border-rose-100">
+          <div className="p-8 md:p-12">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-rose-600 via-pink-600 to-rose-700 bg-clip-text text-transparent mb-4">
+                Why Choose Us
+              </h2>
+              <p className="text-gray-600 text-lg max-w-2xl mx-auto">
+                Exceptional service and benefits with every purchase
+              </p>
+              <div className="w-24 h-1 bg-gradient-to-r from-rose-400 to-pink-600 mx-auto mt-4 rounded-full"></div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="text-center group">
+                <div className="w-16 h-16 bg-gradient-to-r from-rose-100 to-pink-100 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <Truck className="h-8 w-8 text-rose-500" />
+                </div>
+                <h3 className="font-semibold text-gray-800 mb-2">
+                  Free Shipping
+                </h3>
+                <p className="text-gray-600 text-sm">On orders over EGP 500</p>
+              </div>
+
+              <div className="text-center group">
+                <div className="w-16 h-16 bg-gradient-to-r from-rose-100 to-pink-100 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <Package2 className="h-8 w-8 text-rose-500" />
+                </div>
+                <h3 className="font-semibold text-gray-800 mb-2">
+                  Secure Packaging
+                </h3>
+                <p className="text-gray-600 text-sm">
+                  Safe delivery guaranteed
+                </p>
+              </div>
+
+              <div className="text-center group">
+                <div className="w-16 h-16 bg-gradient-to-r from-rose-100 to-pink-100 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <RefreshCw className="h-8 w-8 text-rose-500" />
+                </div>
+                <h3 className="font-semibold text-gray-800 mb-2">
+                  30-Day Returns
+                </h3>
+                <p className="text-gray-600 text-sm">Easy return process</p>
+              </div>
+
+              <div className="text-center group">
+                <div className="w-16 h-16 bg-gradient-to-r from-rose-100 to-pink-100 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <ShieldCheck className="h-8 w-8 text-rose-500" />
+                </div>
+                <h3 className="font-semibold text-gray-800 mb-2">
+                  Cruelty Free
+                </h3>
+                <p className="text-gray-600 text-sm">Not tested on animals</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Related Products */}
         {relatedProducts.length > 0 && (
           <div className="mt-16">
@@ -270,7 +288,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {relatedProducts.map((relatedProduct: any) => (
+              {" "}
+              {relatedProducts.map((relatedProduct: typeof product) => (
                 <Link
                   href={`/product/${relatedProduct.id}`}
                   key={relatedProduct.id}

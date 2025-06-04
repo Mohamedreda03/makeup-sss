@@ -10,7 +10,7 @@ import timezone from "dayjs/plugin/timezone";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { toEgyptISOString } from "@/lib/timezone-config";
 
-// تهيئة الملحقات
+// Initialize plugins
 dayjs.extend(utc);
 dayjs.extend(timezone);
 dayjs.extend(customParseFormat);

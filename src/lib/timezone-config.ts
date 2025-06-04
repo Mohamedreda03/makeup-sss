@@ -135,10 +135,14 @@ export const createEgyptDate = (
 ): Date => {
   // Use dayjs to create a date in Egypt timezone and convert to local Date
   const egyptMoment = dayjs.tz(
-    `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')} ${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}:${second.toString().padStart(2, '0')}`,
+    `${year}-${month.toString().padStart(2, "0")}-${day
+      .toString()
+      .padStart(2, "0")} ${hour.toString().padStart(2, "0")}:${minute
+      .toString()
+      .padStart(2, "0")}:${second.toString().padStart(2, "0")}`,
     "Africa/Cairo"
   );
-  
+
   // Return as a regular Date object representing the Egypt time
   return new Date(
     egyptMoment.year(),
@@ -154,7 +158,7 @@ export const createEgyptDate = (
 export const toEgyptTime = (date: Date): Date => {
   // Use dayjs for more reliable timezone conversion
   const egyptMoment = dayjs(date).tz("Africa/Cairo");
-  
+
   // Create a new Date object with the Egypt timezone components
   return new Date(
     egyptMoment.year(),
@@ -251,34 +255,46 @@ export const toEgyptISOString = (date: string, time: string): string => {
 // Convert working hours from Egypt timezone to UTC for database storage
 export const convertWorkingHoursToUTC = (
   startTime: string, // HH:MM format
-  endTime: string    // HH:MM format
+  endTime: string // HH:MM format
 ): { startTimeUTC: string; endTimeUTC: string } => {
   // Use a reference date to convert times
   const referenceDate = "2000-01-01";
-  
-  const startTimeUTC = dayjs.tz(`${referenceDate}T${startTime}`, "Africa/Cairo").utc().format("HH:mm");
-  const endTimeUTC = dayjs.tz(`${referenceDate}T${endTime}`, "Africa/Cairo").utc().format("HH:mm");
-  
+
+  const startTimeUTC = dayjs
+    .tz(`${referenceDate}T${startTime}`, "Africa/Cairo")
+    .utc()
+    .format("HH:mm");
+  const endTimeUTC = dayjs
+    .tz(`${referenceDate}T${endTime}`, "Africa/Cairo")
+    .utc()
+    .format("HH:mm");
+
   return {
     startTimeUTC,
-    endTimeUTC
+    endTimeUTC,
   };
 };
 
 // Convert working hours from UTC back to Egypt timezone for display
 export const convertWorkingHoursFromUTC = (
   startTimeUTC: string, // HH:MM format in UTC
-  endTimeUTC: string    // HH:MM format in UTC
+  endTimeUTC: string // HH:MM format in UTC
 ): { startTime: string; endTime: string } => {
   // Use a reference date to convert times
   const referenceDate = "2000-01-01";
-  
-  const startEgypt = dayjs.utc(`${referenceDate}T${startTimeUTC}`).tz("Africa/Cairo").format("HH:mm");
-  const endEgypt = dayjs.utc(`${referenceDate}T${endTimeUTC}`).tz("Africa/Cairo").format("HH:mm");
-  
+
+  const startEgypt = dayjs
+    .utc(`${referenceDate}T${startTimeUTC}`)
+    .tz("Africa/Cairo")
+    .format("HH:mm");
+  const endEgypt = dayjs
+    .utc(`${referenceDate}T${endTimeUTC}`)
+    .tz("Africa/Cairo")
+    .format("HH:mm");
+
   return {
     startTime: startEgypt,
-    endTime: endEgypt
+    endTime: endEgypt,
   };
 };
 
@@ -295,14 +311,14 @@ export const convertAvailabilityToUTC = (settings: {
     settings.startTime,
     settings.endTime
   );
-  
+
   return {
     ...settings,
     startTimeUTC,
     endTimeUTC,
     // Keep original Egypt times for reference
     startTimeEgypt: settings.startTime,
-    endTimeEgypt: settings.endTime
+    endTimeEgypt: settings.endTime,
   };
 };
 
@@ -323,17 +339,17 @@ export const convertAvailabilityFromUTC = (settings: {
       settings.startTimeUTC,
       settings.endTimeUTC
     );
-    
+
     return {
       workingDays: settings.workingDays,
       startTime,
       endTime,
       sessionDuration: settings.sessionDuration,
       breakBetweenSessions: settings.breakBetweenSessions,
-      isAvailable: settings.isAvailable
+      isAvailable: settings.isAvailable,
     };
   }
-  
+
   // Fallback to existing Egypt times if UTC not available
   return {
     workingDays: settings.workingDays,
@@ -341,7 +357,7 @@ export const convertAvailabilityFromUTC = (settings: {
     endTime: settings.endTime || "17:00",
     sessionDuration: settings.sessionDuration,
     breakBetweenSessions: settings.breakBetweenSessions,
-    isAvailable: settings.isAvailable
+    isAvailable: settings.isAvailable,
   };
 };
 
@@ -349,7 +365,7 @@ export const convertAvailabilityFromUTC = (settings: {
 export const isWithinWorkingHours = (
   egyptTime: Date,
   startTime: string, // HH:MM format in Egypt timezone
-  endTime: string    // HH:MM format in Egypt timezone
+  endTime: string // HH:MM format in Egypt timezone
 ): boolean => {
   const timeStr = dayjs(egyptTime).tz("Africa/Cairo").format("HH:mm");
   return timeStr >= startTime && timeStr < endTime;
@@ -359,20 +375,20 @@ export const isWithinWorkingHours = (
 export const generateTimeSlots = (
   date: string, // YYYY-MM-DD format
   startTime: string, // HH:MM format in Egypt timezone
-  endTime: string,   // HH:MM format in Egypt timezone
+  endTime: string, // HH:MM format in Egypt timezone
   intervalMinutes: number = 60
 ): string[] => {
   const slots: string[] = [];
-  
+
   const startDateTime = dayjs.tz(`${date}T${startTime}`, "Africa/Cairo");
   const endDateTime = dayjs.tz(`${date}T${endTime}`, "Africa/Cairo");
-  
+
   let currentTime = startDateTime;
-  
+
   while (currentTime.isBefore(endDateTime)) {
     slots.push(currentTime.format("HH:mm"));
     currentTime = currentTime.add(intervalMinutes, "minute");
   }
-  
+
   return slots;
 };

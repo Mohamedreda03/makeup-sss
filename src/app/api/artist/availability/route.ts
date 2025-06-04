@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { z } from "zod";
-import { convertAvailabilityToUTC, convertAvailabilityFromUTC } from "@/lib/timezone-config";
+import {
+  convertAvailabilityToUTC,
+  convertAvailabilityFromUTC,
+} from "@/lib/timezone-config";
 
 export const dynamic = "force-dynamic";
 
@@ -44,7 +47,7 @@ export async function GET() {
           typeof artist.available_slots === "string"
             ? JSON.parse(artist.available_slots)
             : artist.available_slots;
-            
+
         // Convert from UTC storage to Egypt timezone for display
         availabilitySettings = convertAvailabilityFromUTC(storedSettings);
       } catch (e) {

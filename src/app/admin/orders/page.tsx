@@ -49,6 +49,13 @@ interface OrderWithRelations extends Order {
     email: string | null;
   } | null;
   order_details: OrderDetails[];
+  payment: {
+    id: string;
+    amount: number;
+    method: string;
+    payment_status: string;
+    date: Date;
+  } | null;
 }
 
 // Format price
@@ -136,8 +143,7 @@ function OrdersTableSkeleton() {
 // Main orders list component
 async function OrdersList({ status }: { status: OrderStatus | "ALL" }) {
   // Prepare filter based on status
-  const filter = status === "ALL" ? {} : { status };
-  // Fetch orders with filter
+  const filter = status === "ALL" ? {} : { status }; // Fetch orders with filter including payment information
   const orders = await db.order.findMany({
     where: filter,
     orderBy: {
@@ -150,6 +156,7 @@ async function OrdersList({ status }: { status: OrderStatus | "ALL" }) {
           product: true,
         },
       },
+      payment: true, // Include payment information to get actual amount paid
     },
   });
   return (
@@ -231,15 +238,19 @@ async function OrdersList({ status }: { status: OrderStatus | "ALL" }) {
                   </TableCell>{" "}
                   <TableCell className="py-3">
                     <OrderStatusBadge status={order.status} />
-                  </TableCell>
+                  </TableCell>{" "}
                   <TableCell className="py-3">
                     <div className="font-medium text-green-600">
-                      {formatPrice(
-                        order.order_details.reduce(
-                          (total, item) => total + item.price * item.quantity,
-                          0
-                        )
-                      )}
+                      {/* Display actual payment amount (with discount) instead of calculating from items */}
+                      {order.payment
+                        ? formatPrice(order.payment.amount)
+                        : formatPrice(
+                            order.order_details.reduce(
+                              (total, item) =>
+                                total + item.price * item.quantity,
+                              0
+                            )
+                          )}
                     </div>
                   </TableCell>{" "}
                   <TableCell>

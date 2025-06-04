@@ -3,15 +3,15 @@ import { auth } from "@/lib/auth";
 import NavbarClient from "./NavbarClient";
 
 export default async function Navbar() {
-  // الحصول على جلسة المستخدم
+  // Get user session
   const session = await auth();
 
-  // معلومات الطرق
+  // Route information
   const routes = [
     {
       href: "/",
       label: "Home",
-      active: false, // سيتم تحديثه في جانب العميل
+      active: false, // Will be updated on client side
     },
     {
       href: "/artists",
@@ -29,13 +29,12 @@ export default async function Navbar() {
       active: false,
     },
   ];
-
-  // إذا كان المستخدم مسجل الدخول، نحصل على بياناته المحدثة من قاعدة البيانات
+  // If user is logged in, get their updated data from database
   let userData = null;
 
   if (session?.user?.id) {
     try {
-      // الحصول على بيانات المستخدم المحدثة من قاعدة البيانات
+      // Get updated user data from database
       const user = await db.user.findUnique({
         where: {
           id: session.user.id as string,
@@ -51,14 +50,13 @@ export default async function Navbar() {
 
       if (user) {
         userData = {
-          ...user,
-          // إضافة معلمة زمنية لمنع التخزين المؤقت للصورة
+          ...user, // Add timestamp parameter to prevent image caching
           image: user.image ? `${user.image}` : null,
         };
       }
     } catch (error) {
       console.error("Error fetching user data:", error);
-      // استخدام بيانات الجلسة كبديل في حالة فشل الاستعلام
+      // Use session data as fallback in case of query failure
       userData = session.user;
     }
   }

@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { addDays, format, startOfDay, getDay } from "date-fns";
-import { 
-  convertAvailabilityFromUTC, 
-  nowInEgypt, 
-  createEgyptDate, 
+import {
+  convertAvailabilityFromUTC,
+  nowInEgypt,
+  createEgyptDate,
   toEgyptTime,
-  isSameDayInEgypt
+  isSameDayInEgypt,
 } from "@/lib/timezone-config";
 
 const DEFAULT_BUSINESS_HOURS = {
@@ -58,13 +58,14 @@ export async function GET(
         message: "Artist profile not found",
         availability: [],
       });
-    }    // Parse availability settings and convert from UTC storage to Egypt timezone
+    } // Parse availability settings and convert from UTC storage to Egypt timezone
     let workingHours = DEFAULT_BUSINESS_HOURS;
     let regularDaysOff = DEFAULT_REGULAR_DAYS_OFF;
     let isAvailable = true;
 
     if (makeupArtistRecord?.available_slots) {
-      try {        const storedSettings = makeupArtistRecord.available_slots as {
+      try {
+        const storedSettings = makeupArtistRecord.available_slots as {
           workingDays?: number[];
           startTime?: string;
           endTime?: string;
@@ -78,7 +79,10 @@ export async function GET(
           workingDays: storedSettings.workingDays || [1, 2, 3, 4, 5], // Monday to Friday default
           sessionDuration: storedSettings.sessionDuration || 60,
           breakBetweenSessions: storedSettings.breakBetweenSessions || 15,
-          isAvailable: storedSettings.isAvailable !== undefined ? storedSettings.isAvailable : true,
+          isAvailable:
+            storedSettings.isAvailable !== undefined
+              ? storedSettings.isAvailable
+              : true,
           startTime: storedSettings.startTime,
           endTime: storedSettings.endTime,
         };
@@ -122,7 +126,7 @@ export async function GET(
         message: "This artist is not currently accepting bookings",
         availability: [],
       });
-    }    // Set date range in Egypt timezone
+    } // Set date range in Egypt timezone
     let startDate: Date;
     if (dateParam) {
       const [year, month, day] = dateParam.split("-").map(Number);
@@ -157,7 +161,7 @@ export async function GET(
         "yyyy-MM-dd"
       )}`
     );
-    console.log(`Total appointments found: ${allAppointments.length}`);    // Filter appointments for the date range using Egypt timezone
+    console.log(`Total appointments found: ${allAppointments.length}`); // Filter appointments for the date range using Egypt timezone
     const relevantAppointments = allAppointments.filter((apt) => {
       const aptInEgypt = toEgyptTime(apt.date_time);
       return aptInEgypt >= startDate && aptInEgypt < endDate;
@@ -222,13 +226,13 @@ export async function GET(
               currentDate.getDate(),
               hour,
               minute
-            );            // Skip past slots - compare using Egypt time
+            ); // Skip past slots - compare using Egypt time
             const nowEgyptTime = nowInEgypt();
             const todayInEgypt = new Date(
               nowEgyptTime.getFullYear(),
               nowEgyptTime.getMonth(),
               nowEgyptTime.getDate()
-            );            // Only skip if slot is in the past (same day or earlier + past time)
+            ); // Only skip if slot is in the past (same day or earlier + past time)
             if (
               currentDate.getTime() === todayInEgypt.getTime() &&
               slotDateTime < nowEgyptTime
@@ -239,7 +243,7 @@ export async function GET(
             }
 
             const slotTimeStr = format(slotDateTime, "HH:mm");
-            const timeLabel = format(slotDateTime, "h:mm a");            // Check if this slot conflicts with any appointment
+            const timeLabel = format(slotDateTime, "h:mm a"); // Check if this slot conflicts with any appointment
             let isBooked = false;
             for (const appointment of relevantAppointments) {
               const appointmentInEgypt = toEgyptTime(appointment.date_time);
@@ -262,7 +266,8 @@ export async function GET(
               const slotMinutes = hour * 60 + minute;
               const slotEndMinutes = slotMinutes + workingHours.interval;
               const appointmentMinutes =
-                appointmentInEgypt.getHours() * 60 + appointmentInEgypt.getMinutes();
+                appointmentInEgypt.getHours() * 60 +
+                appointmentInEgypt.getMinutes();
               const appointmentEndMinutes =
                 appointmentEnd.getHours() * 60 + appointmentEnd.getMinutes();
 
@@ -275,7 +280,8 @@ export async function GET(
               if (hasOverlap) {
                 isBooked = true;
                 break;
-              }            }
+              }
+            }
 
             allTimeSlots.push({
               time: slotTimeStr,

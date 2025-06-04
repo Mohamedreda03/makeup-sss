@@ -7,7 +7,7 @@ import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import { Calendar, Clock, User, CheckCircle, DollarSign } from "lucide-react";
 
-// تهيئة إضافات dayjs
+// Initialize dayjs plugins
 dayjs.extend(utc);
 dayjs.extend(timezone);
 import { Button } from "@/components/ui/button";
@@ -303,9 +303,10 @@ export default function AppointmentsPage() {
                     <div className="flex items-center">
                       <Calendar className="h-3 w-3 mr-1 text-gray-500" />
                       <span>
+                        {" "}
                         {(() => {
                           try {
-                            // استخدام dayjs لتحويل وتنسيق التاريخ بتوقيت مصر
+                            // Use dayjs to convert and format date in Egypt timezone
                             return dayjs(appointment.datetime)
                               .tz("Africa/Cairo")
                               .format("MMM D, YYYY");

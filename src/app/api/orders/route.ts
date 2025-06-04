@@ -108,7 +108,6 @@ export async function POST(request: NextRequest) {
 
       return { order, payment };
     });
-
     console.log("Order created successfully:", {
       orderId: result.order.id,
       paymentId: result.payment.id,
@@ -120,6 +119,8 @@ export async function POST(request: NextRequest) {
       },
       itemCount: items.length,
       total: total,
+      // Log to verify if discount was applied (3+ items should have lower total)
+      hasDiscountApplied: items.length >= 3,
     });
 
     return NextResponse.json(

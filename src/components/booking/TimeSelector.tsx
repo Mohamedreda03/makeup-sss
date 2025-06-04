@@ -126,7 +126,7 @@ export function TimeSelector({
                 key={`${slot.time}-${slot.label}`}
                 onClick={() => {
                   if (!isBooked) {
-                    onTimeSelect(slot.time); // استخدام الوقت الأصلي بتنسيق 24 ساعة
+                    onTimeSelect(slot.time); // Use original time in 24 hour format
                   }
                 }}
                 disabled={isBooked}

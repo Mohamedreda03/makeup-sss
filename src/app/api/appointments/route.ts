@@ -4,9 +4,9 @@ import { db } from "@/lib/db";
 import { z } from "zod";
 import { format, addMinutes } from "date-fns";
 import { BookingStatus } from "@/generated/prisma";
-import { 
-  toEgyptISOString, 
-  convertWorkingHoursFromUTC 
+import {
+  toEgyptISOString,
+  convertWorkingHoursFromUTC,
 } from "@/lib/timezone-config";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
@@ -230,7 +230,8 @@ export async function POST(req: Request) {
         `Appointment time: ${format(
           appointmentDateTime,
           "yyyy-MM-dd HH:mm"
-        )} to ${format(appointmentEndTime, "HH:mm")}`      );
+        )} to ${format(appointmentEndTime, "HH:mm")}`
+      );
 
       // Parse availability settings or use defaults
       let workingHours = DEFAULT_BUSINESS_HOURS;
@@ -252,7 +253,7 @@ export async function POST(req: Request) {
         // Convert from UTC storage to Egypt timezone for processing
         let startTime = storedSettings.startTime || "09:00";
         let endTime = storedSettings.endTime || "17:00";
-        
+
         // If we have UTC times stored, convert them to Egypt timezone
         if (storedSettings.startTimeUTC && storedSettings.endTimeUTC) {
           const convertedTimes = convertWorkingHoursFromUTC(

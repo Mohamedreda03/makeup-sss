@@ -85,38 +85,86 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
           },
           artist: true,
         },
-      });
-
-      // If booking is completed and has a price, update artist earnings
+      }); // If booking is completed and has a price, update artist and admin earnings
       if (
         newStatus === "COMPLETED" &&
-        booking.service_price &&
+        booking.total_price &&
         booking.booking_status !== "COMPLETED"
       ) {
+        // Calculate commission split: 93% artist, 7% admin
+        const adminCommission = booking.total_price * 0.07;
+        const artistEarnings = booking.total_price - adminCommission;
+
+        // Update artist earnings (93% of total)
         await prisma.makeUpArtist.update({
           where: { id: user.makeup_artist!.id },
           data: {
             earnings: {
-              increment: booking.service_price,
+              increment: artistEarnings,
             },
           },
         });
+
+        // Find admin user and update their earnings (7% commission)
+        const adminUser = await prisma.user.findFirst({
+          where: { role: "ADMIN" },
+        });
+
+        if (adminUser) {
+          await prisma.user.update({
+            where: { id: adminUser.id },
+            data: {
+              earnings: {
+                increment: adminCommission,
+              },
+            },
+          });
+        }
+
+        console.log(
+          `Booking completed: Artist earned ${artistEarnings} (93%), Admin earned ${adminCommission} (7%)`
+        );
       }
 
       // If booking was completed and is now being changed to another status, subtract from earnings
       if (
         booking.booking_status === "COMPLETED" &&
         newStatus !== "COMPLETED" &&
-        booking.service_price
+        booking.total_price
       ) {
+        // Calculate the amounts to subtract
+        const adminCommission = booking.total_price * 0.07;
+        const artistEarnings = booking.total_price - adminCommission;
+
+        // Subtract from artist earnings
         await prisma.makeUpArtist.update({
           where: { id: user.makeup_artist!.id },
           data: {
             earnings: {
-              decrement: booking.service_price,
+              decrement: artistEarnings,
             },
           },
         });
+
+        // Subtract from admin earnings
+        const adminUser = await prisma.user.findFirst({
+          where: { role: "ADMIN" },
+        });
+
+        if (adminUser) {
+          await prisma.user.update({
+            where: { id: adminUser.id },
+            data: {
+              earnings: {
+                decrement: adminCommission,
+              },
+            },
+          });
+        }
+
+        console.log(
+          `Booking status changed from completed: Subtracted ${artistEarnings} from artist, ${adminCommission} from admin`
+        );
       }
 
       return updatedBooking;

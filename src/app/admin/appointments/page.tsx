@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-import { 
-  toEgyptTime, 
-  formatDateToEgyptLocale, 
-  formatTimeToEgypt12h 
+import {
+  toEgyptTime,
+  formatDateToEgyptLocale,
+  formatTimeToEgypt12h,
 } from "@/lib/timezone-config";
 import {
   ArrowLeft,
@@ -538,21 +538,33 @@ function AdminAppointmentsPage() {
                         </div>
                       </TableCell>{" "}
                       <TableCell>
-                        <div>                            {(() => {
-                              try {
-                                // Use timezone utilities for consistent Egypt timezone formatting
-                                return formatDateToEgyptLocale(booking.date_time.toISOString().split('T')[0]);
-                              } catch {
-                                return "Date not available";
-                              }
-                            })()}
+                        <div>
+                          {" "}
+                          {(() => {
+                            try {
+                              // Use timezone utilities for consistent Egypt timezone formatting
+                              return formatDateToEgyptLocale(
+                                booking.date_time.toISOString().split("T")[0]
+                              );
+                            } catch {
+                              return "Date not available";
+                            }
+                          })()}
                           <div className="text-sm text-muted-foreground">
                             {(() => {
                               try {
                                 // Use timezone utilities for consistent Egypt timezone formatting
-                                const egyptTime = toEgyptTime(booking.date_time);
+                                const egyptTime = toEgyptTime(
+                                  booking.date_time
+                                );
                                 return formatTimeToEgypt12h(
-                                  `${egyptTime.getHours().toString().padStart(2, '0')}:${egyptTime.getMinutes().toString().padStart(2, '0')}`
+                                  `${egyptTime
+                                    .getHours()
+                                    .toString()
+                                    .padStart(2, "0")}:${egyptTime
+                                    .getMinutes()
+                                    .toString()
+                                    .padStart(2, "0")}`
                                 );
                               } catch {
                                 return "Time not available";
@@ -666,18 +678,13 @@ function AdminAppointmentsPage() {
             </div>{" "}
             <h3 className="text-lg font-medium text-gray-900 mb-1">
               {searchInput || statusFilter !== "all"
-                ? "لا توجد حجوزات مطابقة"
-                : "لا توجد حجوزات"}
+                ? "No Matching Appointments"
+                : "No Appointments Found"}
             </h3>
             <p className="text-gray-500 text-center max-w-sm mb-4">
               {searchInput || statusFilter !== "all"
-                ? "لم يتم العثور على حجوزات تطابق معايير البحث المحددة"
-                : "لا توجد حجوزات في النظام حتى الآن"}
-            </p>
-            <p className="text-xs text-muted-foreground mb-4">
-              {searchInput || statusFilter !== "all"
-                ? "No bookings match your search criteria"
-                : "There are no bookings in the system yet"}
+                ? "No appointments were found that match the specified search criteria"
+                : "There are no appointments in the system yet"}
             </p>
             {searchQuery || statusFilter !== "all" ? (
               <Button
@@ -809,8 +816,10 @@ function AdminAppointmentsPage() {
                         const booking = bookings.find(
                           (b) => b.id === bookingToUpdate
                         );
-                        if (!booking) return "Booking not found";                        // Use timezone utilities for consistent Egypt timezone formatting
-                        return formatDateToEgyptLocale(booking.date_time.toISOString().split('T')[0]);
+                        if (!booking) return "Booking not found"; // Use timezone utilities for consistent Egypt timezone formatting
+                        return formatDateToEgyptLocale(
+                          booking.date_time.toISOString().split("T")[0]
+                        );
                       } catch {
                         return "Date not available";
                       }
@@ -822,10 +831,16 @@ function AdminAppointmentsPage() {
                         const booking = bookings.find(
                           (b) => b.id === bookingToUpdate
                         );
-                        if (!booking) return "Booking not found";                        // Use timezone utilities for consistent Egypt timezone formatting
+                        if (!booking) return "Booking not found"; // Use timezone utilities for consistent Egypt timezone formatting
                         const egyptTime = toEgyptTime(booking.date_time);
                         return formatTimeToEgypt12h(
-                          `${egyptTime.getHours().toString().padStart(2, '0')}:${egyptTime.getMinutes().toString().padStart(2, '0')}`
+                          `${egyptTime
+                            .getHours()
+                            .toString()
+                            .padStart(2, "0")}:${egyptTime
+                            .getMinutes()
+                            .toString()
+                            .padStart(2, "0")}`
                         );
                       } catch {
                         return "Time not available";
