@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { z } from "zod";
@@ -20,7 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Upload, ImagePlus } from "lucide-react";
+import { Upload, ImagePlus, Loader2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 
 // Form schema
@@ -53,6 +53,7 @@ const productFormSchema = z.object({
     })
     .default("0"),
   featured: z.boolean().default(false),
+  inStock: z.boolean().default(true),
 });
 
 type ProductFormValues = z.infer<typeof productFormSchema>;
@@ -66,6 +67,7 @@ const defaultValues: Partial<ProductFormValues> = {
   category: "",
   stock_quantity: "0",
   featured: false,
+  inStock: true,
 };
 
 interface ProductFormProps {
@@ -80,6 +82,7 @@ export default function ProductForm({
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [fetchingData, setFetchingData] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(
     initialData?.image || null
   );
@@ -91,6 +94,54 @@ export default function ProductForm({
     resolver: zodResolver(productFormSchema),
     defaultValues: initialData || defaultValues,
   });
+
+  // Fetch product data when productId is provided
+  useEffect(() => {
+    const fetchProductData = async () => {
+      if (!productId || initialData) return;
+
+      setFetchingData(true);
+      try {
+        const response = await fetch(`/api/admin/products/${productId}`);
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch product data");
+        }
+
+        const product = await response.json();
+        // Update form with fetched data
+        const formData: ProductFormValues = {
+          name: product.name || "",
+          description: product.description || "",
+          price: product.price?.toString() || "",
+          image: product.image || "",
+          category: product.category || "",
+          stock_quantity: product.stock_quantity?.toString() || "0",
+          featured: product.featured || false,
+          inStock: product.inStock !== undefined ? product.inStock : true,
+        };
+
+        // Reset form with new data
+        form.reset(formData);
+
+        // Set image preview
+        if (product.image) {
+          setImagePreview(product.image);
+        }
+      } catch (error) {
+        console.error("Error fetching product:", error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load product data. Please try again.",
+        });
+      } finally {
+        setFetchingData(false);
+      }
+    };
+
+    fetchProductData();
+  }, [productId, initialData, form, toast]);
 
   // Handle form submission
   const onSubmit = async (data: ProductFormValues) => {
@@ -167,181 +218,233 @@ export default function ProductForm({
     };
     reader.readAsDataURL(file);
   };
-
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
-          {/* Product Name */}
-          <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Product Name</FormLabel>
-                <FormControl>
-                  <Input placeholder="Enter product name" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+    <>
+      {fetchingData && (
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <span className="ml-2">Loading product data...</span>
         </div>
+      )}
 
-        {/* Product Description */}
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Description</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Enter product description"
-                  className="resize-none min-h-[120px]"
-                  {...field}
-                  value={field.value || ""}
-                />
-              </FormControl>
-              <FormDescription>
-                Provide a detailed description of the product.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Price */}
-          <FormField
-            control={form.control}
-            name="price"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Price ($)</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    placeholder="0.00"
-                    min="0"
-                    step="0.01"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />{" "}
-          {/* Stock Quantity Input */}
-          <FormField
-            control={form.control}
-            name="stock_quantity"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Stock Quantity</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    min="0"
-                    placeholder="Enter stock quantity"
-                    {...field}
-                  />
-                </FormControl>
-                <FormDescription>
-                  Number of items available in stock
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          {/* Featured Checkbox */}
-          <FormField
-            control={form.control}
-            name="featured"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-end space-x-3 space-y-0 rounded-md border p-4">
-                <FormControl>
-                  <Checkbox
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                </FormControl>
-                <div className="space-y-1 leading-none">
-                  <FormLabel>Featured</FormLabel>
-                  <FormDescription>
-                    Show this product on the homepage?
-                  </FormDescription>
-                </div>
-              </FormItem>
-            )}
-          />
-        </div>
-
-        {/* Image Upload */}
-        <div className="space-y-3">
-          <div>
-            <Label htmlFor="imageUpload">Product Image</Label>
-            <FormDescription>Upload a product image (max 5MB).</FormDescription>
-          </div>
-
-          <div className="flex items-center gap-6">
-            {/* Image Preview */}
-            <div className="border rounded-md w-32 h-32 flex items-center justify-center overflow-hidden bg-gray-50 dark:bg-gray-900">
-              {imagePreview ? (
-                <div className="relative w-full h-full">
-                  <Image
-                    src={imagePreview}
-                    alt="Product preview"
-                    className="object-cover"
-                    fill
-                  />
-                </div>
-              ) : (
-                <ImagePlus className="h-10 w-10 text-gray-400" />
-              )}
-            </div>
-
-            {/* Upload Button */}
-            <div>
-              <Label
-                htmlFor="imageUpload"
-                className="cursor-pointer inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
-              >
-                <Upload className="mr-2 h-4 w-4" />
-                Upload Image
-              </Label>
-              <Input
-                id="imageUpload"
-                type="file"
-                className="hidden"
-                accept="image/*"
-                onChange={handleImageUpload}
+      {!fetchingData && (
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
+              {/* Product Name */}
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Product Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter product name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </div>
-          </div>
-        </div>
+            {/* Product Description */}
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Description</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Enter product description"
+                      className="resize-none min-h-[120px]"
+                      {...field}
+                      value={field.value || ""}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Provide a detailed description of the product.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />{" "}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Price */}
+              <FormField
+                control={form.control}
+                name="price"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Price ($)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        placeholder="0.00"
+                        min="0"
+                        step="0.01"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-        {/* Submit Button */}
-        <div className="flex justify-end space-x-4">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => router.push("/admin/products")}
-            disabled={loading}
-          >
-            Cancel
-          </Button>
-          <Button type="submit" disabled={loading}>
-            {loading
-              ? isEditMode
-                ? "Updating..."
-                : "Creating..."
-              : isEditMode
-              ? "Update Product"
-              : "Create Product"}
-          </Button>
-        </div>
-      </form>
-    </Form>
+              {/* Stock Quantity Input */}
+              <FormField
+                control={form.control}
+                name="stock_quantity"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Stock Quantity</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="0"
+                        placeholder="Enter stock quantity"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Number of items available in stock
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Category Input */}
+              <FormField
+                control={form.control}
+                name="category"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Category</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter product category" {...field} />
+                    </FormControl>
+                    <FormDescription>
+                      Product category (e.g., Makeup, Skincare)
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Featured Checkbox */}
+              <FormField
+                control={form.control}
+                name="featured"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>Featured Product</FormLabel>
+                      <FormDescription>
+                        Show this product on the homepage and in featured
+                        sections
+                      </FormDescription>
+                    </div>
+                  </FormItem>
+                )}
+              />
+
+              {/* In Stock Checkbox */}
+              <FormField
+                control={form.control}
+                name="inStock"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>Available for Purchase</FormLabel>
+                      <FormDescription>
+                        Allow customers to purchase this product
+                      </FormDescription>
+                    </div>
+                  </FormItem>
+                )}
+              />
+            </div>
+            {/* Image Upload */}
+            <div className="space-y-3">
+              <div>
+                <Label htmlFor="imageUpload">Product Image</Label>
+                <FormDescription>
+                  Upload a product image (max 5MB).
+                </FormDescription>
+              </div>
+
+              <div className="flex items-center gap-6">
+                {/* Image Preview */}
+                <div className="border rounded-md w-32 h-32 flex items-center justify-center overflow-hidden bg-gray-50 dark:bg-gray-900">
+                  {imagePreview ? (
+                    <div className="relative w-full h-full">
+                      <Image
+                        src={imagePreview}
+                        alt="Product preview"
+                        className="object-cover"
+                        fill
+                      />
+                    </div>
+                  ) : (
+                    <ImagePlus className="h-10 w-10 text-gray-400" />
+                  )}
+                </div>
+
+                {/* Upload Button */}
+                <div>
+                  <Label
+                    htmlFor="imageUpload"
+                    className="cursor-pointer inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
+                  >
+                    <Upload className="mr-2 h-4 w-4" />
+                    Upload Image
+                  </Label>
+                  <Input
+                    id="imageUpload"
+                    type="file"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                  />
+                </div>
+              </div>
+            </div>
+            {/* Submit Button */}
+            <div className="flex justify-end space-x-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => router.push("/admin/products")}
+                disabled={loading}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={loading}>
+                {loading
+                  ? isEditMode
+                    ? "Updating..."
+                    : "Creating..."
+                  : isEditMode
+                  ? "Update Product"
+                  : "Create Product"}
+              </Button>{" "}
+            </div>
+          </form>
+        </Form>
+      )}
+    </>
   );
 }

@@ -252,12 +252,13 @@ export default function ArtistAvailabilityPage() {
         </h1>
         <p className="text-muted-foreground mt-2">
           Configure your working schedule and availability for client bookings.
-        </p>
+        </p>{" "}
         <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
           <p className="text-sm text-blue-800">
             <strong>Timezone Note:</strong> All times are displayed and saved in
-            Egypt timezone (UTC+2/+3). Clients will see appointment times in
-            Egypt timezone regardless of their location.
+            Egypt timezone (UTC+2/+3). Times will remain in Egypt timezone even
+            when deployed to servers in other regions. Clients will see
+            appointment times in Egypt timezone regardless of their location.
           </p>
         </div>
       </div>
@@ -399,10 +400,10 @@ export default function ArtistAvailabilityPage() {
                   <p>
                     <strong>End:</strong>{" "}
                     {formatTime(availabilitySettings.endTime)}
-                  </p>
+                  </p>{" "}
                   <p className="mt-2 text-xs text-gray-500">
-                    Times are automatically saved in UTC and displayed in Egypt
-                    timezone
+                    Times are stored in Egypt timezone and will remain
+                    consistent across all server environments
                   </p>
                 </div>
               </div>

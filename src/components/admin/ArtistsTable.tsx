@@ -32,6 +32,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import {
   Pencil,
   Trash2,
@@ -83,6 +84,7 @@ export default function ArtistsTable({
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeletingModal, setShowDeletingModal] = useState(false);
 
   // Fetch artists data
   const fetchData = useCallback(async () => {
@@ -149,13 +151,14 @@ export default function ArtistsTable({
     setDeleteId(id);
     setShowDeleteDialog(true);
   };
-
   // Handle delete
   const handleDelete = async () => {
     if (!deleteId) return;
 
     try {
       setIsDeleting(true);
+      setShowDeleteDialog(false); // Close confirmation dialog
+      setShowDeletingModal(true); // Show loading modal
 
       const response = await fetch(`/api/admin/artists/${deleteId}`, {
         method: "DELETE",
@@ -182,6 +185,7 @@ export default function ArtistsTable({
       });
     } finally {
       setIsDeleting(false);
+      setShowDeletingModal(false); // Hide loading modal
       setShowDeleteDialog(false);
       setDeleteId(null);
     }
@@ -545,24 +549,68 @@ export default function ArtistsTable({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>{" "}
             <AlertDialogAction
               onClick={handleDelete}
               disabled={isDeleting}
               className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
             >
-              {isDeleting ? (
-                <div className="flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Deleting...
-                </div>
-              ) : (
-                "Delete Artist"
-              )}
+              Delete Artist
             </AlertDialogAction>
           </AlertDialogFooter>
-        </AlertDialogContent>
+        </AlertDialogContent>{" "}
       </AlertDialog>
+      {/* Loading Modal for Deletion */}
+      <Dialog open={showDeletingModal} onOpenChange={() => {}}>
+        <DialogContent className="sm:max-w-md">
+          <div className="flex flex-col items-center justify-center py-8 px-6">
+            <div className="relative mb-6">
+              {/* Outer rotating ring */}
+              <div className="w-20 h-20 border-4 border-red-200 rounded-full animate-spin border-t-red-600"></div>
+              {/* Inner pulsing circle */}
+              <div className="absolute inset-0 w-20 h-20 border-4 border-transparent rounded-full animate-pulse bg-red-50 flex items-center justify-center">
+                <Trash2 className="w-6 h-6 text-red-600" />
+              </div>
+            </div>
+
+            <div className="text-center space-y-3">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Deleting Artist
+              </h3>
+              <p className="text-sm text-gray-600 max-w-sm">
+                Please wait while we safely remove the artist and all associated
+                data. This may take a few moments...
+              </p>
+
+              {/* Progress steps */}
+              <div className="mt-6 space-y-2">
+                <div className="flex items-center gap-3 text-sm">
+                  <div className="w-2 h-2 bg-red-600 rounded-full animate-pulse"></div>
+                  <span className="text-gray-600">
+                    Removing artist profile...
+                  </span>
+                </div>
+                <div className="flex items-center gap-3 text-sm">
+                  <div
+                    className="w-2 h-2 bg-red-400 rounded-full animate-pulse"
+                    style={{ animationDelay: "0.2s" }}
+                  ></div>
+                  <span className="text-gray-600">
+                    Cleaning up bookings and reviews...
+                  </span>
+                </div>
+                <div className="flex items-center gap-3 text-sm">
+                  <div
+                    className="w-2 h-2 bg-red-300 rounded-full animate-pulse"
+                    style={{ animationDelay: "0.4s" }}
+                  ></div>
+                  <span className="text-gray-600">Finalizing deletion...</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

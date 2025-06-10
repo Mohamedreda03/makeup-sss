@@ -3,8 +3,8 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { z } from "zod";
 import {
-  convertAvailabilityToUTC,
   convertAvailabilityFromUTC,
+  convertAvailabilityToEgyptStorage,
 } from "@/lib/timezone-config";
 
 export const dynamic = "force-dynamic";
@@ -46,10 +46,27 @@ export async function GET() {
         const storedSettings =
           typeof artist.available_slots === "string"
             ? JSON.parse(artist.available_slots)
-            : artist.available_slots;
-
-        // Convert from UTC storage to Egypt timezone for display
-        availabilitySettings = convertAvailabilityFromUTC(storedSettings);
+            : artist.available_slots; // Check if stored settings have Egypt timezone marker
+        if (
+          storedSettings.storageType === "EGYPT_TIME" ||
+          storedSettings.timezone === "Africa/Cairo"
+        ) {
+          // Data is already in Egypt timezone, use directly
+          availabilitySettings = {
+            workingDays: storedSettings.workingDays || [],
+            startTime: storedSettings.startTime || "09:00",
+            endTime: storedSettings.endTime || "17:00",
+            sessionDuration: storedSettings.sessionDuration || 60,
+            breakBetweenSessions: storedSettings.breakBetweenSessions || 15,
+            isAvailable:
+              storedSettings.isAvailable !== undefined
+                ? storedSettings.isAvailable
+                : true,
+          };
+        } else {
+          // Legacy data - convert from UTC storage to Egypt timezone for display
+          availabilitySettings = convertAvailabilityFromUTC(storedSettings);
+        }
       } catch (e) {
         console.error("Error parsing availability settings:", e);
       }
@@ -97,11 +114,11 @@ export async function PUT(req: NextRequest) {
         { status: 400 }
       );
     }
-
     const availabilitySettings = validation.data;
 
-    // Convert Egypt timezone settings to include UTC for storage
-    const utcConvertedSettings = convertAvailabilityToUTC(availabilitySettings);
+    // Convert Egypt timezone settings for storage (keep in Egypt time)
+    const egyptStorageSettings =
+      convertAvailabilityToEgyptStorage(availabilitySettings);
 
     // Find and verify the makeup artist belongs to the current user
     const artist = await db.makeUpArtist.findUnique({
@@ -110,13 +127,11 @@ export async function PUT(req: NextRequest) {
 
     if (!artist) {
       return NextResponse.json({ error: "Artist not found" }, { status: 404 });
-    }
-
-    // Update the availability settings with UTC conversion
+    } // Update the availability settings with Egypt timezone storage
     const updatedArtist = await db.makeUpArtist.update({
       where: { user_id: session.user.id },
       data: {
-        available_slots: utcConvertedSettings, // Store with UTC times
+        available_slots: egyptStorageSettings, // Store with Egypt times
         // Set general availability based on working days
         availability:
           availabilitySettings.isAvailable &&

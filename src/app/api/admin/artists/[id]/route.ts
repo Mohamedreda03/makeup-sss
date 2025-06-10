@@ -368,11 +368,22 @@ export async function DELETE(
 
     const artistId = params.id;
 
-    // Check if artist exists
-    const existingArtist = await db.user.findUnique({
+    // Check if artist exists and is actually an artist
+    const existingArtist = await prisma.user.findUnique({
       where: {
         id: artistId,
         role: "ARTIST",
+      },
+      include: {
+        makeup_artist: true,
+        services: true,
+        bookings: true,
+        reviews: true,
+        orders: true,
+        cart: true,
+        accounts: true,
+        sessions: true,
+        passwordResets: true,
       },
     });
 
@@ -383,19 +394,141 @@ export async function DELETE(
       );
     }
 
-    // Delete artist (will cascade delete associated data)
-    await db.user.delete({
-      where: { id: artistId },
+    // Use transaction to ensure all deletions happen atomically
+    const deletionSummary = await prisma.$transaction(async (tx) => {
+      let deletedCounts = {
+        reviews: 0,
+        bookings: 0,
+        services: 0,
+        cartItems: 0,
+        cart: 0,
+        orders: 0,
+        accounts: 0,
+        sessions: 0,
+        passwordResets: 0,
+        makeupArtist: 0,
+        user: 0,
+      };
+
+      // 1. Delete reviews (both given and received)
+      if (existingArtist.makeup_artist) {
+        const deletedReviews = await tx.review.deleteMany({
+          where: {
+            OR: [
+              { user_id: artistId }, // Reviews given by artist
+              { artist_id: existingArtist.makeup_artist.id }, // Reviews received by artist
+            ],
+          },
+        });
+        deletedCounts.reviews = deletedReviews.count;
+      }
+
+      // 2. Delete bookings (as customer and as artist)
+      if (existingArtist.makeup_artist) {
+        const deletedBookings = await tx.booking.deleteMany({
+          where: {
+            OR: [
+              { user_id: artistId }, // Bookings made by artist
+              { artist_id: existingArtist.makeup_artist.id }, // Bookings for artist
+            ],
+          },
+        });
+        deletedCounts.bookings = deletedBookings.count;
+      }
+
+      // 3. Delete artist services
+      const deletedServices = await tx.artistService.deleteMany({
+        where: { artistId: artistId },
+      });
+      deletedCounts.services = deletedServices.count;
+
+      // 4. Delete cart items if artist has cart
+      if (existingArtist.cart) {
+        const deletedCartItems = await tx.cartItem.deleteMany({
+          where: { cart_id: existingArtist.cart.id },
+        });
+        deletedCounts.cartItems = deletedCartItems.count;
+
+        // 5. Delete cart
+        await tx.cart.delete({
+          where: { id: existingArtist.cart.id },
+        });
+        deletedCounts.cart = 1;
+      }
+
+      // 6. Delete orders and order details
+      if (existingArtist.orders.length > 0) {
+        // Delete order details first
+        await tx.orderDetails.deleteMany({
+          where: {
+            order_id: {
+              in: existingArtist.orders.map((order) => order.id),
+            },
+          },
+        });
+
+        // Delete payments
+        await tx.payment.deleteMany({
+          where: {
+            order_id: {
+              in: existingArtist.orders.map((order) => order.id),
+            },
+          },
+        });
+
+        // Delete orders
+        const deletedOrders = await tx.order.deleteMany({
+          where: { user_id: artistId },
+        });
+        deletedCounts.orders = deletedOrders.count;
+      }
+
+      // 7. Delete auth-related records
+      const deletedAccounts = await tx.account.deleteMany({
+        where: { userId: artistId },
+      });
+      deletedCounts.accounts = deletedAccounts.count;
+
+      const deletedSessions = await tx.session.deleteMany({
+        where: { userId: artistId },
+      });
+      deletedCounts.sessions = deletedSessions.count;
+
+      const deletedPasswordResets = await tx.passwordReset.deleteMany({
+        where: { userId: artistId },
+      });
+      deletedCounts.passwordResets = deletedPasswordResets.count;
+
+      // 8. Delete makeup artist profile
+      if (existingArtist.makeup_artist) {
+        await tx.makeUpArtist.delete({
+          where: { id: existingArtist.makeup_artist.id },
+        });
+        deletedCounts.makeupArtist = 1;
+      }
+
+      // 9. Finally, delete the user
+      await tx.user.delete({
+        where: { id: artistId },
+      });
+      deletedCounts.user = 1;
+
+      return deletedCounts;
     });
 
-    return NextResponse.json(
-      { message: "Artist deleted successfully" },
-      { status: 200 }
-    );
+    return NextResponse.json({
+      message: "Artist deleted successfully",
+      artist: {
+        id: existingArtist.id,
+        name: existingArtist.name,
+        email: existingArtist.email,
+      },
+      deletionSummary,
+    });
   } catch (error) {
     console.error("[ARTIST_DELETE]", error);
     return NextResponse.json(
-      { message: "Internal server error" },
+      { message: "Internal server error while deleting artist" },
       { status: 500 }
     );
   }

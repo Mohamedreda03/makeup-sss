@@ -9,6 +9,8 @@ import {
   toEgyptTime,
   isSameDayInEgypt,
   convertWorkingHoursFromUTC,
+  createEgyptDateTime,
+  displayEgyptDateTime,
 } from "@/lib/timezone-config";
 
 // Define status type
@@ -124,23 +126,18 @@ export async function POST(req: Request) {
         .map(Number);
       const [timeHour, timeMinute] = validatedData.appointmentTime
         .split(":")
-        .map(Number);
-
-      // Create appointment datetime using Egypt timezone
-      const appointmentDateTime = createEgyptDate(
-        year,
-        month,
-        day,
-        timeHour,
-        timeMinute,
-        0
+        .map(Number); // Create appointment datetime using Egypt timezone for storage
+      const appointmentDateTime = createEgyptDateTime(
+        validatedData.appointmentDate,
+        validatedData.appointmentTime
       );
-      console.log("Appointment datetime created in Egypt timezone:", {
-        datetime: appointmentDateTime.toLocaleString("en-US", {
-          timeZone: "Africa/Cairo",
-        }),
-        utc: appointmentDateTime.toISOString(),
-      });
+      console.log(
+        "Appointment datetime created in Egypt timezone for storage:",
+        {
+          datetime: displayEgyptDateTime(appointmentDateTime),
+          storage: appointmentDateTime.toISOString(),
+        }
+      );
 
       const dayOfWeek = getDay(appointmentDateTime);
       const appointmentEndTime = addMinutes(

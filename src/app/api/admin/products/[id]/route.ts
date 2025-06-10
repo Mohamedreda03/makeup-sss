@@ -59,6 +59,7 @@ export async function PATCH(
         { status: 401 }
       );
     }
+
     const body = await req.json();
     const {
       name,
@@ -68,9 +69,11 @@ export async function PATCH(
       image,
       stock_quantity,
       featured,
+      inStock, // Add support for toggling inStock status
     } = body;
 
-    if (!name || !price || !description) {
+    // For non-delete operations, name and price are required
+    if (body.action !== "toggle-status" && (!name || price === undefined)) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
@@ -86,11 +89,18 @@ export async function PATCH(
     if (!existingProduct) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
-    const updatedProduct = await db.product.update({
-      where: {
-        id: params.id,
-      },
-      data: {
+
+    // Handle different types of updates
+    let updateData: any = {};
+
+    if (body.action === "toggle-status") {
+      // Toggle inStock status only
+      updateData = {
+        inStock: !existingProduct.inStock,
+      };
+    } else {
+      // Full product update
+      updateData = {
         name,
         price,
         description,
@@ -98,7 +108,15 @@ export async function PATCH(
         image,
         stock_quantity,
         featured,
+        ...(inStock !== undefined && { inStock }),
+      };
+    }
+
+    const updatedProduct = await db.product.update({
+      where: {
+        id: params.id,
       },
+      data: updateData,
     });
 
     return NextResponse.json(updatedProduct);
@@ -138,16 +156,42 @@ export async function DELETE(
       where: {
         id: params.id,
       },
+      include: {
+        cart_items: true,
+        order_details: true,
+      },
     });
 
     if (!product) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
-    await db.product.delete({
-      where: {
-        id: params.id,
-      },
+    // Check if product is being used in any active cart items or orders
+    const activeCartItems = product.cart_items.length;
+    const orderDetails = product.order_details.length;
+
+    if (activeCartItems > 0 || orderDetails > 0) {
+      return NextResponse.json(
+        {
+          error: "Cannot delete product",
+          message: `This product cannot be deleted because it is referenced in ${activeCartItems} cart item(s) and ${orderDetails} order(s). Please remove all references first or mark the product as inactive instead.`,
+          details: {
+            cartItems: activeCartItems,
+            orders: orderDetails,
+          },
+        },
+        { status: 400 }
+      );
+    }
+
+    // Use transaction to ensure data consistency
+    await db.$transaction(async (prisma) => {
+      // Delete the product (cascading deletes will handle related records)
+      await prisma.product.delete({
+        where: {
+          id: params.id,
+        },
+      });
     });
 
     return NextResponse.json(
@@ -156,6 +200,22 @@ export async function DELETE(
     );
   } catch (error) {
     console.error("Error deleting product:", error);
+
+    // Handle foreign key constraint errors
+    if (
+      error instanceof Error &&
+      error.message.includes("foreign key constraint")
+    ) {
+      return NextResponse.json(
+        {
+          error: "Cannot delete product",
+          message:
+            "This product is referenced by other records and cannot be deleted. Please remove all references first.",
+        },
+        { status: 400 }
+      );
+    }
+
     return NextResponse.json(
       { error: "Failed to delete product" },
       { status: 500 }

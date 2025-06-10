@@ -58,7 +58,7 @@ export async function GET(
         message: "Artist profile not found",
         availability: [],
       });
-    } // Parse availability settings and convert from UTC storage to Egypt timezone
+    } // Parse availability settings - check if data is already in Egypt timezone
     let workingHours = DEFAULT_BUSINESS_HOURS;
     let regularDaysOff = DEFAULT_REGULAR_DAYS_OFF;
     let isAvailable = true;
@@ -72,47 +72,78 @@ export async function GET(
           sessionDuration?: number;
           breakBetweenSessions?: number;
           isAvailable?: boolean;
+          storageType?: string;
+          timezone?: string;
         };
 
-        // Set default values for required properties
-        const settingsWithDefaults = {
-          workingDays: storedSettings.workingDays || [1, 2, 3, 4, 5], // Monday to Friday default
-          sessionDuration: storedSettings.sessionDuration || 60,
-          breakBetweenSessions: storedSettings.breakBetweenSessions || 15,
-          isAvailable:
-            storedSettings.isAvailable !== undefined
-              ? storedSettings.isAvailable
-              : true,
-          startTime: storedSettings.startTime,
-          endTime: storedSettings.endTime,
-        };
+        console.log("Raw stored settings:", storedSettings);
 
-        // Convert from UTC storage to Egypt timezone for display/processing
-        const settings = convertAvailabilityFromUTC(settingsWithDefaults);
-
-        if (settings.startTime && settings.endTime) {
-          workingHours = {
-            start:
-              parseInt(settings.startTime.split(":")[0]) ||
-              DEFAULT_BUSINESS_HOURS.start,
-            end:
-              parseInt(settings.endTime.split(":")[0]) ||
-              DEFAULT_BUSINESS_HOURS.end,
-            interval:
-              settings.sessionDuration || DEFAULT_BUSINESS_HOURS.interval,
+        // Check if data is already stored in Egypt timezone (new format)
+        if (
+          storedSettings.storageType === "EGYPT_TIME" ||
+          storedSettings.timezone === "Africa/Cairo"
+        ) {
+          // Data is already in Egypt timezone, use directly
+          if (storedSettings.startTime && storedSettings.endTime) {
+            workingHours = {
+              start:
+                parseInt(storedSettings.startTime.split(":")[0]) ||
+                DEFAULT_BUSINESS_HOURS.start,
+              end:
+                parseInt(storedSettings.endTime.split(":")[0]) ||
+                DEFAULT_BUSINESS_HOURS.end,
+              interval:
+                storedSettings.sessionDuration ||
+                DEFAULT_BUSINESS_HOURS.interval,
+            };
+          }
+        } else {
+          // Legacy data - convert from UTC storage to Egypt timezone for processing
+          const settingsWithDefaults = {
+            workingDays: storedSettings.workingDays || [1, 2, 3, 4, 5], // Monday to Friday default
+            sessionDuration: storedSettings.sessionDuration || 60,
+            breakBetweenSessions: storedSettings.breakBetweenSessions || 15,
+            isAvailable:
+              storedSettings.isAvailable !== undefined
+                ? storedSettings.isAvailable
+                : true,
+            startTime: storedSettings.startTime,
+            endTime: storedSettings.endTime,
           };
+
+          // Convert from UTC storage to Egypt timezone for processing
+          const settings = convertAvailabilityFromUTC(settingsWithDefaults);
+
+          if (settings.startTime && settings.endTime) {
+            workingHours = {
+              start:
+                parseInt(settings.startTime.split(":")[0]) ||
+                DEFAULT_BUSINESS_HOURS.start,
+              end:
+                parseInt(settings.endTime.split(":")[0]) ||
+                DEFAULT_BUSINESS_HOURS.end,
+              interval:
+                settings.sessionDuration || DEFAULT_BUSINESS_HOURS.interval,
+            };
+          }
         }
 
-        if (settings.workingDays && Array.isArray(settings.workingDays)) {
+        // Handle working days and availability for both new and legacy formats
+        const workingDays = storedSettings.workingDays || [1, 2, 3, 4, 5]; // Monday to Friday default
+        if (workingDays && Array.isArray(workingDays)) {
           const allDays = [0, 1, 2, 3, 4, 5, 6]; // Sunday=0 to Saturday=6
-          regularDaysOff = allDays.filter(
-            (day) => !settings.workingDays!.includes(day)
-          );
+          regularDaysOff = allDays.filter((day) => !workingDays.includes(day));
         }
 
-        if (settings.isAvailable !== undefined) {
-          isAvailable = settings.isAvailable;
+        if (storedSettings.isAvailable !== undefined) {
+          isAvailable = storedSettings.isAvailable;
         }
+
+        console.log("Processed settings:", {
+          workingHours,
+          regularDaysOff,
+          isAvailable,
+        });
       } catch (error) {
         console.error("Error parsing availability settings:", error);
       }

@@ -29,6 +29,9 @@ import {
   ChevronRight,
   Eye,
   Loader2,
+  EyeOff,
+  ToggleLeft,
+  ToggleRight,
 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import {
@@ -50,6 +53,7 @@ interface Product {
   category: string;
   stock_quantity: number;
   featured: boolean;
+  inStock: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -78,7 +82,7 @@ export default function ProductsTable({
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-
+  const [togglingStatus, setTogglingStatus] = useState<string | null>(null);
   // In a real app, we would fetch data from an API
   // For this example, let's use some static data
   const fetchData = useCallback(async () => {
@@ -86,7 +90,7 @@ export default function ProductsTable({
     try {
       // Fetch actual products from the API
       const response = await fetch(
-        `/api/products?query=${searchQuery}&page=${currentPage}&limit=${pageSize}&sort=${sort}`
+        `/api/admin/products?query=${searchQuery}&page=${currentPage}&limit=${pageSize}&sort=${sort}`
       );
 
       if (!response.ok) {
@@ -127,7 +131,6 @@ export default function ProductsTable({
       `/admin/products?query=${searchQuery}&page=${currentPage}&limit=${pageSize}&sort=${value}`
     );
   };
-
   // Handle delete
   const handleDelete = async (id: string) => {
     try {
@@ -138,8 +141,24 @@ export default function ProductsTable({
         method: "DELETE",
       });
 
+      const responseData = await response.json();
+
       if (!response.ok) {
-        throw new Error("Failed to delete product");
+        // Handle specific error cases
+        if (response.status === 400 && responseData.details) {
+          const { cartItems, orders } = responseData.details;
+          const message = `Cannot delete this product because it is being used in:\n• ${cartItems} active cart item(s)\n• ${orders} order(s)\n\nPlease remove all references first or mark the product as inactive instead.`;
+
+          toast({
+            variant: "destructive",
+            title: "Cannot Delete Product",
+            description: message,
+            duration: 6000,
+          });
+          return;
+        }
+
+        throw new Error(responseData.message || "Failed to delete product");
       }
 
       // Refresh the data from server to ensure consistency
@@ -151,16 +170,70 @@ export default function ProductsTable({
       });
     } catch (error) {
       console.error("Error deleting product", error);
+
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "There was an error deleting the product. Please try again.";
+
       toast({
         variant: "destructive",
         title: "Error deleting product",
-        description:
-          "There was an error deleting the product. Please try again.",
+        description: errorMessage,
       });
     } finally {
       setIsDeleting(false);
       setShowDeleteDialog(false);
       setDeleteId(null);
+    }
+  };
+
+  // Handle toggle product status (inStock)
+  const handleToggleStatus = async (id: string) => {
+    try {
+      setTogglingStatus(id);
+
+      const response = await fetch(`/api/admin/products/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          action: "toggle-status",
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to toggle product status");
+      }
+
+      const updatedProduct = await response.json();
+
+      // Update the local state
+      setProducts((prev) =>
+        prev.map((product) =>
+          product.id === id
+            ? { ...product, inStock: updatedProduct.inStock }
+            : product
+        )
+      );
+
+      toast({
+        title: "Status updated",
+        description: `Product has been ${
+          updatedProduct.inStock ? "activated" : "deactivated"
+        } successfully.`,
+      });
+    } catch (error) {
+      console.error("Error toggling product status", error);
+      toast({
+        variant: "destructive",
+        title: "Error updating status",
+        description:
+          "There was an error updating the product status. Please try again.",
+      });
+    } finally {
+      setTogglingStatus(null);
     }
   };
 
@@ -233,6 +306,7 @@ export default function ProductsTable({
         <Table>
           <TableHeader className="bg-gray-50 dark:bg-gray-800">
             <TableRow className="border-b border-gray-200 dark:border-gray-700">
+              {" "}
               <TableHead className="py-4 px-6 font-semibold text-gray-900 dark:text-gray-100">
                 Product
               </TableHead>
@@ -251,10 +325,11 @@ export default function ProductsTable({
             </TableRow>
           </TableHeader>
           <TableBody>
+            {" "}
             {products.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={5}
+                  colSpan={6}
                   className="text-center py-12 text-gray-500 dark:text-gray-400"
                 >
                   <div className="flex flex-col items-center justify-center">
@@ -302,7 +377,6 @@ export default function ProductsTable({
                       </div>
                     </div>
                   </TableCell>
-
                   <TableCell className="py-4 px-6">
                     <div className="font-semibold text-gray-900 dark:text-gray-100">
                       EGP {product.price.toFixed(2)}
@@ -320,7 +394,7 @@ export default function ProductsTable({
                         Out of Stock
                       </span>
                     )}
-                  </TableCell>
+                  </TableCell>{" "}
                   <TableCell className="py-4 px-6">
                     <div className="flex items-center gap-2">
                       {product.featured && (
@@ -333,6 +407,30 @@ export default function ProductsTable({
                           Regular
                         </span>
                       )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="py-4 px-6">
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleToggleStatus(product.id)}
+                        disabled={togglingStatus === product.id}
+                        className={`h-8 px-3 text-xs font-medium transition-all duration-200 ${
+                          product.inStock
+                            ? "text-green-700 bg-green-50 hover:bg-green-100 dark:text-green-400 dark:bg-green-900/20 dark:hover:bg-green-900/30"
+                            : "text-red-700 bg-red-50 hover:bg-red-100 dark:text-red-400 dark:bg-red-900/20 dark:hover:bg-red-900/30"
+                        }`}
+                      >
+                        {togglingStatus === product.id ? (
+                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                        ) : product.inStock ? (
+                          <ToggleRight className="h-3 w-3 mr-1" />
+                        ) : (
+                          <ToggleLeft className="h-3 w-3 mr-1" />
+                        )}
+                        {product.inStock ? "Active" : "Inactive"}
+                      </Button>
                     </div>
                   </TableCell>
                   <TableCell className="py-4 px-6 text-right">
@@ -358,17 +456,23 @@ export default function ProductsTable({
                           <Pencil className="h-4 w-4 text-green-600 dark:text-green-400" />
                           <span className="sr-only">Edit</span>
                         </Link>
-                      </Button>
+                      </Button>{" "}
                       <Dialog
                         open={showDeleteDialog && deleteId === product.id}
-                        onOpenChange={setShowDeleteDialog}
+                        onOpenChange={(open) => {
+                          setShowDeleteDialog(open);
+                          if (!open) setDeleteId(null);
+                        }}
                       >
                         <DialogTrigger asChild>
                           <Button
                             variant="ghost"
                             size="sm"
                             className="h-8 w-8 p-0 hover:bg-red-50 dark:hover:bg-red-900/20"
-                            onClick={() => setDeleteId(product.id)}
+                            onClick={() => {
+                              setDeleteId(product.id);
+                              setShowDeleteDialog(true);
+                            }}
                           >
                             <Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />
                             <span className="sr-only">Delete</span>
@@ -381,11 +485,14 @@ export default function ProductsTable({
                               Are you sure you want to delete the product "
                               {product.name}"? This action cannot be undone.
                             </DialogDescription>
-                          </DialogHeader>
+                          </DialogHeader>{" "}
                           <DialogFooter>
                             <Button
                               variant="outline"
-                              onClick={() => setShowDeleteDialog(false)}
+                              onClick={() => {
+                                setShowDeleteDialog(false);
+                                setDeleteId(null);
+                              }}
                               disabled={isDeleting}
                             >
                               Cancel

@@ -5,8 +5,9 @@ import { z } from "zod";
 import { format, addMinutes } from "date-fns";
 import { BookingStatus } from "@/generated/prisma";
 import {
-  toEgyptISOString,
   convertWorkingHoursFromUTC,
+  createEgyptDateTimeForDB,
+  displayEgyptDateTime,
 } from "@/lib/timezone-config";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
@@ -107,14 +108,16 @@ export async function GET(req: Request) {
       },
       skip: (page - 1) * pageSize,
       take: pageSize,
-    }); // Format response
+    }); // Format response - treat stored datetime as Egypt time (no conversion)
     const formattedAppointments = appointments.map((booking) => {
       // Check if booking is paid - payment status is tracked in booking_status
       const isPaid = booking.booking_status === "COMPLETED";
 
+      // Treat the stored datetime as Egypt time directly (no timezone conversion)
+      // Since we store in Egypt time, we should return it as Egypt time
       return {
         id: booking.id,
-        datetime: booking.date_time,
+        datetime: booking.date_time, // Return as-is (already Egypt time)
         description: booking.service_type, // Use service_type as description
         status: booking.booking_status,
         serviceType: booking.service_type,
@@ -187,34 +190,26 @@ export async function POST(req: Request) {
           { status: 404 }
         );
       }
-      console.log(`Artist verified: ${artist.name || artist.id}`); // Convert Egypt timezone date/time to UTC for database storage
-      console.log("=== TIMEZONE-AWARE DATETIME PROCESSING ===");
+      console.log(`Artist verified: ${artist.name || artist.id}`); // Convert Egypt timezone date/time to Egypt storage format for database
+      console.log("=== TIMEZONE-AWARE DATETIME PROCESSING (EGYPT STORAGE) ===");
       console.log("Received appointmentDate:", validatedData.appointmentDate);
-      console.log("Received appointmentTime:", validatedData.appointmentTime);
-
-      // Convert Egypt timezone date/time to UTC ISO string for database
-      const appointmentDateTimeUTC = toEgyptISOString(
+      console.log("Received appointmentTime:", validatedData.appointmentTime); // Create appointment datetime using Egypt timezone directly (NO conversion)
+      const appointmentDateTime = createEgyptDateTimeForDB(
         validatedData.appointmentDate,
         validatedData.appointmentTime
       );
-
-      // Create Date object from UTC ISO string for further processing
-      const appointmentDateTime = new Date(appointmentDateTimeUTC);
 
       console.log(
         "Egypt date/time input:",
         `${validatedData.appointmentDate} ${validatedData.appointmentTime}`
       );
-      console.log("Converted to UTC ISO:", appointmentDateTimeUTC);
       console.log(
-        "Created UTC datetime object:",
+        "Created Egypt datetime object:",
         appointmentDateTime.toISOString()
       );
       console.log(
         "Will display in Egypt as:",
-        appointmentDateTime.toLocaleString("en-US", {
-          timeZone: "Africa/Cairo",
-        })
+        displayEgyptDateTime(appointmentDateTime)
       );
 
       // Get day of week in Egypt timezone for proper validation
@@ -297,21 +292,13 @@ export async function POST(req: Request) {
           { message: "This artist is not currently accepting bookings" },
           { status: 400 }
         );
-      } // Check if appointment is during working hours (in Egypt timezone)
-      // Extract Egypt timezone hours/minutes for working hours validation
-      const egyptDateTime = new Date(
-        appointmentDateTime.toLocaleString("en-US", {
-          timeZone: "Africa/Cairo",
-        })
-      );
-      const egyptHours = egyptDateTime.getHours();
-      const egyptMinutes = egyptDateTime.getMinutes();
+      } // Check if appointment is during working hours (Egypt timezone)
+      // Since appointmentDateTime is already in Egypt time, use it directly
+      const egyptHours = appointmentDateTime.getHours();
+      const egyptMinutes = appointmentDateTime.getMinutes();
 
-      const egyptEndDateTime = new Date(
-        appointmentEndTime.toLocaleString("en-US", { timeZone: "Africa/Cairo" })
-      );
-      const appointmentEndHour = egyptEndDateTime.getHours();
-      const appointmentEndMinute = egyptEndDateTime.getMinutes();
+      const appointmentEndHour = appointmentEndTime.getHours();
+      const appointmentEndMinute = appointmentEndTime.getMinutes();
 
       console.log("=== WORKING HOURS CHECK (EGYPT TIMEZONE) ===");
       console.log(
@@ -385,26 +372,18 @@ export async function POST(req: Request) {
         appointmentDateTime.toLocaleString("en-US", {
           timeZone: "Africa/Cairo",
         })
-      );
+      ); // Create day range for conflict checking (Egypt timezone)
+      // Since we store in Egypt time, create range in Egypt time
+      const dayStart = new Date(appointmentDateTime);
+      dayStart.setHours(0, 0, 0, 0);
 
-      // Create UTC day range for the appointment date in Egypt timezone
-      // We need to find the UTC range that covers the entire Egypt day
-      const egyptDayStart = new Date(
-        `${validatedData.appointmentDate}T00:00:00+02:00`
-      );
-      const egyptDayEnd = new Date(
-        `${validatedData.appointmentDate}T23:59:59+02:00`
-      );
+      const dayEnd = new Date(appointmentDateTime);
+      dayEnd.setHours(23, 59, 59, 999);
 
-      console.log("Searching bookings in UTC date range:", {
-        start: egyptDayStart.toISOString(),
-        end: egyptDayEnd.toISOString(),
-        egyptStart: egyptDayStart.toLocaleString("en-US", {
-          timeZone: "Africa/Cairo",
-        }),
-        egyptEnd: egyptDayEnd.toLocaleString("en-US", {
-          timeZone: "Africa/Cairo",
-        }),
+      console.log("Searching bookings in Egypt time range:", {
+        start: dayStart.toISOString(),
+        end: dayEnd.toISOString(),
+        requestedTime: appointmentDateTime.toISOString(),
       });
       const existingBookings = await db.booking.findMany({
         where: {
@@ -413,8 +392,8 @@ export async function POST(req: Request) {
             in: ["PENDING", "CONFIRMED"],
           },
           date_time: {
-            gte: egyptDayStart,
-            lt: egyptDayEnd,
+            gte: dayStart,
+            lt: dayEnd,
           },
         },
         select: {
@@ -427,23 +406,24 @@ export async function POST(req: Request) {
 
       console.log(
         `Found ${existingBookings.length} existing bookings for the day`
-      ); // Check for time conflicts using Egypt timezone comparison with dayjs
-      const requestedDateTime = dayjs(appointmentDateTime).tz("Africa/Cairo");
-      const requestedTimeStr = requestedDateTime.format("YYYY-MM-DD HH:mm");
+      ); // Check for time conflicts - direct comparison since both are Egypt time
+      const requestedTime = appointmentDateTime.getTime();
 
-      console.log("=== DETAILED CONFLICT CHECK ===");
-      console.log("Requested appointment (Egypt):", requestedTimeStr);
+      console.log("=== SIMPLIFIED CONFLICT CHECK ===");
+      console.log(
+        "Requested appointment time:",
+        appointmentDateTime.toISOString()
+      );
 
       const isOverlapping = existingBookings.some((booking) => {
-        const existingDateTime = dayjs(booking.date_time).tz("Africa/Cairo");
-        const existingTimeStr = existingDateTime.format("YYYY-MM-DD HH:mm");
+        const existingTime = booking.date_time.getTime();
 
         console.log(`Comparing with existing booking ${booking.id}:`);
-        console.log(`  Existing: ${existingTimeStr}`);
-        console.log(`  Requested: ${requestedTimeStr}`);
+        console.log(`  Existing: ${booking.date_time.toISOString()}`);
+        console.log(`  Requested: ${appointmentDateTime.toISOString()}`);
 
-        // Compare exact date and time strings for precision
-        const isConflict = existingTimeStr === requestedTimeStr;
+        // Direct time comparison (both in Egypt time)
+        const isConflict = Math.abs(existingTime - requestedTime) < 60000; // Within 1 minute
         console.log(`  Conflict: ${isConflict}`);
 
         return isConflict;
@@ -463,7 +443,7 @@ export async function POST(req: Request) {
       const bookingData = {
         user_id: userId,
         artist_id: artist.makeup_artist.id, // Use makeup_artist.id instead of user.id
-        date_time: appointmentDateTime, // Store as UTC datetime
+        date_time: appointmentDateTime, // Store as Egypt time (no conversion)
         service_type: validatedData.serviceType,
         total_price: validatedData.totalPrice,
         location: validatedData.location || null,
@@ -473,10 +453,9 @@ export async function POST(req: Request) {
       console.log("Preparing to create booking:", {
         ...bookingData,
         date_time: {
-          utc: bookingData.date_time.toISOString(),
-          egypt: bookingData.date_time.toLocaleString("en-US", {
-            timeZone: "Africa/Cairo",
-          }),
+          egyptTime: bookingData.date_time.toISOString(),
+          localDisplay: bookingData.date_time.toLocaleString(),
+          hours: bookingData.date_time.getHours(),
         },
       });
 
