@@ -489,7 +489,8 @@ export default function AppointmentsPage() {
               <div className="flex flex-col h-32 items-center justify-center">
                 <div className="w-16 h-16 mb-4 rounded-full bg-amber-50 flex items-center justify-center">
                   <Filter className="h-8 w-8 text-amber-400" />
-                </div>                <p className="text-muted-foreground">
+                </div>{" "}
+                <p className="text-muted-foreground">
                   No results for selected filter
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">

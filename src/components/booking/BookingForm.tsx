@@ -175,7 +175,7 @@ export default function BookingForm({
 
       if (!response.ok) {
         throw new Error("Failed to book appointment");
-      }      // Show success toast
+      } // Show success toast
       toast({
         title: "Booking Successful!",
         description: "Your appointment has been scheduled successfully.",
@@ -183,10 +183,12 @@ export default function BookingForm({
 
       // Redirect to appointments page
       router.push("/appointments");
-    } catch (error) {      console.error("Error booking appointment:", error);
+    } catch (error) {
+      console.error("Error booking appointment:", error);
       toast({
         title: "Booking Failed",
-        description: "An error occurred while trying to book your appointment. Please try again.",
+        description:
+          "An error occurred while trying to book your appointment. Please try again.",
         variant: "destructive",
       });
     } finally {

@@ -646,11 +646,13 @@ export default function ArtistDashboard() {
               <div className="flex flex-col items-center justify-center py-10">
                 <div className="w-16 h-16 mb-4 rounded-full bg-amber-50 flex items-center justify-center">
                   <Calendar className="h-8 w-8 text-amber-400" />
-                </div>                <h3 className="text-xl font-medium mb-2 text-gray-800">
+                </div>{" "}
+                <h3 className="text-xl font-medium mb-2 text-gray-800">
                   No matching bookings
                 </h3>
                 <p className="text-gray-500 max-w-md text-center">
-                  No bookings found for the selected filter. Please try another filter.
+                  No bookings found for the selected filter. Please try another
+                  filter.
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
                   No bookings found for the selected filters.
