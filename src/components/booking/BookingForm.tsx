@@ -175,19 +175,18 @@ export default function BookingForm({
 
       if (!response.ok) {
         throw new Error("Failed to book appointment");
-      } // Show success toast
+      }      // Show success toast
       toast({
-        title: "تم الحجز بنجاح!",
-        description: "تم جدولة موعدك بنجاح.",
+        title: "Booking Successful!",
+        description: "Your appointment has been scheduled successfully.",
       });
 
       // Redirect to appointments page
       router.push("/appointments");
-    } catch (error) {
-      console.error("Error booking appointment:", error);
+    } catch (error) {      console.error("Error booking appointment:", error);
       toast({
-        title: "فشل الحجز",
-        description: "حدث خطأ أثناء محاولة حجز موعدك. يرجى المحاولة مرة أخرى.",
+        title: "Booking Failed",
+        description: "An error occurred while trying to book your appointment. Please try again.",
         variant: "destructive",
       });
     } finally {

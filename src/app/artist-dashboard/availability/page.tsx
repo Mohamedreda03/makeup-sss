@@ -24,8 +24,9 @@ import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import {
-  formatTimeToEgypt12h,
-  formatDateToEgyptLocale,
+  formatTimeSimple,
+  formatDateSimple,
+  formatSimpleDateTime,
 } from "@/lib/timezone-config";
 
 // Initialize dayjs plugins
@@ -228,10 +229,9 @@ export default function ArtistAvailabilityPage() {
       availabilitySettings.breakBetweenSessions;
 
     return Math.floor(totalMinutes / sessionWithBreak);
-  };
-  // Format time for display with Egyptian timezone
+  }; // Format time for display with simple local time
   const formatTime = (timeString: string) => {
-    return formatTimeToEgypt12h(timeString);
+    return formatTimeSimple(timeString);
   };
 
   if (status === "loading" || isLoading) {
@@ -254,11 +254,12 @@ export default function ArtistAvailabilityPage() {
           Configure your working schedule and availability for client bookings.
         </p>{" "}
         <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          {" "}
           <p className="text-sm text-blue-800">
             <strong>Timezone Note:</strong> All times are displayed and saved in
-            Egypt timezone (UTC+2/+3). Times will remain in Egypt timezone even
-            when deployed to servers in other regions. Clients will see
-            appointment times in Egypt timezone regardless of their location.
+            local timezone. Times will work correctly on localhost without
+            complex timezone conversion. This simplified approach ensures
+            consistent time handling across all environments.
           </p>
         </div>
       </div>
@@ -390,7 +391,7 @@ export default function ArtistAvailabilityPage() {
             {availabilitySettings.startTime && availabilitySettings.endTime && (
               <div className="mt-4 p-3 bg-gray-50 rounded-lg">
                 <p className="text-sm font-medium text-gray-700 mb-2">
-                  Time Preview (Egypt Timezone):
+                  Time Preview (Local Timezone):
                 </p>
                 <div className="text-sm text-gray-600">
                   <p>
@@ -402,8 +403,8 @@ export default function ArtistAvailabilityPage() {
                     {formatTime(availabilitySettings.endTime)}
                   </p>{" "}
                   <p className="mt-2 text-xs text-gray-500">
-                    Times are stored in Egypt timezone and will remain
-                    consistent across all server environments
+                    Times are stored in local timezone and will work
+                    consistently on localhost and all deployment environments
                   </p>
                 </div>
               </div>

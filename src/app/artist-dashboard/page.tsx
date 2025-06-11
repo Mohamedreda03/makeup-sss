@@ -7,9 +7,14 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 
-// تهيئة إضافات dayjs
+// Initialize dayjs plugins
 dayjs.extend(utc);
 dayjs.extend(timezone);
+import {
+  formatTimeSimple,
+  formatDateSimple,
+  formatSimpleDateTime,
+} from "@/lib/timezone-config";
 import {
   Calendar,
   Clock,
@@ -538,10 +543,11 @@ export default function ArtistDashboard() {
                         <div>
                           {(() => {
                             try {
-                              // استخدام dayjs لتحويل وتنسيق التاريخ بتوقيت مصر
-                              return dayjs(booking.date_time)
-                                .tz("Africa/Cairo")
-                                .format("MMM D, YYYY");
+                              // Display local date without timezone conversion
+                              return formatSimpleDateTime(
+                                booking.date_time,
+                                "MMM D, YYYY"
+                              );
                             } catch {
                               return "Date not available";
                             }
@@ -549,10 +555,11 @@ export default function ArtistDashboard() {
                           <div className="text-xs text-gray-500">
                             {(() => {
                               try {
-                                // استخدام dayjs لتحويل وتنسيق الوقت بتوقيت مصر
-                                return dayjs(booking.date_time)
-                                  .tz("Africa/Cairo")
-                                  .format("h:mm A");
+                                // Display local time without timezone conversion
+                                return formatSimpleDateTime(
+                                  booking.date_time,
+                                  "h:mm A"
+                                );
                               } catch {
                                 return "Time not available";
                               }
@@ -639,12 +646,11 @@ export default function ArtistDashboard() {
               <div className="flex flex-col items-center justify-center py-10">
                 <div className="w-16 h-16 mb-4 rounded-full bg-amber-50 flex items-center justify-center">
                   <Calendar className="h-8 w-8 text-amber-400" />
-                </div>
-                <h3 className="text-xl font-medium mb-2 text-gray-800">
-                  لا توجد حجوزات مطابقة
+                </div>                <h3 className="text-xl font-medium mb-2 text-gray-800">
+                  No matching bookings
                 </h3>
                 <p className="text-gray-500 max-w-md text-center">
-                  لم يتم العثور على حجوزات للفلتر المحدد. يرجى تجربة فلتر آخر.
+                  No bookings found for the selected filter. Please try another filter.
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
                   No bookings found for the selected filters.
@@ -707,14 +713,15 @@ export default function ArtistDashboard() {
                   </div>
                 </div>{" "}
                 <div className="space-y-1">
-                  <div className="text-sm font-medium">Date & Time</div>
+                  <div className="text-sm font-medium">Date & Time</div>{" "}
                   <div>
                     {(() => {
                       try {
-                        // استخدام dayjs لتحويل وتنسيق التاريخ بتوقيت مصر
-                        return dayjs(selectedBooking.date_time)
-                          .tz("Africa/Cairo")
-                          .format("MMMM D, YYYY");
+                        // Display local date without timezone conversion
+                        return formatSimpleDateTime(
+                          selectedBooking.date_time,
+                          "MMMM D, YYYY"
+                        );
                       } catch {
                         return "Date not available";
                       }
@@ -722,10 +729,11 @@ export default function ArtistDashboard() {
                     <div className="text-sm text-gray-500">
                       {(() => {
                         try {
-                          // استخدام dayjs لتحويل وتنسيق الوقت بتوقيت مصر
-                          return dayjs(selectedBooking.date_time)
-                            .tz("Africa/Cairo")
-                            .format("h:mm A");
+                          // Display local time without timezone conversion
+                          return formatSimpleDateTime(
+                            selectedBooking.date_time,
+                            "h:mm A"
+                          );
                         } catch {
                           return "Time not available";
                         }

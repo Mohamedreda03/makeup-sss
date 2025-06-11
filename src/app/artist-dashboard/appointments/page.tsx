@@ -18,8 +18,13 @@ import {
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
+import {
+  formatTimeSimple,
+  formatDateSimple,
+  formatSimpleDateTime,
+} from "@/lib/timezone-config";
 
-// تهيئة إضافات dayjs
+// Initialize dayjs plugins
 dayjs.extend(utc);
 dayjs.extend(timezone);
 import { Button } from "@/components/ui/button";
@@ -475,7 +480,7 @@ export default function AppointmentsPage() {
                 <div className="w-16 h-16 mb-4 rounded-full bg-gray-50 flex items-center justify-center">
                   <Calendar className="h-8 w-8 text-muted-foreground" />
                 </div>
-                <p className="text-muted-foreground">لا توجد مواعيد</p>
+                <p className="text-muted-foreground">No appointments</p>
                 <p className="text-xs text-muted-foreground mt-1">
                   No appointments found.
                 </p>
@@ -484,9 +489,8 @@ export default function AppointmentsPage() {
               <div className="flex flex-col h-32 items-center justify-center">
                 <div className="w-16 h-16 mb-4 rounded-full bg-amber-50 flex items-center justify-center">
                   <Filter className="h-8 w-8 text-amber-400" />
-                </div>
-                <p className="text-muted-foreground">
-                  لا توجد نتائج للفلتر المحدد
+                </div>                <p className="text-muted-foreground">
+                  No results for selected filter
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
                   No appointments match the selected filter.
@@ -537,10 +541,11 @@ export default function AppointmentsPage() {
                             <span className="font-medium">
                               {(() => {
                                 try {
-                                  // استخدام dayjs لتحويل وتنسيق التاريخ بتوقيت مصر
-                                  return dayjs(appointment.date_time)
-                                    .tz("Africa/Cairo")
-                                    .format("MMM DD, YYYY");
+                                  // Display local date without timezone conversion
+                                  return formatSimpleDateTime(
+                                    appointment.date_time,
+                                    "MMM DD, YYYY"
+                                  );
                                 } catch {
                                   return "Date not available";
                                 }
@@ -549,10 +554,11 @@ export default function AppointmentsPage() {
                             <span className="text-xs text-muted-foreground">
                               {(() => {
                                 try {
-                                  // استخدام dayjs لتحويل وتنسيق الوقت بتوقيت مصر
-                                  return dayjs(appointment.date_time)
-                                    .tz("Africa/Cairo")
-                                    .format("h:mm A");
+                                  // Display local time without timezone conversion
+                                  return formatSimpleDateTime(
+                                    appointment.date_time,
+                                    "h:mm A"
+                                  );
                                 } catch {
                                   return "Time not available";
                                 }
@@ -718,10 +724,11 @@ export default function AppointmentsPage() {
                   {selectedAppointment &&
                     (() => {
                       try {
-                        // استخدام dayjs لتحويل وتنسيق التاريخ بتوقيت مصر
-                        return dayjs(selectedAppointment.date_time)
-                          .tz("Africa/Cairo")
-                          .format("MMMM D, YYYY");
+                        // Display local date without timezone conversion
+                        return formatSimpleDateTime(
+                          selectedAppointment.date_time,
+                          "MMMM D, YYYY"
+                        );
                       } catch {
                         return "Date not available";
                       }
@@ -735,10 +742,11 @@ export default function AppointmentsPage() {
                   {selectedAppointment &&
                     (() => {
                       try {
-                        // استخدام dayjs لتحويل وتنسيق الوقت بتوقيت مصر
-                        return dayjs(selectedAppointment.date_time)
-                          .tz("Africa/Cairo")
-                          .format("h:mm A");
+                        // Display local time without timezone conversion
+                        return formatSimpleDateTime(
+                          selectedAppointment.date_time,
+                          "h:mm A"
+                        );
                       } catch {
                         return "Time not available";
                       }

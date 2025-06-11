@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 
+// Mark route as dynamic to prevent static generation
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     const session = await auth();

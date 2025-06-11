@@ -42,10 +42,10 @@ export default async function ArtistDashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // التحقق من صلاحيات المستخدم في السيرفر
+  // Check user permissions on server
   const session = await auth();
 
-  // التحقق من أن المستخدم مسجل الدخول وهو فنان
+  // Check that user is logged in and is an artist
   if (!session || session.user?.role !== "ARTIST") {
     redirect("/");
   }
@@ -79,7 +79,7 @@ export default async function ArtistDashboardLayout({
     },
   ];
 
-  // تمرير بيانات المستخدم وعناصر التنقل إلى مكون العميل
+  // Pass user data and navigation items to client component
   return (
     <ArtistDashboardNav user={session.user} navItems={navItems}>
       {children}

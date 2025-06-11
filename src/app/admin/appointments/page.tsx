@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import {
-  toEgyptTime,
-  formatDateToEgyptLocale,
-  formatTimeToEgypt12h,
+  formatTimeSimple,
+  formatDateSimple,
+  formatSimpleDateTime,
 } from "@/lib/timezone-config";
 import {
   ArrowLeft,
@@ -538,13 +538,15 @@ function AdminAppointmentsPage() {
                         </div>
                       </TableCell>{" "}
                       <TableCell>
+                        {" "}
                         <div>
                           {" "}
                           {(() => {
                             try {
-                              // Use timezone utilities for consistent Egypt timezone formatting
-                              return formatDateToEgyptLocale(
-                                booking.date_time.toISOString().split("T")[0]
+                              // Display local date without timezone conversion
+                              return formatSimpleDateTime(
+                                booking.date_time,
+                                "MMMM D, YYYY"
                               );
                             } catch {
                               return "Date not available";
@@ -553,18 +555,10 @@ function AdminAppointmentsPage() {
                           <div className="text-sm text-muted-foreground">
                             {(() => {
                               try {
-                                // Use timezone utilities for consistent Egypt timezone formatting
-                                const egyptTime = toEgyptTime(
-                                  booking.date_time
-                                );
-                                return formatTimeToEgypt12h(
-                                  `${egyptTime
-                                    .getHours()
-                                    .toString()
-                                    .padStart(2, "0")}:${egyptTime
-                                    .getMinutes()
-                                    .toString()
-                                    .padStart(2, "0")}`
+                                // Display local time without timezone conversion
+                                return formatSimpleDateTime(
+                                  booking.date_time,
+                                  "h:mm A"
                                 );
                               } catch {
                                 return "Time not available";
@@ -816,9 +810,11 @@ function AdminAppointmentsPage() {
                         const booking = bookings.find(
                           (b) => b.id === bookingToUpdate
                         );
-                        if (!booking) return "Booking not found"; // Use timezone utilities for consistent Egypt timezone formatting
-                        return formatDateToEgyptLocale(
-                          booking.date_time.toISOString().split("T")[0]
+                        if (!booking) return "Booking not found";
+                        // Display local date without timezone conversion
+                        return formatSimpleDateTime(
+                          booking.date_time,
+                          "MMMM D, YYYY"
                         );
                       } catch {
                         return "Date not available";
@@ -831,16 +827,11 @@ function AdminAppointmentsPage() {
                         const booking = bookings.find(
                           (b) => b.id === bookingToUpdate
                         );
-                        if (!booking) return "Booking not found"; // Use timezone utilities for consistent Egypt timezone formatting
-                        const egyptTime = toEgyptTime(booking.date_time);
-                        return formatTimeToEgypt12h(
-                          `${egyptTime
-                            .getHours()
-                            .toString()
-                            .padStart(2, "0")}:${egyptTime
-                            .getMinutes()
-                            .toString()
-                            .padStart(2, "0")}`
+                        if (!booking) return "Booking not found";
+                        // Display local time without timezone conversion
+                        return formatSimpleDateTime(
+                          booking.date_time,
+                          "h:mm A"
                         );
                       } catch {
                         return "Time not available";

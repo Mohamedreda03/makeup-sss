@@ -1,9 +1,6 @@
 "use client";
 
-import {
-  formatTimeToEgypt12h,
-  formatDateToEgyptLocale,
-} from "@/lib/timezone-config";
+import { formatTimeSimple, formatDateSimple } from "@/lib/timezone-config";
 
 interface Service {
   id: string;
@@ -53,7 +50,7 @@ export function BookingSummary({
                 {" "}
                 {(() => {
                   try {
-                    return formatDateToEgyptLocale(selectedDate);
+                    return formatDateSimple(selectedDate);
                   } catch {
                     return "Date not available";
                   }
@@ -65,7 +62,7 @@ export function BookingSummary({
               <span className="font-medium">
                 {(() => {
                   try {
-                    return formatTimeToEgypt12h(selectedTime);
+                    return formatTimeSimple(selectedTime);
                   } catch {
                     return selectedTime;
                   }

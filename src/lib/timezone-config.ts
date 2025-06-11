@@ -3,6 +3,7 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import customParseFormat from "dayjs/plugin/customParseFormat";
+import { format } from "date-fns";
 
 // Initialize dayjs plugins
 dayjs.extend(utc);
@@ -404,20 +405,18 @@ export const convertAvailabilityToEgyptStorage = (settings: {
   breakBetweenSessions: number;
   isAvailable: boolean;
 }) => {
-  // Ensure times are in Egypt timezone format
-  const egyptStartTime = dayjs
-    .tz(`2000-01-01T${settings.startTime}`, "Africa/Cairo")
-    .format("HH:mm");
-  const egyptEndTime = dayjs
-    .tz(`2000-01-01T${settings.endTime}`, "Africa/Cairo")
-    .format("HH:mm");
-
+  // Store Egypt times directly without any UTC conversion!
+  // The times received are already in Egypt timezone, so keep them as-is
   return {
-    ...settings,
-    startTime: egyptStartTime,
-    endTime: egyptEndTime,
-    timezone: "Africa/Cairo", // Store timezone info
-    storageType: "EGYPT_TIME", // Mark as Egypt time storage
+    workingDays: settings.workingDays,
+    startTime: settings.startTime, // Keep original Egypt time (e.g., "09:00")
+    endTime: settings.endTime, // Keep original Egypt time (e.g., "17:00")
+    sessionDuration: settings.sessionDuration,
+    breakBetweenSessions: settings.breakBetweenSessions,
+    isAvailable: settings.isAvailable,
+    // Mark as Egypt timezone storage - NO UTC conversion!
+    storageType: "EGYPT_TIME",
+    timezone: "Africa/Cairo",
   };
 };
 
@@ -522,20 +521,56 @@ export const treatAsEgyptTime = (dateTime: Date | string): Date => {
         egyptMoment.minute(),
         egyptMoment.second()
       );
-    } else {
-      // If it's already a Date, treat its components as Egypt time
-      return new Date(
-        dateTime.getFullYear(),
-        dateTime.getMonth(),
-        dateTime.getDate(),
-        dateTime.getHours(),
-        dateTime.getMinutes(),
-        dateTime.getSeconds()
-      );
     }
+    // If it's already a Date, treat it as Egypt time (no conversion)
+    return dateTime;
   } catch (error) {
     console.error("Error treating as Egypt time:", error);
     return new Date();
+  }
+};
+
+// Parse dates that are stored as Egypt time in database (no conversion needed)
+export const parseEgyptStoredDate = (storedDate: Date | string): Date => {
+  // Since the date is stored as Egypt time, we parse it directly without timezone conversion
+  const date = new Date(storedDate);
+
+  // Create a new date using the UTC components as if they were Egypt time
+  return new Date(
+    date.getUTCFullYear(),
+    date.getUTCMonth(),
+    date.getUTCDate(),
+    date.getUTCHours(),
+    date.getUTCMinutes(),
+    date.getUTCSeconds()
+  );
+};
+
+// Format dates that are stored as Egypt time for display
+export const formatEgyptStoredDate = (
+  storedDate: Date | string,
+  formatPattern: string = "MMM D, YYYY"
+): string => {
+  try {
+    const egyptDate = parseEgyptStoredDate(storedDate);
+    return format(egyptDate, formatPattern);
+  } catch (error) {
+    console.error("Error formatting Egypt stored date:", error);
+    return "Date not available";
+  }
+};
+
+// Format time that is stored as Egypt time for display
+export const formatEgyptStoredTime = (
+  storedDate: Date | string,
+  formatPattern: string = "h:mm a"
+): string => {
+  try {
+    const egyptDate = parseEgyptStoredDate(storedDate);
+    return format(egyptDate, formatPattern);
+  } catch (error) {
+    console.error("Error formatting Egypt stored time:", error);
+    return "Time not available";
   }
 };
 
@@ -554,4 +589,131 @@ export const validateEgyptTimezone = (dateTime: Date | string): boolean => {
 // Display Egypt timezone datetime for UI confirmation
 export const displayEgyptDateTime = (dateTime: Date): string => {
   return dayjs(dateTime).tz("Africa/Cairo").format("YYYY-MM-DD HH:mm");
+};
+
+// ===== SIMPLE LOCAL TIME FUNCTIONS (NO TIMEZONE CONVERSION) =====
+
+// Simple function to format time string to 12-hour format
+export const formatTimeSimple = (timeString: string): string => {
+  if (!timeString || !timeString.match(/^\d{2}:\d{2}$/)) {
+    return timeString;
+  }
+
+  const [hours, minutes] = timeString.split(":").map(Number);
+  const hour12 = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+  const ampm = hours >= 12 ? "PM" : "AM";
+
+  return `${hour12}:${minutes.toString().padStart(2, "0")} ${ampm}`;
+};
+
+// Simple function to format date for display
+export const formatDateSimple = (dateString: string): string => {
+  try {
+    const date = new Date(dateString + "T00:00:00");
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  } catch {
+    return dateString;
+  }
+};
+
+// Simple function to create datetime for storage (Egypt timezone)
+export const createSimpleDateTime = (date: string, time: string): Date => {
+  try {
+    const [year, month, day] = date.split("-").map(Number);
+    const [hours, minutes] = time.split(":").map(Number);
+
+    console.log(
+      `Creating Egypt time: ${date} ${time} (Input: ${hours}:${minutes})`
+    );
+
+    // Create date in Egypt timezone using dayjs
+    const egyptTime = dayjs.tz(
+      `${date} ${time}`,
+      "YYYY-MM-DD HH:mm",
+      "Africa/Cairo"
+    );
+
+    // Create Date object with UTC components matching Egypt time
+    // This way, when stored in DB, it shows the Egypt time directly
+    const result = new Date(
+      Date.UTC(
+        year,
+        month - 1, // Month is 0-indexed
+        day,
+        hours, // Use Egypt hours directly as UTC hours
+        minutes, // Use Egypt minutes directly as UTC minutes
+        0,
+        0
+      )
+    );
+
+    console.log(`Egypt time input: ${hours}:${minutes}`);
+    console.log(`Created date (UTC components): ${result.toISOString()}`);
+    console.log(
+      `This will display as: ${result.getUTCHours()}:${result
+        .getUTCMinutes()
+        .toString()
+        .padStart(2, "0")} UTC`
+    );
+    console.log(`But represents Egypt time: ${hours}:${minutes}`);
+
+    return result;
+  } catch (error) {
+    console.error("Error creating Egypt datetime:", error);
+    return new Date();
+  }
+};
+
+// Simple function to format datetime for display (treats stored data as Egypt time)
+export const formatSimpleDateTime = (
+  date: Date | string,
+  format?: string
+): string => {
+  const dateObj = new Date(date);
+
+  // Since we store Egypt time as UTC components, we use UTC methods to get the "Egypt" time back
+  if (
+    format === "MMM D, YYYY" ||
+    format === "MMM DD, YYYY" ||
+    format === "MMMM D, YYYY"
+  ) {
+    const utcDate = new Date(dateObj.getTime());
+    return utcDate.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      timeZone: "UTC", // Use UTC to get the stored Egypt time components
+    });
+  }
+
+  if (format === "h:mm A" || format === "h:mm a") {
+    const utcDate = new Date(dateObj.getTime());
+    return utcDate.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+      timeZone: "UTC", // Use UTC to get the stored Egypt time components
+    });
+  }
+  // Default format
+  const utcDate = new Date(dateObj.getTime());
+  return (
+    utcDate.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      timeZone: "UTC",
+    }) +
+    " " +
+    utcDate.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+      timeZone: "UTC",
+    })
+  );
 };

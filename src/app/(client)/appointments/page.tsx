@@ -2,14 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
-import dayjs from "dayjs";
-import utc from "dayjs/plugin/utc";
-import timezone from "dayjs/plugin/timezone";
 import { Calendar, Clock, User, CheckCircle, DollarSign } from "lucide-react";
-
-// Initialize dayjs plugins
-dayjs.extend(utc);
-dayjs.extend(timezone);
+import {
+  formatTimeSimple,
+  formatDateSimple,
+  formatSimpleDateTime,
+} from "@/lib/timezone-config";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -296,35 +294,35 @@ export default function AppointmentsPage() {
                       <CheckCircle className="h-4 w-4 mr-1 inline" />
                       Confirmed
                     </Badge>
-                  </div>
-
+                  </div>{" "}
                   <div className="grid grid-cols-2 gap-2 text-xs bg-gray-50 p-2 rounded-md mb-3">
                     {" "}
                     <div className="flex items-center">
-                      <Calendar className="h-3 w-3 mr-1 text-gray-500" />
+                      <Calendar className="h-3 w-3 mr-1 text-gray-500" />{" "}
                       <span>
-                        {" "}
                         {(() => {
                           try {
-                            // Use dayjs to convert and format date in Egypt timezone
-                            return dayjs(appointment.datetime)
-                              .tz("Africa/Cairo")
-                              .format("MMM D, YYYY");
+                            // Parse appointment datetime as local time (no conversion)
+                            return formatSimpleDateTime(
+                              appointment.datetime,
+                              "MMM D, YYYY"
+                            );
                           } catch {
                             return "Date not available";
                           }
                         })()}
                       </span>
-                    </div>{" "}
+                    </div>
                     <div className="flex items-center">
                       <Clock className="h-3 w-3 mr-1 text-gray-500" />
                       <span>
                         {(() => {
                           try {
-                            // استخدام dayjs لتحويل وتنسيق الوقت بتوقيت مصر
-                            return dayjs(appointment.datetime)
-                              .tz("Africa/Cairo")
-                              .format("h:mm A");
+                            // Parse appointment datetime as local time (no conversion)
+                            return formatSimpleDateTime(
+                              appointment.datetime,
+                              "h:mm a"
+                            );
                           } catch {
                             return "Time not available";
                           }
@@ -387,38 +385,39 @@ export default function AppointmentsPage() {
                     </Badge>
                   </div>{" "}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm bg-gray-50 p-3 rounded-md mt-4">
+                    {" "}
                     <div className="flex items-center">
                       <Calendar className="h-4 w-4 mr-2 text-gray-500" />
                       <span>
                         {(() => {
                           try {
-                            // استخدام dayjs لتحويل وتنسيق التاريخ بتوقيت مصر
-                            return dayjs(appointment.datetime)
-                              .tz("Africa/Cairo")
-                              .format("MMMM D, YYYY");
+                            // Parse appointment datetime as local time (no conversion)
+                            return formatSimpleDateTime(
+                              appointment.datetime,
+                              "MMM D, YYYY"
+                            );
                           } catch {
                             return "Date not available";
                           }
                         })()}
                       </span>
                     </div>
-
                     <div className="flex items-center">
                       <Clock className="h-4 w-4 mr-2 text-gray-500" />
                       <span>
                         {(() => {
                           try {
-                            // استخدام dayjs لتحويل وتنسيق الوقت بتوقيت مصر
-                            return dayjs(appointment.datetime)
-                              .tz("Africa/Cairo")
-                              .format("h:mm A");
+                            // Parse appointment datetime as local time (no conversion)
+                            return formatSimpleDateTime(
+                              appointment.datetime,
+                              "h:mm a"
+                            );
                           } catch {
                             return "Time not available";
                           }
                         })()}
                       </span>
                     </div>
-
                     <div className="flex items-center">
                       <DollarSign className="h-4 w-4 mr-2 text-gray-500" />
                       <span>EGP {appointment.totalPrice}</span>
@@ -470,16 +469,17 @@ export default function AppointmentsPage() {
                     </Badge>
                   </div>{" "}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm bg-gray-50 p-3 rounded-md">
-                    {" "}
                     <div className="flex items-center">
-                      <Calendar className="h-4 w-4 mr-2 text-gray-500" />
+                      {" "}
+                      <Calendar className="h-4 w-4 mr-2 text-gray-500" />{" "}
                       <span>
                         {(() => {
                           try {
-                            // استخدام dayjs لتحويل وتنسيق التاريخ بتوقيت مصر
-                            return dayjs(appointment.datetime)
-                              .tz("Africa/Cairo")
-                              .format("MMMM D, YYYY");
+                            // Parse appointment datetime as local time (no conversion)
+                            return formatSimpleDateTime(
+                              appointment.datetime,
+                              "MMM D, YYYY"
+                            );
                           } catch {
                             return "Date not available";
                           }
@@ -491,10 +491,11 @@ export default function AppointmentsPage() {
                       <span>
                         {(() => {
                           try {
-                            // استخدام dayjs لتحويل وتنسيق الوقت بتوقيت مصر
-                            return dayjs(appointment.datetime)
-                              .tz("Africa/Cairo")
-                              .format("h:mm A");
+                            // Parse appointment datetime as local time (no conversion)
+                            return formatSimpleDateTime(
+                              appointment.datetime,
+                              "h:mm a"
+                            );
                           } catch {
                             return "Time not available";
                           }

@@ -4,8 +4,9 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
-  formatTimeToEgypt12h,
-  formatDateToEgyptLocale,
+  formatTimeSimple,
+  formatDateSimple,
+  formatSimpleDateTime,
 } from "@/lib/timezone-config";
 import {
   Card,
@@ -380,11 +381,11 @@ export default function PaymentRequestPage() {
                     appointmentRequest.appointmentTime
                       ? (() => {
                           try {
-                            // Format the date and time using our consistent Egypt timezone utilities
-                            const formattedDate = formatDateToEgyptLocale(
+                            // Format the date and time using simple local time utilities
+                            const formattedDate = formatDateSimple(
                               appointmentRequest.appointmentDate
                             );
-                            const formattedTime = formatTimeToEgypt12h(
+                            const formattedTime = formatTimeSimple(
                               appointmentRequest.appointmentTime
                             );
 
